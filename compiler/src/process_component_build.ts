@@ -1016,7 +1016,10 @@ function recurseRepeatExpression(node: ts.CallExpression | ts.PropertyAccessExpr
   ts.PropertyAccessExpression | ts.CallExpression {
   if (ts.isCallExpression(node) && node.expression && ts.isIdentifier(node.expression) &&
     node.expression.getText() === COMPONENT_REPEAT) {
-    return ts.factory.createCallExpression(node.expression, node.typeArguments, [...node.arguments, ts.factory.createThis()]);
+    // the runtime Repeat signature is (arr, owningView, options): the owning view is
+    // inserted as the second argument, user-given options (e.g. RepeatOptions) follow it
+    return ts.factory.createCallExpression(node.expression, node.typeArguments,
+      [...node.arguments.slice(0, 1), ts.factory.createThis(), ...node.arguments.slice(1)]);
   } else if (ts.isPropertyAccessExpression(node)) {
     return ts.factory.updatePropertyAccessExpression(node,
       recurseRepeatExpression(node.expression, log, isBuilder, isGlobalBuilder, isTransition, isInRepeatTemplate), node.name);
