@@ -28,7 +28,7 @@ description: 为 arkui-plugins 的 UI-Plugins 创建新的变换快照测试 tes
 
 ### Step 1: 确认 localtest 输入已更新（就绪检查）
 
-创建任何 testcase 前，**第一件事永远是确认 `test/demo/localtest/` 下的输入文件已被用户更新**——这是用户"已准备好创建新 testcase"的信号。不要跳过本检查，也不要替用户编写 localtest 输入。
+创建任何 testcase 前，**第一件事是确认 `test/demo/localtest/` 下的输入文件已被用户更新**——这是用户"已准备好创建新 testcase"的信号。不要跳过本检查，也不要替用户编写 localtest 输入。
 
 - 目标文件：`demo/localtest/entry/src/main/ets/pages/new.ets` —— localtest 工程的编译入口。`demo/localtest/build_config_template.json` 的 `compileFiles`/`entryFiles` 已预接线指向它，`main_pages.json` 已注册 `pages/new`
 - 检查方法（在 `<TEST>` 目录执行）：
@@ -37,7 +37,7 @@ description: 为 arkui-plugins 的 UI-Plugins 创建新的变换快照测试 tes
   find demo/localtest -newer package.json -type f
   ```
 
-  输出中**关注 `.ets` 源文件**（如 `demo/localtest/entry/src/main/ets/pages/new.ets`，或用户声称准备的其他文件），列出即说明输入已更新。注意 `build_config.json` 是 localtest 的**生成物**（每次编译都会刷新 mtime）、`build_config_template.json` 可能因 Step 3 的批准修改而变新——这两类不代表用户准备了新输入，忽略即可。
+  输出中**关注 `.ets` 源文件**（如 `demo/localtest/entry/src/main/ets/pages/new.ets`，或用户声称准备的其它文件），列出即说明输入已更新。注意 `build_config.json` 是 localtest 的**生成物**（每次编译都会刷新 mtime）、`build_config_template.json` 可能因 Step 3 的批准修改而变新——这两类不代表用户准备了新输入，忽略即可。
 - 判定与动作：
   - **已更新** → 用户已就绪，继续 Step 2
   - **未更新** → **停下来，请用户修改 `demo/localtest/entry/src/main/ets/pages/new.ets`（写入要测试的 ArkUI 场景源码）并确认准备就绪**。得到确认前不得继续后续步骤，也不得自行虚构测试场景
@@ -166,7 +166,7 @@ npm run localtest
 | `double-dollar/` | $$ 语法 |
 | `entry/` | @Entry 路由/导航元数据 |
 | `exports/`、`imports/` | export/import 行为 |
-| `insight-intent/` | insight-intent 元数据 |
+| `insight-intent/` | 用户意图 元数据 |
 | `router-map-pages/` | 路由表 |
 | `wrap-builder/` | wrap-builder |
 
@@ -178,7 +178,7 @@ npm run localtest
 
 ### Step 6: 填写 testcase 内容（逐项询问用户）
 
-testcase 文件的结构与其他 `.test.ts` 一致（版权头、导入、buildConfig、插件、expectedScript、测试函数、run()）。填写前**按下列顺序逐项询问用户**（一次一个问题），收集完再一次性写入文件。回答过程中的约定：用户说 "stop" 表示**连当前正在询问的选项一并否决**。
+testcase 文件的结构与其它 `.test.ts` 一致（版权头、导入、buildConfig、插件、expectedScript、测试函数、run()）。填写前**按下列顺序逐项询问用户**（一次一个问题），收集完再一次性写入文件。回答过程中的约定：用户说 "stop" 表示**连当前正在询问的选项一并否决**。
 
 **6-1 compileFiles**：确认需要编译的文件清单。默认仅 Step 4-1 复制的 mock 文件；若测试涉及本地依赖（多文件编译），把全部文件加入（范例：`ut/ui-plugins/imports/import-struct.test.ts`）。**路径必须真实存在，禁止写入无效路径**。
 
@@ -190,20 +190,20 @@ testcase 文件的结构与其他 `.test.ts` 一致（版权头、导入、build
 
 | 导出名 | name | 作用 |
 |--------|------|------|
-| `beforeUINoRecheck` | before-ui-no-recheck | UI checked 变换前置准备 |
-| `uiNoRecheck` | ui-no-recheck | UI checked 主变换（CheckedTransformer） |
-| `collectNoRecheck` | collect-no-recheck | 元数据收集（UI+memo） |
-| `memoNoRecheck` | memo-no-recheck | memo（unmemoize）变换 |
-| `builderLambdaNoRecheck` | builder-lambda-no-recheck | builder lambda 变换 |
-| `structNoRecheck` | struct-no-recheck | struct 相关变换 |
-| `beforeInsightIntentNoRecheck` | before-insight-intent-no-recheck | insight-intent 前置 |
-| `insightIntentNoRecheck` | insight-intent-no-recheck | insight-intent 变换 |
+| `beforeUINoRecheck` | `before-ui-no-recheck` | UI checked 变换前置准备 |
+| `uiNoRecheck` | `ui-no-recheck` | UI checked 主变换（CheckedTransformer） |
+| `collectNoRecheck` | `collect-no-recheck` | 元数据收集（UI+memo） |
+| `memoNoRecheck` | `memo-no-recheck` | memo（unmemoize）变换 |
+| `builderLambdaNoRecheck` | `builder-lambda-no-recheck` | builder lambda 变换 |
+| `structNoRecheck` | `struct-no-recheck` | struct 相关变换 |
+| `beforeInsightIntentNoRecheck` | `before-insight-intent-no-recheck` | 用户意图 前置 |
+| `insightIntentNoRecheck` | `insight-intent-no-recheck` | 用户意图 变换 |
 
 经典组合：UI 链路 `[parsed, beforeUINoRecheck, uiNoRecheck, recheck]`；UI+memo 双链路 `[parsed, collectNoRecheck, uiNoRecheck, memoNoRecheck, recheck]`（范例 `constant-usage.test.ts`）。
 
-**6-5 test hooks**：逐个询问（每次报一个建议键，用户"是"则记录、"stop"则连当前提议一起否决并结束 hook 收集，也可指定其他键）。hook 键两类：裸状态（`parsed`/`checked`，全部插件执行完后触发一次）与插件专属（`<state>:<plugin name>`，特定插件执行完后触发）；机制见 `utils/plugin-tester.ts` 与 `utils/plugin-driver.ts` 的 `collectHistory()`。每个 hook 绑定一个测试函数（函数名自拟，如 `testMockPopupUITransformer`），断言 `this.scriptSnapshot` 与 expectedScript 经 `parseDumpSrc()` 归一化后的比对。
+**6-5 test hooks**：逐个询问（每次报一个建议键，用户"是"则记录、"stop"则连当前提议一起否决并结束 hook 收集，也可指定其它键）。hook 键两类：裸状态（`parsed`/`checked`，全部插件执行完后触发一次）与插件专属（`<state>:<plugin name>`，特定插件执行完后触发）；机制见 `utils/plugin-tester.ts` 与 `utils/plugin-driver.ts` 的 `collectHistory()`。每个 hook 绑定一个测试函数（函数名自拟，如 `testMockPopupUITransformer`），断言 `this.scriptSnapshot` 与 expectedScript 经 `parseDumpSrc()` 归一化后的比对。
 
-**6-6 early-stop**（必填，`pluginTester.run()` 第 4 参数的 `stopAfter`）：列出选项让用户挑——`'checked'`（最常用）与 `'parsed'`；其他状态（`afterNew`/`scopeInited`/`lowered`/`asmGenerated`/`binGenerated`/`clean`）按需提供。规则：hooks 执行到 after-check 就选 `'checked'`。
+**6-6 early-stop**（必填，`pluginTester.run()` 第 4 参数的 `stopAfter`）：列出选项让用户挑——`'checked'`（最常用）与 `'parsed'`；其它状态（`afterNew`/`scopeInited`/`lowered`/`asmGenerated`/`binGenerated`/`clean`）按需提供。规则：hooks 执行到 after-check 就选 `'checked'`。
 
 **6-7 tracing**：询问是否断言外部源（被 import 的依赖/SDK 模块）dump。是→先问 external source 名称，在第 4 参数加 `tracing: { externalSourceNames: ['<完整键名>'] }`（键名 = `<packageName>.<相对路径转换>`，范例 `ut/ui-plugins/declarations/class-observedV2-usage.test.ts`）；否→不加。
 
@@ -262,7 +262,7 @@ npm run test -- test/ut/<主目录>/<子目录>/<名称>.test.ts
 
 **8-2 分析失败 diff**
 
-首次运行大概率失败。用 `grep "^    [+-]"` 提取差异行，按类别归组。**localtest 与 testcase 环境存在正常差异**，已知类别：
+第一次运行大概率失败。用 `grep "^    [+-]"` 提取差异行，按类别归组。**localtest 与 testcase 环境存在正常差异**，已知类别：
 
 | 差异类别 | localtest dump | testcase 实际 | 修复（只改 expectedScript） |
 |----------|----------------|---------------|------------------------------|
