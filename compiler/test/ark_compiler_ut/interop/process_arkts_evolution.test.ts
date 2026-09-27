@@ -542,6 +542,69 @@ const IMPORT_ARKTS_EVO_OBJECT_CODE_EXPECT: string = `import { ArkTSObject } from
 let testObject: ArkTSObject = { a: 1 };
 `;
 
+const CONCURRENT_CLASS_CODE_1: string = `import { ArkTSClass } from "arkTSEvo";
+@Concurrent
+function foo(): void {
+  let a: ArkTSClass = {a: 1};
+}
+`;
+
+const CONCURRENT_CLASS_CODE_1_EXPECT: string = `import { ArkTSClass } from "arkTSEvo";
+let tmpClass = globalThis.Panda.getClass("LarkTSEvo/src/main/ets/decl/ArkTSClass;");
+@Concurrent
+function foo(): void {
+    let a: ArkTSClass = (() => { let tmpObj = new tmpClass(); tmpObj.a = 1; return tmpObj; })();
+}
+`;
+
+const CONCURRENT_INTERFACE_CODE_1: string = `import { ArkTSInterface } from "arkTSEvo";
+@Concurrent
+function bar(): void {
+  let a: ArkTSInterface = {a: 1};
+}
+`;
+
+const CONCURRENT_INTERFACE_CODE_1_EXPECT: string = `import { ArkTSInterface } from "arkTSEvo";
+let tmpClass = globalThis.Panda.getClass("LarkTSEvo/src/main/ets/decl/arkTSEvo$src$main$ets$decl$ArkTSInterface$ObjectLiteral;");
+@Concurrent
+function bar(): void {
+    let a: ArkTSInterface = (() => { let tmpObj = new tmpClass(); tmpObj.a = 1; return tmpObj; })();
+}
+`;
+
+const CONCURRENT_AND_NON_CONCURRENT_CODE: string = `import { ArkTSClass } from "arkTSEvo";
+let a: ArkTSClass = {a: 1};
+@Concurrent
+function foo(): void {
+  let b: ArkTSClass = {a: 2};
+}
+`;
+
+const CONCURRENT_AND_NON_CONCURRENT_CODE_EXPECT: string = `import { ArkTSClass } from "arkTSEvo";
+let tmpObj;
+let tmpClass = globalThis.Panda.getClass("LarkTSEvo/src/main/ets/decl/ArkTSClass;");
+let a: ArkTSClass = (tmpObj = new tmpClass(), tmpObj.a = 1, tmpObj);
+@Concurrent
+function foo(): void {
+    let b: ArkTSClass = (() => { let tmpObj_1 = new tmpClass(); tmpObj_1.a = 2; return tmpObj_1; })();
+}
+`;
+
+const CONCURRENT_RECORD_CODE: string = `import { ArkTSRecordFunc } from "arkTSEvo";
+@Concurrent
+function foo(): void {
+  ArkTSRecordFunc({a: 1});
+}
+`;
+
+const CONCURRENT_RECORD_CODE_EXPECT: string = `import { ArkTSRecordFunc } from "arkTSEvo";
+let tmpRecord = globalThis.Panda.getInstance("Lstd.core.Record;");
+@Concurrent
+function foo(): void {
+    ArkTSRecordFunc((tmpRecord["a"] = 1, tmpRecord));
+}
+`;
+
 const CLASS_IMPLEMENTS_ARKTS_EVO_CLASS_OR_INTERFACE_CODE: string = `import { I1, I2 } from "arkTSEvo";
 interface I3 {};
 class A implements I1 {}
@@ -1127,6 +1190,43 @@ mocha.describe('process arkts evolution tests', function () {
       const result = ts.transform(testSourceFile, [interopTransform(program, testFileName, true)]).transformed[0];
       const resultCode = ts.createPrinter().printFile(result);
       expect(resultCode === IMPORT_ARKTS_EVO_OBJECT_CODE_EXPECT).to.be.true;
+      cleanUpProcessArkTSEvolutionObj();
+    });
+
+    mocha.it('3-1-11-1: test concurrent function with ArkTS evolution class in object literal', function () {
+      const { program, testSourceFile } = createDualSourceProgram(CONCURRENT_CLASS_CODE_1);
+      const result = ts.transform(testSourceFile, [interopTransform(program, testFileName, true)]).transformed[0];
+      const resultCode = ts.createPrinter().printFile(result);
+      expect(resultCode === CONCURRENT_CLASS_CODE_1_EXPECT).to.be.true;
+      cleanUpProcessArkTSEvolutionObj();
+    });
+
+    mocha.it('3-1-11-2: test concurrent function with ArkTS evolution interface in object literal', function () {
+      const { program, testSourceFile } = createDualSourceProgram(CONCURRENT_INTERFACE_CODE_1);
+      const result = ts.transform(testSourceFile, [interopTransform(program, testFileName, true)]).transformed[0];
+      const resultCode = ts.createPrinter().printFile(result);
+      expect(resultCode === CONCURRENT_INTERFACE_CODE_1_EXPECT).to.be.true;
+      cleanUpProcessArkTSEvolutionObj();
+    });
+
+    mocha.it('3-1-11-3: test concurrent and non-concurrent mix with ArkTS evolution class in object literal', function () {
+      const { program, testSourceFile } = createDualSourceProgram(CONCURRENT_AND_NON_CONCURRENT_CODE);
+      const result = ts.transform(testSourceFile, [interopTransform(program, testFileName, true)]).transformed[0];
+      const resultCode = ts.createPrinter().printFile(result);
+      expect(resultCode === CONCURRENT_AND_NON_CONCURRENT_CODE_EXPECT).to.be.true;
+      cleanUpProcessArkTSEvolutionObj();
+    });
+
+    mocha.it('3-1-11-4: test concurrent function with ArkTS evolution record in object literal', function () {
+      const { program, testSourceFile } = createDualSourceProgram(CONCURRENT_RECORD_CODE);
+      const originalChecker = program.getTypeChecker();
+      const mockedTypeChecker = Object.create(originalChecker);
+      mockedTypeChecker.isStaticRecord = () => true;
+      const mockedProgram = Object.create(program);
+      mockedProgram.getTypeChecker = () => mockedTypeChecker;
+      const result = ts.transform(testSourceFile, [interopTransform(mockedProgram, testFileName, true)]).transformed[0];
+      const resultCode = ts.createPrinter().printFile(result);
+      expect(resultCode === CONCURRENT_RECORD_CODE_EXPECT).to.be.true;
       cleanUpProcessArkTSEvolutionObj();
     });
 

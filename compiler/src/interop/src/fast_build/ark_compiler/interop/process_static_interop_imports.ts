@@ -75,14 +75,19 @@ export function processStaticInteropImports(sourceFile: ts.SourceFile, id: strin
     hasStatementChanges ?
       ts.factory.updateSourceFile(sourceFile, replacementStatements) : sourceFile;
 
-  if (hasStaticImportReplacement && FileManager.hasStaticInteropConcurrentImport(sourceFile.fileName)) {
+  let hasConcurrentBridge: boolean = false;
+  if (FileManager.hasStaticInteropConcurrentImport(sourceFile.fileName)) {
     const concurrentUsage: StaticInteropConcurrentUsage = collectStaticInteropConcurrentUsage(sourceFile);
+    const inputStatements: ts.Statement[] = [...transformedSourceFile.statements];
     const concurrentStatements: ts.Statement[] = createConcurrentStaticInteropStatements(
-      sourceFile.fileName, [...transformedSourceFile.statements], concurrentUsage);
-    transformedSourceFile = ts.factory.updateSourceFile(transformedSourceFile, concurrentStatements);
+      sourceFile.fileName, inputStatements, concurrentUsage);
+    hasConcurrentBridge = concurrentStatements.length !== inputStatements.length;
+    if (hasConcurrentBridge) {
+      transformedSourceFile = ts.factory.updateSourceFile(transformedSourceFile, concurrentStatements);
+    }
   }
 
-  if (!hasStatementChanges) {
+  if (!hasStatementChanges && !hasConcurrentBridge) {
     return sourceFile;
   }
 
@@ -165,11 +170,40 @@ function getGeneratedStaticInteropDeclarationName(statement: ts.Statement): stri
   }
   if (ts.isVariableStatement(statement)) {
     const declaration: ts.VariableDeclaration = statement.declarationList.declarations[0];
-    return ts.isIdentifier(declaration.name) && ts.isCallExpression(declaration.initializer) &&
-      ts.isIdentifier(declaration.initializer.expression) && declaration.initializer.expression.text === '__createLazy__' ?
-      declaration.name.text : undefined;
+    if (!ts.isIdentifier(declaration.name) || !declaration.initializer ||
+      !ts.isCallExpression(declaration.initializer)) {
+      return undefined;
+    }
+    const callee: ts.Expression = declaration.initializer.expression;
+    if (ts.isIdentifier(callee) && callee.text === '__createLazy__') {
+      return declaration.name.text;
+    }
+    if (isPandaGetClassOrInstanceCall(callee)) {
+      return declaration.name.text;
+    }
+    return undefined;
   }
   return ts.isModuleDeclaration(statement) && ts.isIdentifier(statement.name) ? statement.name.text : undefined;
+}
+
+function isPandaGetClassOrInstanceCall(callee: ts.Expression): boolean {
+  if (!ts.isPropertyAccessExpression(callee)) {
+    return false;
+  }
+  const nameText: string = callee.name.text;
+  if (nameText === 'Panda.getClass' || nameText === 'Panda.getInstance') {
+    return ts.isIdentifier(callee.expression) && callee.expression.text === 'globalThis';
+  }
+  if (nameText === 'getClass' || nameText === 'getInstance') {
+    const middle: ts.Expression = callee.expression;
+    return ts.isPropertyAccessExpression(middle) && middle.name.text === 'Panda' &&
+      ts.isIdentifier(middle.expression) && middle.expression.text === 'globalThis';
+  }
+  return false;
+}
+
+function isCreateLazyCall(initializer: ts.CallExpression): boolean {
+  return ts.isIdentifier(initializer.expression) && initializer.expression.text === '__createLazy__';
 }
 
 function createStaticInteropBridgeStatement(statement: ts.Statement, bridgeName: string): ts.Statement {
@@ -177,10 +211,13 @@ function createStaticInteropBridgeStatement(statement: ts.Statement, bridgeName:
   if (ts.isVariableStatement(statement)) {
     const declaration: ts.VariableDeclaration = statement.declarationList.declarations[0];
     const initializer: ts.CallExpression = declaration.initializer as ts.CallExpression;
+    const updatedInitializer: ts.CallExpression = isCreateLazyCall(initializer) ?
+      ts.factory.updateCallExpression(initializer, initializer.expression, initializer.typeArguments,
+        [initializer.arguments[0], ts.factory.createStringLiteral(bridgeName)]) :
+      initializer;
     const updatedDeclaration: ts.VariableDeclaration = ts.factory.updateVariableDeclaration(
       declaration, ts.factory.createIdentifier(bridgeName), declaration.exclamationToken, declaration.type,
-      ts.factory.updateCallExpression(initializer, initializer.expression, initializer.typeArguments,
-        [initializer.arguments[0], ts.factory.createStringLiteral(bridgeName)]));
+      updatedInitializer);
     return ts.factory.updateVariableStatement(statement, [exportModifier],
       ts.factory.updateVariableDeclarationList(statement.declarationList, [updatedDeclaration]));
   }

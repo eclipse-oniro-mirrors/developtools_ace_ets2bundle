@@ -118,6 +118,25 @@ mocha.describe('process static interop imports tests', function() {
     return ts.createPrinter({ newLine: ts.NewLineKind.LineFeed }).printFile(result.transformed[0]);
   }
 
+  function transformWithSyntheticGlobals(code: string, syntheticPatterns: RegExp[]): string {
+    const { processStaticInteropImports } = require(
+      '../../../lib/fast_build/ark_compiler/interop/process_static_interop_imports');
+    const sourceFile: ts.SourceFile = ts.createSourceFile(
+      importerId, code, ts.ScriptTarget.ES2021, true, ts.ScriptKind.ETS);
+    const modifiedStatements: ts.Statement[] = sourceFile.statements.map((stmt: ts.Statement) => {
+      const text: string = stmt.getText(sourceFile);
+      if (syntheticPatterns.some(pattern => pattern.test(text))) {
+        return ts.setTextRange(stmt, { pos: -1, end: -1 });
+      }
+      return stmt;
+    });
+    const syntheticSourceFile: ts.SourceFile = ts.factory.updateSourceFile(sourceFile, modifiedStatements);
+    const transformer: ts.TransformerFactory<ts.SourceFile> = context => node =>
+      processStaticInteropImports(node, importerId, context);
+    const result: ts.TransformationResult<ts.SourceFile> = ts.transform(syntheticSourceFile, [transformer]);
+    return ts.createPrinter({ newLine: ts.NewLineKind.LineFeed }).printFile(result.transformed[0]);
+  }
+
   mocha.it('removes an import that resolves to the configured file', function() {
     const result: string = transform('import { test } from "./teststatic";\nconst value = 1;\n');
     expect(result).not.to.include('import { test } from "./teststatic";');
@@ -274,5 +293,58 @@ mocha.describe('process static interop imports tests', function() {
     const result: string = transform(code);
     expect(result).to.include('export { test };');
     expect(staticInteropTransformLog.errors).to.be.empty;
+  });
+
+  mocha.it('bridges tmpClass when used in a Concurrent function IIFE', function() {
+    FileManager.setStaticInteropConcurrentImport(importerId);
+    const code: string =
+      'let tmpClass = globalThis.Panda.getClass("Ltest/Class;");\n' +
+      'function task() {\n  "use concurrent";\n' +
+      '  let a = (() => { let tmpObj = new tmpClass(); tmpObj.a = 1; return tmpObj; })();\n}\n';
+    const result: string = transformWithSyntheticGlobals(code, [/^let tmpClass = globalThis\.Panda\.getClass/]);
+    expect(result).to.include('import { __staticInteropConcurrent_tmpClass as tmpClass } from "./index";');
+    expect(result).to.include('export let __staticInteropConcurrent_tmpClass');
+    expect(result).to.include('new tmpClass()');
+  });
+
+  mocha.it('bridges tmpRecord when used in a Concurrent function comma expression', function() {
+    FileManager.setStaticInteropConcurrentImport(importerId);
+    const code: string =
+      'let tmpRecord = globalThis.Panda.getInstance("Lstd/core/Record;");\n' +
+      'function task() {\n  "use concurrent";\n' +
+      '  foo((tmpRecord["a"] = 1, tmpRecord));\n}\n';
+    const result: string = transformWithSyntheticGlobals(code, [/^let tmpRecord = globalThis\.Panda\.getInstance/]);
+    expect(result).to.include('import { __staticInteropConcurrent_tmpRecord as tmpRecord } from "./index";');
+    expect(result).to.include('export let __staticInteropConcurrent_tmpRecord');
+  });
+
+  mocha.it('does not bridge tmpObj declaration without initializer', function() {
+    FileManager.setStaticInteropConcurrentImport(importerId);
+    const code: string =
+      'let tmpObj;\n' +
+      'function task() {\n  "use concurrent";\n  tmpObj;\n}\n';
+    const result: string = transformWithSyntheticGlobals(code, [/^let tmpObj;/]);
+    expect(result).not.to.include('__staticInteropConcurrent_tmpObj');
+  });
+
+  mocha.it('does not bridge tmpClass when not used in a Concurrent function', function() {
+    FileManager.setStaticInteropConcurrentImport(importerId);
+    const code: string =
+      'let tmpClass = globalThis.Panda.getClass("Ltest/Class;");\n' +
+      'function task() {\n  "use concurrent";\n  localValue();\n}\n' +
+      'let a = new tmpClass();\n';
+    const result: string = transformWithSyntheticGlobals(code, [/^let tmpClass = globalThis\.Panda\.getClass/]);
+    expect(result).not.to.include('__staticInteropConcurrent_tmpClass');
+  });
+
+  mocha.it('bridges tmpClass without any static import replacement', function() {
+    FileManager.setStaticInteropConcurrentImport(importerId);
+    const code: string =
+      'let tmpClass = globalThis.Panda.getClass("Ltest/Class;");\n' +
+      'function task() {\n  "use concurrent";\n' +
+      '  let a = new tmpClass();\n}\n';
+    const result: string = transformWithSyntheticGlobals(code, [/^let tmpClass = globalThis\.Panda\.getClass/]);
+    expect(result).to.include('import { __staticInteropConcurrent_tmpClass as tmpClass } from "./index";');
+    expect(result).not.to.include('__createLazy__');
   });
 });

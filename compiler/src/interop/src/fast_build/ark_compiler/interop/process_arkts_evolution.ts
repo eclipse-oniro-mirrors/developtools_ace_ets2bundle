@@ -360,55 +360,76 @@ function updateEovMaps(filePath: string, relative:string , packageName: string):
 function createInteropVisitor(rootNode: ts.SourceFile, context: ts.TransformationContext,
   typeChecker: ts.TypeChecker, scopeUsedNames: WeakMap<ts.Node, Set<string>>, fullNameToTmpVar: Map<string, string>,
   globalDeclarations: Map<string, ts.Statement>): ts.Visitor {
+  let inConcurrentFunction: boolean = false;
   return function visitor(node: ts.Node): ts.VisitResult<ts.Node> {
     validateStaticInteropDynamicImport(node, rootNode.fileName);
+    // Track whether we are inside a concurrent function body.
+    // Concurrent functions emit a "use concurrent" directive prologue and only allow
+    // import variables or local variables — module-scope temps (e.g. tmpObj) are forbidden.
+    const wasInConcurrent: boolean = inConcurrentFunction;
     if (hasConcurrentDecoratorNode(node)) {
       FileManager.setStaticInteropConcurrentImport(rootNode.fileName);
+      inConcurrentFunction = true;
     }
     if (!ts.isObjectLiteralExpression(node)) {
-      return ts.visitEachChild(node, visitor, context);
+      return visitChildrenAndRestore();
     }
-
     const contextualType: ts.Type | undefined = typeChecker.getContextualType(node);
     if (!contextualType) {
-      return ts.visitEachChild(node, visitor, context);
+      return visitChildrenAndRestore();
     }
     const isRecordType: boolean = typeof typeChecker.isStaticRecord === 'function' && typeChecker.isStaticRecord(contextualType);
     const finalType: ts.Type = unwrapType(node, contextualType);
     const decl : ts.Declaration = (finalType.symbol?.declarations || finalType.aliasSymbol?.declarations)?.[0];
-
     let className: string;
     let tmpObjName: string;
     if (!isRecordType) {
-      if (!decl || !isFromArkTSEvolutionModule(decl) || (!ts.isClassDeclaration(decl) && !ts.isInterfaceDeclaration(decl))) {
-        return ts.visitEachChild(node, visitor, context);
-      }
       className = finalType.symbol?.name || finalType.aliasSymbol?.name;
-      if (!className) {
-        return ts.visitEachChild(node, visitor, context);
-      }
-
-      if (ts.isClassDeclaration(decl) && !hasZeroArgConstructor(decl, className)) {
-        return ts.visitEachChild(node, visitor, context);
+      if (shouldSkipNonRecordObjectLiteral(decl, className)) {
+        return visitChildrenAndRestore();
       }
       tmpObjName = getUniqueName(rootNode, 'tmpObj', scopeUsedNames);
-      declareGlobalTemp(tmpObjName, globalDeclarations);
+      if (!inConcurrentFunction) {
+        declareGlobalTemp(tmpObjName, globalDeclarations);
+      }
     }
-
     const fullName: string = buildFullClassName(decl, finalType, className, isRecordType);
     const getCtorExpr: ts.Expression = buildGetConstructorCall(fullName, isRecordType);
-    let tmpClassName: string;
-    if (fullNameToTmpVar.has(fullName)) {
-      tmpClassName = fullNameToTmpVar.get(fullName)!;
-    } else {
-      tmpClassName = getUniqueName(rootNode, isRecordType ? 'tmpRecord' : 'tmpClass', scopeUsedNames);
-      fullNameToTmpVar.set(fullName, tmpClassName);
-      declareGlobalTemp(tmpClassName, globalDeclarations, getCtorExpr);
-    }
+    const tmpClassName: string = getOrCreateTmpClassName(
+      rootNode, fullName, isRecordType, scopeUsedNames, fullNameToTmpVar, globalDeclarations, getCtorExpr);
+    const result: ts.Expression = inConcurrentFunction && !isRecordType ?
+      buildConcurrentObjectLiteral(node, tmpObjName, tmpClassName) :
+      ts.factory.createParenthesizedExpression(
+        ts.factory.createCommaListExpression(buildCommaExpressions(node, isRecordType, tmpObjName, tmpClassName)));
+    inConcurrentFunction = wasInConcurrent;
+    return result;
 
-    return ts.factory.createParenthesizedExpression(
-      ts.factory.createCommaListExpression(buildCommaExpressions(node, isRecordType, tmpObjName, tmpClassName)));
+    function visitChildrenAndRestore(): ts.VisitResult<ts.Node> {
+      const childResult: ts.VisitResult<ts.Node> = ts.visitEachChild(node, visitor, context);
+      inConcurrentFunction = wasInConcurrent;
+      return childResult;
+    }
   };
+}
+
+function shouldSkipNonRecordObjectLiteral(decl: ts.Declaration, className: string): boolean {
+  return !decl ||
+    (!ts.isClassDeclaration(decl) && !ts.isInterfaceDeclaration(decl)) ||
+    !isFromArkTSEvolutionModule(decl) ||
+    !className ||
+    (ts.isClassDeclaration(decl) && !hasZeroArgConstructor(decl, className));
+}
+
+function getOrCreateTmpClassName(rootNode: ts.SourceFile, fullName: string, isRecordType: boolean,
+  scopeUsedNames: WeakMap<ts.Node, Set<string>>, fullNameToTmpVar: Map<string, string>,
+  globalDeclarations: Map<string, ts.Statement>, getCtorExpr: ts.Expression): string {
+  if (fullNameToTmpVar.has(fullName)) {
+    return fullNameToTmpVar.get(fullName)!;
+  }
+  const tmpClassName: string = getUniqueName(rootNode, isRecordType ? 'tmpRecord' : 'tmpClass', scopeUsedNames);
+  fullNameToTmpVar.set(fullName, tmpClassName);
+  declareGlobalTemp(tmpClassName, globalDeclarations, getCtorExpr);
+  return tmpClassName;
 }
 
 function hasConcurrentDecoratorNode(node: ts.Node): boolean {
@@ -430,6 +451,45 @@ function getDecoratorName(expression: ts.Expression): string | undefined {
     return expression.name.text;
   }
   return undefined;
+}
+
+/**
+ * Builds an IIFE (Immediately Invoked Function Expression) for object literals
+ * inside @Concurrent functions. The temp variable is declared as a local inside
+ * the arrow function. The constructor reference (tmpClass) is resolved via the
+ * self-import bridge in processStaticInteropImports, making it an import
+ * variable allowed in concurrent functions.
+ *
+ * Generated pattern:
+ *   (() => { let tmpObj = new tmpClass(); tmpObj.name = 1; return tmpObj; })()
+ */
+function buildConcurrentObjectLiteral(node: ts.ObjectLiteralExpression,
+  tmpObjName: string, tmpClassName: string): ts.Expression {
+  const assignments: ts.Expression[] = buildPropertyAssignments(node, tmpObjName, true);
+  const statements: ts.Statement[] = [
+    ts.factory.createVariableStatement(
+      undefined,
+      ts.factory.createVariableDeclarationList(
+        [ts.factory.createVariableDeclaration(
+          tmpObjName, undefined, undefined,
+          ts.factory.createNewExpression(ts.factory.createIdentifier(tmpClassName), undefined, [])
+        )],
+        ts.NodeFlags.Let
+      )
+    ),
+    ...assignments.map((assignment: ts.Expression) => ts.factory.createExpressionStatement(assignment)),
+    ts.factory.createReturnStatement(ts.factory.createIdentifier(tmpObjName))
+  ];
+  return ts.factory.createCallExpression(
+    ts.factory.createParenthesizedExpression(
+      ts.factory.createArrowFunction(
+        undefined, undefined, [], undefined,
+        ts.factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
+        ts.factory.createBlock(statements, false)
+      )
+    ),
+    undefined, []
+  );
 }
 
 /**
