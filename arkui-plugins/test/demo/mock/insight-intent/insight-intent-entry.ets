@@ -36,6 +36,7 @@ const result = {
   icon: "$r('app.media.startIcon')",
   llmDescription: 'Description',
   keywords: ['keywords', 'testKeywords'],
+  permissions: ['permission1', 'permission2'],
   abilityName: 'EntryAbility',
   executeMode: [
     insightIntent.ExecuteMode.UI_ABILITY_FOREGROUND,

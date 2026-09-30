@@ -1484,6 +1484,7 @@ class ParseIntent {
         intentObj.parameters = schemaObj.parameters;
         intentObj.llmDescription = schemaObj.llmDescription;
         intentObj.keywords = schemaObj.keywords;
+        intentObj.permissions = schemaObj.permissions;
         intentObj.intentName = schemaObj.intentName;
         intentObj.result = schemaObj.result;
         intentObj.domain = schemaObj.domain;

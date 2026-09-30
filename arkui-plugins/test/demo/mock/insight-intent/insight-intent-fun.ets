@@ -45,6 +45,7 @@ export class ClassForFunc {
     icon: "$r('app.media.startIcon')",
     llmDescription: 'Description',
     keywords: ['keywords', 'testKeywords'],
+    permissions: ['permission1', 'permission2'],
     parameters: "intentFunctionParameters"
   })
   static Function1(location:string): Promise<string> {

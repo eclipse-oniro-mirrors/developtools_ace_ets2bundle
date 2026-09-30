@@ -38,6 +38,7 @@ export interface InsightIntentDataBase {
     icon?: string | undefined;
     llmDescription?: string | undefined;
     keywords?: string[];
+    permissions?: string[];
     parameters?: Record<string, unknown> | null | undefined;
     result?: Record<string, unknown> | null | undefined;
     example?: string;
