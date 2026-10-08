@@ -993,7 +993,7 @@ function addDependencyPackageEntries(dependentModuleMap: Map<string, ArkTSEvolut
       continue;
     }
     for (const dynamicEntry of dependencyModuleInfo.dynamicFiles ?? []) {
-      if (dynamicEntry.endsWith('.d') || dynamicEntry.endsWith('.d.ets')) {
+      if (dynamicEntry.endsWith('.d') || dynamicEntry.endsWith('.d.ets') || dynamicEntry.endsWith('.d.ts')) {
         continue;
       }
       addDynamicEntryFromModule(dependentModuleMap, dependencyPackageName, dynamicEntry, currentPackageName);
