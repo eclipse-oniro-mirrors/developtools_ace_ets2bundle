@@ -778,6 +778,7 @@ export const INNER_COMPONENT_NON_SKIP_DECL_NAMES: string[] = [
     // 'Shape',
     // 'Stack',
     // 'Video',
+    'WithEnv',
     'MovingPhotoView',
     'DynamicLayout',
     'Component3D',
