@@ -141,6 +141,7 @@ function initProjectConfig(projectConfig) {
   projectConfig.uiTransformOptimization = false;
   projectConfig.ignoreCrossplatformCheck = false;
   projectConfig.strictCheckerOnly = false;
+  projectConfig.enableAccurateNullChecks = false;
   projectConfig.isolatedDeclarations = false;
   projectConfig.noCheck = false;
   projectConfig.tsImportSoCheck = false;
@@ -1364,6 +1365,7 @@ function resetProjectConfig() {
   projectConfig.uiTransformOptimization = false;
   projectConfig.ignoreCrossplatformCheck = false;
   projectConfig.strictCheckerOnly = false;
+  projectConfig.enableAccurateNullChecks = false;
   const props = ['projectPath', 'buildPath', 'aceModuleBuild', 'manifestFilePath', 'aceProfilePath',
     'aceModuleJsonPath', 'aceSuperVisualPath', 'hashProjectPath', 'aceBuildJson', 'cachePath',
     'aceSoPath', 'localPropertiesPath', 'projectProfilePath', 'isPreview', 'compileMode', 'runtimeOS',

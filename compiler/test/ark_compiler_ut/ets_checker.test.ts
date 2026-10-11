@@ -210,6 +210,56 @@ mocha.describe('test ets_checker file api', function () {
         expect(globalProgram.program == null).to.be.true;
         expect(compilerOptions.skipPathsInKeyForCompilationSettings).to.be.true;
     });
+    mocha.it('1-4-1: test enableAccurateNullChecks ArkTS version gate and cache invalidation', function () {
+        this.timeout(10000);
+        this.rollup.build();
+        this.rollup.share.initWithCache();
+        const share = this.rollup.share;
+        share.projectConfig.arkTSVersion = '1.0';
+        share.projectConfig.enableAccurateNullChecks = true;
+        Object.assign(projectConfig, share.projectConfig);
+
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, share);
+        const firstCache = share.cache.get('service') as {
+            service: ts.LanguageService;
+            enableAccurateNullChecks: boolean;
+        };
+        const options = compilerOptions as ts.CompilerOptions & { enableAccurateNullChecks?: boolean };
+        expect(options.enableAccurateNullChecks).to.be.false;
+        expect(firstCache.enableAccurateNullChecks).to.be.false;
+        const firstService = firstCache.service;
+        resetEtsCheck();
+
+        share.projectConfig.arkTSVersion = '1.1';
+        Object.assign(projectConfig, share.projectConfig);
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, share);
+        const secondCache = share.cache.get('service') as {
+            service: ts.LanguageService;
+            enableAccurateNullChecks: boolean;
+        };
+        expect(options.enableAccurateNullChecks).to.be.true;
+        expect(secondCache.enableAccurateNullChecks).to.be.true;
+        expect(secondCache.service).to.not.equal(firstService);
+        resetEtsCheck();
+    });
+    mocha.it('1-4-2: test enableAccurateNullChecks uses the default ArkTS version', function () {
+        this.timeout(10000);
+        this.rollup.build();
+        this.rollup.share.initWithCache();
+        const share = this.rollup.share;
+        share.projectConfig.arkTSVersion = undefined;
+        share.projectConfig.enableAccurateNullChecks = true;
+        Object.assign(projectConfig, share.projectConfig);
+
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, share);
+        const cache = share.cache.get('service') as {
+            enableAccurateNullChecks: boolean;
+        };
+        const options = compilerOptions as ts.CompilerOptions & { enableAccurateNullChecks?: boolean };
+        expect(options.enableAccurateNullChecks).to.be.true;
+        expect(cache.enableAccurateNullChecks).to.be.true;
+        resetEtsCheck();
+    });
     mocha.it('1-5: test obfuscation rule change rebuilds language service', function () {
         this.timeout(10000);
         this.rollup.build();
