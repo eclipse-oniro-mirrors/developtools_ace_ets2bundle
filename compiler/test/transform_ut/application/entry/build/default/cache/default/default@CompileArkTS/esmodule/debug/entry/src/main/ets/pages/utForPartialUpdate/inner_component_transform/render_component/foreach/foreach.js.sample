@@ -68,6 +68,8 @@ class ParentView extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
     static getEntryName() {
         return "ParentView";
     }
@@ -124,6 +126,8 @@ class ParentView1 extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 class ParentView2 extends ViewPU {
     constructor(parent, params, __localStorage, elmtId = -1, paramsLambda = undefined, extraInfo) {
@@ -176,6 +180,8 @@ class ParentView2 extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 class ParentView3 extends ViewPU {
@@ -230,6 +236,8 @@ class ParentView3 extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 class ParentView4 extends ViewPU {
     constructor(parent, params, __localStorage, elmtId = -1, paramsLambda = undefined, extraInfo) {
@@ -283,6 +291,8 @@ class ParentView4 extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 class ParentView5 extends ViewPU {
     constructor(parent, params, __localStorage, elmtId = -1, paramsLambda = undefined, extraInfo) {
@@ -335,6 +345,8 @@ class ParentView5 extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 class ParentView6 extends ViewPU {
@@ -395,6 +407,8 @@ class ParentView6 extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 registerNamedRoute(() => new ParentView(undefined, {}), "", { bundleName: "com.example.application", moduleName: "application", pagePath: "pages/utForPartialUpdate/inner_component_transform/render_component/foreach/foreach", pageFullPath: "application/entry/src/main/ets/pages/utForPartialUpdate/inner_component_transform/render_component/foreach/foreach", integratedHsp: "false", moduleType: "followWithHap" });

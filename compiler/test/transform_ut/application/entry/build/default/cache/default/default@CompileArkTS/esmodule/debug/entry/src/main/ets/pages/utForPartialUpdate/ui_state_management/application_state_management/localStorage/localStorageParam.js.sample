@@ -119,6 +119,8 @@ class localStorageParam extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
     static getEntryName() {
         return "localStorageParam";
     }
@@ -157,6 +159,8 @@ class ComA extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 class ComB extends ViewPU {
     constructor(parent, params, __localStorage, elmtId = -1, paramsLambda = undefined, extraInfo) {
@@ -181,6 +185,8 @@ class ComB extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 class ComD extends ViewPU {
@@ -207,6 +213,8 @@ class ComD extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 class ComE extends ViewPU {
     constructor(parent, params, __localStorage, elmtId = -1, paramsLambda = undefined, extraInfo) {
@@ -231,6 +239,8 @@ class ComE extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 if (storage && storage.routeName != undefined && storage.storage != undefined) {

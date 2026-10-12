@@ -61,6 +61,8 @@ class LongPressGestureExample extends View {
         Text.pop();
         Flex.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 loadDocument(new LongPressGestureExample("1", undefined, {}));
 //# sourceMappingURL=longPressGesture.js.map

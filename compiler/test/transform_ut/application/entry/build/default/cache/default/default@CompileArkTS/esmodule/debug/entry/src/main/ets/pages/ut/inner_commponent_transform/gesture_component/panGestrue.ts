@@ -77,6 +77,8 @@ class PanGestureExample extends View {
         Text.pop();
         Flex.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 loadDocument(new PanGestureExample("1", undefined, {}));
 //# sourceMappingURL=panGestrue.js.map

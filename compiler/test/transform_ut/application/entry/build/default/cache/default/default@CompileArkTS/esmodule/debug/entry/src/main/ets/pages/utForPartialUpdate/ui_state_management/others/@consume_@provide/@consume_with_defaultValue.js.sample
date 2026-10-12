@@ -99,6 +99,8 @@ class CompA extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
     static getEntryName() {
         return "CompA";
     }
@@ -145,6 +147,8 @@ class CompB extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 class CompC extends ViewPU {
@@ -195,6 +199,9 @@ class CompC extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
+        this.__reInitializeConsume__Internal("reviewVote", "reviewVotes", 15);
     }
 }
 registerNamedRoute(() => new CompA(undefined, {}), "", { bundleName: "com.example.application", moduleName: "application", pagePath: "pages/utForPartialUpdate/ui_state_management/others/@consume_@provide/@consume_with_defaultValue", pageFullPath: "application/entry/src/main/ets/pages/utForPartialUpdate/ui_state_management/others/@consume_@provide/@consume_with_defaultValue", integratedHsp: "false", moduleType: "followWithHap" });

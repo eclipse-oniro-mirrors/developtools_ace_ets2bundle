@@ -18,7 +18,7 @@ struct RecycleFuncArrHomeComponent {
   @State value: number = 1
   build() {
     Column() {
-      RecycleFuncArrChild({propvalue: this.value, linkvalue: this.value})
+      RecycleFuncArrChild({state_value: this.value})
     }
   }
 }

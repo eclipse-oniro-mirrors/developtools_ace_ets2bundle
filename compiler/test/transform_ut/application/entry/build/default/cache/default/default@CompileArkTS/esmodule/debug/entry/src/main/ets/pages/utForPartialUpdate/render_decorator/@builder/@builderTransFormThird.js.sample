@@ -58,6 +58,8 @@ class TestBuilder1 extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
     static getEntryName() {
         return "TestBuilder1";
     }
@@ -106,6 +108,8 @@ class TestBuilderReusable extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 function testInnerComponent(value, parent = null) {
     const __value__ = value;
@@ -116,11 +120,23 @@ function testInnerComponent(value, parent = null) {
         __Recycle__.create();
     }, __Recycle__);
     {
-        (parent ? parent : this).observeRecycleComponentCreation("TestBuilderReusable", (elmtId, isInitialRender, recycleNode = null) => {
+        if (this.__isGlobalPoolActive__Internal) {
+            Reusable(TestBuilderReusable);
+        }
+        (parent ? parent : this).observeRecycleComponentCreation("TestBuilderReusable", (elmtId, isInitialRender, recycleNode = null, isPreRender = false) => {
             ViewStackProcessor.StartGetAccessRecordingFor(elmtId);
             if (isInitialRender) {
                 let componentCall = recycleNode ? recycleNode : new TestBuilderReusable(parent ? parent : this, {}, undefined, elmtId, () => { }, { page: "test/transform_ut/application/entry/src/main/ets/pages/utForPartialUpdate/render_decorator/@builder/@builderTransFormThird.ets", line: 51, col: 5 });
-                ViewPU.createRecycle(componentCall, recycleNode !== null, "TestBuilderReusable", () => {
+                if (this.__isGlobalPoolActive__Internal) {
+                    let paramsLambda = () => {
+                        return {};
+                    };
+                    componentCall.paramsGenerator_ = paramsLambda;
+                }
+                ViewPU.createRecycle(componentCall, isPreRender ? recycleNode == null : recycleNode !== null, "TestBuilderReusable", () => {
+                    if (this.__isGlobalPoolActive__Internal && this.__pushRecycleElmtIdToRenderStack__Internal && typeof this.__pushRecycleElmtIdToRenderStack__Internal === "function") {
+                        this.__pushRecycleElmtIdToRenderStack__Internal(recycleNode?.id__());
+                    }
                     if (recycleNode && typeof recycleNode.aboutToReuseInternal === "function") {
                         recycleNode.aboutToReuseInternal();
                     }
@@ -130,17 +146,22 @@ function testInnerComponent(value, parent = null) {
                         }
                         recycleNode.rerender();
                     }
+                    if (this.__isGlobalPoolActive__Internal && this.__popRecycleElmtIdFromRenderStack__Internal && typeof this.__popRecycleElmtIdFromRenderStack__Internal === "function") {
+                        this.__popRecycleElmtIdFromRenderStack__Internal();
+                    }
                 });
-                let paramsLambda = () => {
-                    return {};
-                };
-                componentCall.paramsGenerator_ = paramsLambda;
+                if (!this.__isGlobalPoolActive__Internal) {
+                    let paramsLambda = () => {
+                        return {};
+                    };
+                    componentCall.paramsGenerator_ = paramsLambda;
+                }
             }
             else {
                 (parent ? parent : this).updateStateVarsOfChildByElmtId(elmtId, {});
             }
             ViewStackProcessor.StopGetAccessRecording();
-        });
+        }, TestBuilderReusable);
     }
     __Recycle__.pop();
     (parent ? parent : this).observeComponentCreation2((elmtId, isInitialRender) => {
@@ -151,11 +172,23 @@ function testInnerComponent(value, parent = null) {
         __Recycle__.create();
     }, __Recycle__);
     {
-        (parent ? parent : this).observeRecycleComponentCreation("TestBuilderReusable", (elmtId, isInitialRender, recycleNode = null) => {
+        if (this.__isGlobalPoolActive__Internal) {
+            Reusable(TestBuilderReusable);
+        }
+        (parent ? parent : this).observeRecycleComponentCreation("TestBuilderReusable", (elmtId, isInitialRender, recycleNode = null, isPreRender = false) => {
             ViewStackProcessor.StartGetAccessRecordingFor(elmtId);
             if (isInitialRender) {
                 let componentCall = recycleNode ? recycleNode : new TestBuilderReusable(parent ? parent : this, {}, undefined, elmtId, () => { }, { page: "test/transform_ut/application/entry/src/main/ets/pages/utForPartialUpdate/render_decorator/@builder/@builderTransFormThird.ets", line: 52, col: 5 });
-                ViewPU.createRecycle(componentCall, recycleNode !== null, "TestBuilderReusable", () => {
+                if (this.__isGlobalPoolActive__Internal) {
+                    let paramsLambda = () => {
+                        return {};
+                    };
+                    componentCall.paramsGenerator_ = paramsLambda;
+                }
+                ViewPU.createRecycle(componentCall, isPreRender ? recycleNode == null : recycleNode !== null, "TestBuilderReusable", () => {
+                    if (this.__isGlobalPoolActive__Internal && this.__pushRecycleElmtIdToRenderStack__Internal && typeof this.__pushRecycleElmtIdToRenderStack__Internal === "function") {
+                        this.__pushRecycleElmtIdToRenderStack__Internal(recycleNode?.id__());
+                    }
                     if (recycleNode && typeof recycleNode.aboutToReuseInternal === "function") {
                         recycleNode.aboutToReuseInternal();
                     }
@@ -165,17 +198,22 @@ function testInnerComponent(value, parent = null) {
                         }
                         recycleNode.rerender();
                     }
+                    if (this.__isGlobalPoolActive__Internal && this.__popRecycleElmtIdFromRenderStack__Internal && typeof this.__popRecycleElmtIdFromRenderStack__Internal === "function") {
+                        this.__popRecycleElmtIdFromRenderStack__Internal();
+                    }
                 });
-                let paramsLambda = () => {
-                    return {};
-                };
-                componentCall.paramsGenerator_ = paramsLambda;
+                if (!this.__isGlobalPoolActive__Internal) {
+                    let paramsLambda = () => {
+                        return {};
+                    };
+                    componentCall.paramsGenerator_ = paramsLambda;
+                }
             }
             else {
                 (parent ? parent : this).updateStateVarsOfChildByElmtId(elmtId, {});
             }
             ViewStackProcessor.StopGetAccessRecording();
-        });
+        }, TestBuilderReusable);
     }
     __Common__.pop();
     __Recycle__.pop();

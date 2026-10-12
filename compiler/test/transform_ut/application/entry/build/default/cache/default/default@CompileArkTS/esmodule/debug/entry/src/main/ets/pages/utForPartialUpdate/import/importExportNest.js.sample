@@ -178,8 +178,11 @@ class ImportTest extends ViewPU {
                     ViewPU.create(componentCall);
                     let paramsLambda = () => {
                         return {
+                            __testStr__Link__Internal: this.__testState1,
                             testStr: this.testState1,
+                            __testNum__Link__Internal: this.__testState2,
                             testNum: this.testState2,
+                            __testObj__Link__Internal: this.__testState3,
                             testObj: this.testState3
                         };
                     };
@@ -200,7 +203,9 @@ class ImportTest extends ViewPU {
                     ViewPU.create(componentCall);
                     let paramsLambda = () => {
                         return {
+                            __testNum1__Link__Internal: this.__testState4,
                             testNum1: this.testState4,
+                            __testNum2__Link__Internal: this.__testState5,
                             testNum2: this.testState5
                         };
                     };
@@ -215,6 +220,8 @@ class ImportTest extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
     static getEntryName() {
         return "ImportTest";

@@ -179,6 +179,8 @@ class $$_allComponent1 extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
     static getEntryName() {
         return "$$_allComponent1";
     }
@@ -228,6 +230,8 @@ class TextPickerSelected extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 class ToggleIsOn extends ViewPU {
     constructor(parent, params, __localStorage, elmtId = -1, paramsLambda = undefined, extraInfo) {
@@ -274,6 +278,8 @@ class ToggleIsOn extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 class AlphabetIndexerSelected extends ViewPU {
@@ -327,6 +333,8 @@ class AlphabetIndexerSelected extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 class SelectSelected extends ViewPU {
@@ -398,6 +406,8 @@ class SelectSelected extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 class BindSheetIsShow extends ViewPU {
@@ -484,6 +494,8 @@ class BindSheetIsShow extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 class BindContentCoverIsShow extends ViewPU {
     constructor(parent, params, __localStorage, elmtId = -1, paramsLambda = undefined, extraInfo) {
@@ -558,6 +570,8 @@ class BindContentCoverIsShow extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 class RefreshRefreshing extends ViewPU {
     constructor(parent, params, __localStorage, elmtId = -1, paramsLambda = undefined, extraInfo) {
@@ -606,6 +620,8 @@ class RefreshRefreshing extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 class GridItemSelected extends ViewPU {
@@ -675,6 +691,8 @@ class GridItemSelected extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 class ListItemSelected extends ViewPU {
@@ -749,6 +767,8 @@ class ListItemSelected extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 registerNamedRoute(() => new $$_allComponent1(undefined, {}), "", { bundleName: "com.example.application", moduleName: "application", pagePath: "pages/utForPartialUpdate/inner_component_transform/$$_component/$$_allComponent1", pageFullPath: "application/entry/src/main/ets/pages/utForPartialUpdate/inner_component_transform/$$_component/$$_allComponent1", integratedHsp: "false", moduleType: "followWithHap" });

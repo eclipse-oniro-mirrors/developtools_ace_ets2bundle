@@ -49,6 +49,8 @@ class HomePreviewComponent extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
     static getEntryName() {
         return "HomePreviewComponent";
     }
@@ -95,6 +97,8 @@ class HomePreviewComponent_Preview extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 registerNamedRoute(() => new HomePreviewComponent(undefined, {}), "", { bundleName: "com.example.application", moduleName: "application", pagePath: "pages/utForPartialUpdate/render_decorator/@preview/@preview", pageFullPath: "application/entry/src/main/ets/pages/utForPartialUpdate/render_decorator/@preview/@preview", integratedHsp: "false", moduleType: "followWithHap" });

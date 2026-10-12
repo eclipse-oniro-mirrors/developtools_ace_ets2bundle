@@ -117,6 +117,8 @@ class CompA extends View {
         Text.pop();
         Column.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 loadDocument(new CompA("1", undefined, {}));
 //# sourceMappingURL=@watch.js.map

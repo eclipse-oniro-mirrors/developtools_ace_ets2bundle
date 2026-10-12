@@ -64,6 +64,7 @@ class Index extends ViewPU {
                     let paramsLambda = () => {
                         return {
                             options,
+                            __message1__Link__Internal: this.__message1,
                             message1: this.message1,
                             message2: this.message2
                         };
@@ -96,6 +97,8 @@ class Index extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
     static getEntryName() {
         return "Index";
@@ -156,6 +159,9 @@ class Child extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+        this.__message1.resetSource(params.__message1__Link__Internal);
+    }
 }
 class Child2 extends ViewPU {
     constructor(parent, params, __localStorage, elmtId = -1, paramsLambda = undefined, extraInfo) {
@@ -192,6 +198,8 @@ class Child2 extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 registerNamedRoute(() => new Index(undefined, {}), "", { bundleName: "com.example.application", moduleName: "application", pagePath: "pages/utForPartialUpdate/inner_component_transform/custom_component/component_object", pageFullPath: "application/entry/src/main/ets/pages/utForPartialUpdate/inner_component_transform/custom_component/component_object", integratedHsp: "false", moduleType: "followWithHap" });

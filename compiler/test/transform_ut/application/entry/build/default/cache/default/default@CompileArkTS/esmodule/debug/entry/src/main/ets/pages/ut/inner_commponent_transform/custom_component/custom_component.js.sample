@@ -117,6 +117,8 @@ class MyComponent extends View {
         __Common__.pop();
         Column.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 class Banner extends View {
     constructor(compilerAssignedUniqueChildId, parent, params, localStorage) {
@@ -137,6 +139,8 @@ class Banner extends View {
         Text.create(this.value);
         Text.pop();
         Column.pop();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 loadDocument(new MyComponent("1", undefined, {}));

@@ -115,6 +115,8 @@ class HomeComponent extends View {
         Row.pop();
         Column.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 loadDocument(new HomeComponent("1", undefined, {}));
 //# sourceMappingURL=$$_component.js.map

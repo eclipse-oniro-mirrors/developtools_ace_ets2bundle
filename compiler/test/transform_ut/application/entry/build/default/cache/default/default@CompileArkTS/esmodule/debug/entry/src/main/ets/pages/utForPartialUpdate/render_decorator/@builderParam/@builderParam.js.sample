@@ -70,6 +70,8 @@ class CustomContainer extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 class CustomContainer2 extends ViewPU {
     constructor(parent, params, __localStorage, elmtId = -1, paramsLambda = undefined, extraInfo) {
@@ -111,6 +113,8 @@ class CustomContainer2 extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 function specificWithParam(label1, label2, parent = null) {
@@ -306,6 +310,8 @@ class CustomContainerUser extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
     static getEntryName() {
         return "CustomContainerUser";

@@ -63,6 +63,8 @@ class ViewA extends View {
         Text.pop();
         Row.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 class ViewB extends View {
     constructor(compilerAssignedUniqueChildId, parent, params, localStorage) {
@@ -102,6 +104,8 @@ class ViewB extends View {
         Text.pop();
         Row.pop();
         Column.pop();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 loadDocument(new ViewB("1", undefined, {}));

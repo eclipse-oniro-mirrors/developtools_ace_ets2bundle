@@ -59,6 +59,8 @@ class Index extends View {
         Column.pop();
         Row.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 loadDocument(new Index("1", undefined, {}));
 //# sourceMappingURL=forEachTwo.js.map

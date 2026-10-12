@@ -59,6 +59,8 @@ class FancyUse extends View {
         Row.pop();
         Column.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 function __Text__fancytext(fontSize) {
     Text.fontColor(Color.Red);

@@ -77,6 +77,8 @@ class Index extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
     static getEntryName() {
         return "Index";
     }
@@ -108,6 +110,8 @@ class ComA extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 class ComB extends ViewPU {
     constructor(parent, params, __localStorage, elmtId = -1, paramsLambda = undefined, extraInfo) {
@@ -135,6 +139,8 @@ class ComB extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 registerNamedRoute(() => new Index(undefined, {}), "", { bundleName: "com.example.application", moduleName: "application", pagePath: "pages/utForPartialUpdate/render_decorator/@componentParent/@componentParent", pageFullPath: "application/entry/src/main/ets/pages/utForPartialUpdate/render_decorator/@componentParent/@componentParent", integratedHsp: "false", moduleType: "followWithHap" });

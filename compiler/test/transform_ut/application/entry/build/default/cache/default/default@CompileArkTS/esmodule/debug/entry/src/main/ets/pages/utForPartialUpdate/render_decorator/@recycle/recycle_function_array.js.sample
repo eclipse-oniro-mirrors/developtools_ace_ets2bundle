@@ -54,41 +54,61 @@ class RecycleFuncArrHomeComponent extends ViewPU {
         this.observeComponentCreation2((elmtId, isInitialRender) => {
             __Recycle__.create();
         }, __Recycle__);
-        {
-            this.observeRecycleComponentCreation("RecycleFuncArrChild", (elmtId, isInitialRender, recycleNode = null) => {
+       {
+            if (this.__isGlobalPoolActive__Internal) {
+                Reusable(RecycleFuncArrChild);
+            }
+            this.observeRecycleComponentCreation("RecycleFuncArrChild", (elmtId, isInitialRender, recycleNode = null, isPreRender = false) => {
                 ViewStackProcessor.StartGetAccessRecordingFor(elmtId);
                 if (isInitialRender) {
-                    let componentCall = recycleNode ? recycleNode : new RecycleFuncArrChild(this, { propvalue: this.value, linkvalue: this.value }, undefined, elmtId, () => { }, { page: "test/transform_ut/application/entry/src/main/ets/pages/utForPartialUpdate/render_decorator/@recycle/recycle_function_array.ets", line: 21, col: 7 });
-                    ViewPU.createRecycle(componentCall, recycleNode !== null, "RecycleFuncArrChild", () => {
+                    let componentCall = recycleNode ? recycleNode : new RecycleFuncArrChild(this, { state_value: this.value }, undefined, elmtId, () => { }, { page: "test/transform_ut/application/entry/src/main/ets/pages/utForPartialUpdate/render_decorator/@recycle/recycle_function_array.ets", line: 21, col: 7 });
+                    if (this.__isGlobalPoolActive__Internal) {
+                        let paramsLambda = () => {
+                            return {
+                                state_value: this.value
+                            };
+                        };
+                        componentCall.paramsGenerator_ = paramsLambda;
+                    }
+                    ViewPU.createRecycle(componentCall, isPreRender ? recycleNode == null : recycleNode !== null, "RecycleFuncArrChild", () => {
+                        if (this.__isGlobalPoolActive__Internal && this.__pushRecycleElmtIdToRenderStack__Internal && typeof this.__pushRecycleElmtIdToRenderStack__Internal === "function") {
+                            this.__pushRecycleElmtIdToRenderStack__Internal(recycleNode?.id__());
+                        }
                         if (recycleNode && typeof recycleNode.aboutToReuseInternal === "function") {
                             recycleNode.aboutToReuseInternal();
                         }
                         else {
                             if (recycleNode.aboutToReuse && typeof recycleNode.aboutToReuse === "function") {
-                                recycleNode.aboutToReuse({ propvalue: this.value, linkvalue: this.value });
+                                recycleNode.aboutToReuse({ state_value: this.value });
                             }
                             recycleNode.rerender();
                         }
+                        if (this.__isGlobalPoolActive__Internal && this.__popRecycleElmtIdFromRenderStack__Internal && typeof this.__popRecycleElmtIdFromRenderStack__Internal === "function") {
+                            this.__popRecycleElmtIdFromRenderStack__Internal();
+                        }
                     });
-                    let paramsLambda = () => {
-                        return {
-                            propvalue: this.value,
-                            linkvalue: this.value
+                    if (!this.__isGlobalPoolActive__Internal) {
+                        let paramsLambda = () => {
+                            return {
+                                state_value: this.value
+                            };
                         };
-                    };
-                    componentCall.paramsGenerator_ = paramsLambda;
+                        componentCall.paramsGenerator_ = paramsLambda;
+                    }
                 }
                 else {
                     this.updateStateVarsOfChildByElmtId(elmtId, {});
                 }
                 ViewStackProcessor.StopGetAccessRecording();
-            });
+            }, RecycleFuncArrChild);
         }
         __Recycle__.pop();
         Column.pop();
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
     static getEntryName() {
         return "RecycleFuncArrHomeComponent";
@@ -163,6 +183,8 @@ class RecycleFuncArrChild extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 registerNamedRoute(() => new RecycleFuncArrHomeComponent(undefined, {}), "", { bundleName: "com.example.application", moduleName: "application", pagePath: "pages/utForPartialUpdate/render_decorator/@recycle/recycle_function_array", pageFullPath: "application/entry/src/main/ets/pages/utForPartialUpdate/render_decorator/@recycle/recycle_function_array", integratedHsp: "false", moduleType: "followWithHap" });

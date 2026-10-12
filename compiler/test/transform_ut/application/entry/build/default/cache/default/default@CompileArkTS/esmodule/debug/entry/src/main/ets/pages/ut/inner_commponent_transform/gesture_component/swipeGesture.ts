@@ -69,6 +69,8 @@ class SwipeGestureExample extends View {
         Text.pop();
         Column.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 loadDocument(new SwipeGestureExample("1", undefined, {}));
 //# sourceMappingURL=swipeGesture.js.map

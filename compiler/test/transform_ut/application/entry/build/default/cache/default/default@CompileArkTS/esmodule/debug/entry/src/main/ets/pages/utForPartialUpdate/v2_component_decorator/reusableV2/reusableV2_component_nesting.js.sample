@@ -226,6 +226,8 @@ class V1Child extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 registerNamedRoute(() => new ParentOne(undefined, {}), "", { bundleName: "com.example.application", moduleName: "application", pagePath: "pages/utForPartialUpdate/v2_component_decorator/reusableV2/reusableV2_component_nesting", pageFullPath: "application/entry/src/main/ets/pages/utForPartialUpdate/v2_component_decorator/reusableV2/reusableV2_component_nesting", integratedHsp: "false", moduleType: "followWithHap" });
 //# sourceMappingURL=reusableV2_component_nesting.js.map

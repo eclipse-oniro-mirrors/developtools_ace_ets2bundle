@@ -53,6 +53,8 @@ class CustomContainer extends View {
         Text.pop();
         Column.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 class CustomContainer2 extends View {
     constructor(compilerAssignedUniqueChildId, parent, params, localStorage) {
@@ -78,6 +80,8 @@ class CustomContainer2 extends View {
         Text.pop();
         this.content(this);
         Column.pop();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 function specificWithParam(label1, label2, parent = null) {
@@ -209,6 +213,8 @@ class CustomContainerUser extends View {
         }
         Row.pop();
         Column.pop();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 loadDocument(new CustomContainerUser("1", undefined, {}));

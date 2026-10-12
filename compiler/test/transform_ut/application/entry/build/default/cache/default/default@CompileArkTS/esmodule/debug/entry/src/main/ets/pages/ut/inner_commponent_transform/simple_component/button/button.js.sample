@@ -57,6 +57,8 @@ class ButtonExample extends View {
         Flex.pop();
         Flex.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 loadDocument(new ButtonExample("1", undefined, {}));
 //# sourceMappingURL=button.js.map

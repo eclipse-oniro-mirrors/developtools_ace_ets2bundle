@@ -87,6 +87,11 @@ class linkComp extends View {
         Row.pop();
         Column.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+        this.__buttonPlaying.resetSource(params.__buttonPlaying__Link__Internal);
+        this.__items.resetSource(params.__items__Link__Internal);
+        this.__obj.resetSource(params.__obj__Link__Internal);
+    }
 }
 class linkPage extends View {
     constructor(compilerAssignedUniqueChildId, parent, params, localStorage) {
@@ -154,6 +159,8 @@ class linkPage extends View {
         });
         ForEach.pop();
         Column.pop();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 loadDocument(new linkPage("1", undefined, {}));

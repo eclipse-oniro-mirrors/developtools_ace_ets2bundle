@@ -63,6 +63,8 @@ class RotationGestureExample extends View {
         Text.pop();
         Flex.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 loadDocument(new RotationGestureExample("1", undefined, {}));
 //# sourceMappingURL=rotationGesture.js.map

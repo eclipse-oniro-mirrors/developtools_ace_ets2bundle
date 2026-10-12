@@ -58,6 +58,8 @@ class TestBuilder1 extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
     static getEntryName() {
         return "TestBuilder1";
     }
@@ -103,6 +105,8 @@ class TestBuilderChild extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 function commonBuilder(parent = null) { }
