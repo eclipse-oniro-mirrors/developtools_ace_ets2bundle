@@ -129,6 +129,13 @@ export const UT_PARTIAL_UPFATE_PAGES: string[] = [
   'render_decorator/@builder/@builder',
   'render_decorator/@builder/@builderDynamicUsage$$',
   'render_decorator/@builder/@builderOrComponentAsName',
+  'render_decorator/@builder/@builderPlaceholder',
+  'render_decorator/@builder/@builderPlaceholderEmptyCall',
+  'render_decorator/@builder/@builderPlaceholderEmptyLiteral',
+  'render_decorator/@builder/@builderPlaceholderFalse',
+  'render_decorator/@builder/@builderPlaceholderMixed',
+  'render_decorator/@builder/@builderPlaceholderUnknownKeys',
+  'render_decorator/@builder/@builderPlaceholderWithParam',
   'render_decorator/@builder/@builderSimplifyAfferent',
   'render_decorator/@builder/@builderTransFormFirst',
   'render_decorator/@builder/@builderTransFormFourth',
@@ -233,6 +240,14 @@ export const UT_PARTIAL_UPFATE_PAGES: string[] = [
 export const UT_VALIDATE_PAGES_PREVIEW: string[] = [];
 
 export const UT_VALIDATE_PAGES: string[] = [
+  'Decorators/builder_decorator/builder_decorator_legal',
+  'Decorators/builder_decorator/builder_decorator_d1_struct',
+  'Decorators/builder_decorator/builder_decorator_d2_non_literal',
+  'Decorators/builder_decorator/builder_decorator_d3_strict_literal',
+  'Decorators/builder_decorator/builder_decorator_lenient_literal',
+  'Decorators/builder_decorator/builder_decorator_d4_has_param',
+  'Decorators/builder_decorator/builder_decorator_multi_violation',
+
   'Decorators/process_component_build/@BuilderParam',
   'Decorators/process_component_build/arkUIComponent',
   'Decorators/process_component_build/arkUIStandard',
