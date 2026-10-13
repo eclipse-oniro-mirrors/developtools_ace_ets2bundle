@@ -63,6 +63,8 @@ class PinchGestureExample extends View {
         Text.pop();
         Flex.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 loadDocument(new PinchGestureExample("1", undefined, {}));
 //# sourceMappingURL=pinchGesture.js.map

@@ -53,6 +53,9 @@ class TitleComp extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+        this.__title.resetSource(params.__title__Link__Internal);
+    }
 }
 class TestPage extends ViewPU {
     constructor(parent, params, __localStorage, elmtId = -1, paramsLambda = undefined, extraInfo) {
@@ -93,6 +96,7 @@ class TestPage extends ViewPU {
                     ViewPU.create(componentCall);
                     let paramsLambda = () => {
                         return {
+                            __title__Link__Internal: this.__value,
                             title: this.value
                         };
                     };
@@ -113,6 +117,8 @@ class TestPage extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
     static getEntryName() {
         return "TestPage";

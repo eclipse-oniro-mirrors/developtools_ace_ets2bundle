@@ -45,8 +45,6 @@ struct Index {
   @Provide('Provide32') Provide3: string = 'Provide3';
   @Provide Provide4: string = 'Provide4';
   @Provide({allowOverride: stringVariable}) Provide5: string = 'Provide5';
-  @Provide({allowOverride: stringObj}) Provide6: string = 'Provide6';
-  @Provide({allowOverride: stringFunction}) Provide7: string = 'Provide7';
 
   @Consume(stringVariable) Consume: string;
   @Consume(stringObj.stringKey) Consume1: string;

@@ -74,11 +74,27 @@ class RecycleHomeComponent extends ViewPU {
             __Recycle__.create();
         }, __Recycle__);
         {
-            this.observeRecycleComponentCreation("RecycleChild", (elmtId, isInitialRender, recycleNode = null) => {
+            if (this.__isGlobalPoolActive__Internal) {
+                Reusable(RecycleChild);
+            }
+            this.observeRecycleComponentCreation("RecycleChild", (elmtId, isInitialRender, recycleNode = null, isPreRender = false) => {
                 ViewStackProcessor.StartGetAccessRecordingFor(elmtId);
                 if (isInitialRender) {
                     let componentCall = recycleNode ? recycleNode : new RecycleChild(this, { propvalue: this.value, linkvalue: this.__value }, undefined, elmtId, () => { }, { page: "test/transform_ut/application/entry/src/main/ets/pages/utForPartialUpdate/render_decorator/@recycle/recycle.ets", line: 22, col: 7 });
-                    ViewPU.createRecycle(componentCall, recycleNode !== null, "RecycleChild", () => {
+                    if (this.__isGlobalPoolActive__Internal) {
+                        let paramsLambda = () => {
+                            return {
+                                propvalue: this.value,
+                                __linkvalue__Link__Internal: this.__value,
+                                linkvalue: this.value
+                            };
+                        };
+                        componentCall.paramsGenerator_ = paramsLambda;
+                    }
+                    ViewPU.createRecycle(componentCall, isPreRender ? recycleNode == null : recycleNode !== null, "RecycleChild", () => {
+                        if (this.__isGlobalPoolActive__Internal && this.__pushRecycleElmtIdToRenderStack__Internal && typeof this.__pushRecycleElmtIdToRenderStack__Internal === "function") {
+                            this.__pushRecycleElmtIdToRenderStack__Internal(recycleNode?.id__());
+                        }
                         if (recycleNode && typeof recycleNode.aboutToReuseInternal === "function") {
                             recycleNode.aboutToReuseInternal();
                         }
@@ -88,14 +104,19 @@ class RecycleHomeComponent extends ViewPU {
                             }
                             recycleNode.rerender();
                         }
+                        if (this.__isGlobalPoolActive__Internal && this.__popRecycleElmtIdFromRenderStack__Internal && typeof this.__popRecycleElmtIdFromRenderStack__Internal === "function") {
+                            this.__popRecycleElmtIdFromRenderStack__Internal();
+                        }
                     });
-                    let paramsLambda = () => {
-                        return {
-                            propvalue: this.value,
-                            linkvalue: this.value
+                    if (!this.__isGlobalPoolActive__Internal) {
+                        let paramsLambda = () => {
+                            return {
+                                propvalue: this.value,
+                                linkvalue: this.value
+                            };
                         };
-                    };
-                    componentCall.paramsGenerator_ = paramsLambda;
+                        componentCall.paramsGenerator_ = paramsLambda;
+                    }
                 }
                 else {
                     this.updateStateVarsOfChildByElmtId(elmtId, {
@@ -103,7 +124,7 @@ class RecycleHomeComponent extends ViewPU {
                     });
                 }
                 ViewStackProcessor.StopGetAccessRecording();
-            });
+            }, RecycleChild);
         }
         __Common__.pop();
         __Recycle__.pop();
@@ -117,6 +138,8 @@ class RecycleHomeComponent extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
     static getEntryName() {
         return "RecycleHomeComponent";
@@ -226,11 +249,23 @@ class RecycleChild extends ViewPU {
             __Recycle__.create();
         }, __Recycle__);
         {
-            this.observeRecycleComponentCreation("RecycleAnimationTest", (elmtId, isInitialRender, recycleNode = null) => {
+            if (this.__isGlobalPoolActive__Internal) {
+                Reusable(RecycleAnimationTest);
+            }
+            this.observeRecycleComponentCreation("RecycleAnimationTest", (elmtId, isInitialRender, recycleNode = null, isPreRender = false) => {
                 ViewStackProcessor.StartGetAccessRecordingFor(elmtId);
                 if (isInitialRender) {
                     let componentCall = recycleNode ? recycleNode : new RecycleAnimationTest(this, {}, undefined, elmtId, () => { }, { page: "test/transform_ut/application/entry/src/main/ets/pages/utForPartialUpdate/render_decorator/@recycle/recycle.ets", line: 46, col: 7 });
-                    ViewPU.createRecycle(componentCall, recycleNode !== null, "RecycleAnimationTest", () => {
+                    if (this.__isGlobalPoolActive__Internal) {
+                        let paramsLambda = () => {
+                            return {};
+                        };
+                        componentCall.paramsGenerator_ = paramsLambda;
+                    }
+                    ViewPU.createRecycle(componentCall, isPreRender ? recycleNode == null : recycleNode !== null, "RecycleAnimationTest", () => {
+                        if (this.__isGlobalPoolActive__Internal && this.__pushRecycleElmtIdToRenderStack__Internal && typeof this.__pushRecycleElmtIdToRenderStack__Internal === "function") {
+                            this.__pushRecycleElmtIdToRenderStack__Internal(recycleNode?.id__());
+                        }
                         if (recycleNode && typeof recycleNode.aboutToReuseInternal === "function") {
                             recycleNode.aboutToReuseInternal();
                         }
@@ -240,17 +275,22 @@ class RecycleChild extends ViewPU {
                             }
                             recycleNode.rerender();
                         }
+                        if (this.__isGlobalPoolActive__Internal && this.__popRecycleElmtIdFromRenderStack__Internal && typeof this.__popRecycleElmtIdFromRenderStack__Internal === "function") {
+                            this.__popRecycleElmtIdFromRenderStack__Internal();
+                        }
                     });
-                    let paramsLambda = () => {
-                        return {};
-                    };
-                    componentCall.paramsGenerator_ = paramsLambda;
+                    if (!this.__isGlobalPoolActive__Internal) {
+                        let paramsLambda = () => {
+                            return {};
+                        };
+                        componentCall.paramsGenerator_ = paramsLambda;
+                    }
                 }
                 else {
                     this.updateStateVarsOfChildByElmtId(elmtId, {});
                 }
                 ViewStackProcessor.StopGetAccessRecording();
-            });
+            }, RecycleAnimationTest);
         }
         __Common__.pop();
         __Recycle__.pop();
@@ -280,60 +320,6 @@ class RecycleChild extends ViewPU {
         }, Text);
         Text.pop();
         Button.pop();
-        {
-            const itemCreation = (elmtId, isInitialRender) => {
-                ViewStackProcessor.StartGetAccessRecordingFor(elmtId);
-                ListItem.create(deepRenderFunction, true, 'true');
-                if (!isInitialRender) {
-                    ListItem.pop();
-                }
-                ViewStackProcessor.StopGetAccessRecording();
-            };
-            const itemCreation2 = (elmtId, isInitialRender) => {
-                ListItem.create(deepRenderFunction, true, 'true');
-                ListItem.width(this.width_value);
-                if (isInitialRender) {
-                    ListItem.height(100);
-                }
-            };
-            const deepRenderFunction = (elmtId, isInitialRender) => {
-                itemCreation(elmtId, isInitialRender);
-                this.observeComponentCreation2((elmtId, isInitialRender) => {
-                    Text.create('ListItem');
-                    Text.width(this.width_value);
-                    if (isInitialRender) {
-                        Text.height(100);
-                    }
-                }, Text);
-                Text.pop();
-                ListItem.pop();
-            };
-            this.observeComponentCreation2(itemCreation2, ListItem);
-            ListItem.pop();
-        }
-        {
-            const itemCreation = (elmtId, isInitialRender) => {
-                ViewStackProcessor.StartGetAccessRecordingFor(elmtId);
-                ListItem.create(deepRenderFunction, true, 'true');
-                if (!isInitialRender) {
-                    ListItem.pop();
-                }
-                ViewStackProcessor.StopGetAccessRecording();
-            };
-            const itemCreation2 = (elmtId, isInitialRender) => {
-                ListItem.create(deepRenderFunction, true, 'true');
-                ListItem.width(this.width_value);
-                if (isInitialRender) {
-                    ListItem.height(100);
-                }
-            };
-            const deepRenderFunction = (elmtId, isInitialRender) => {
-                itemCreation(elmtId, isInitialRender);
-                ListItem.pop();
-            };
-            this.observeComponentCreation2(itemCreation2, ListItem);
-            ListItem.pop();
-        }
         this.observeComponentCreation2((elmtId, isInitialRender) => {
             Tabs.create({ barPosition: BarPosition.Start, index: 1, controller: this.controller });
             Tabs.width(this.width_value);
@@ -407,6 +393,9 @@ class RecycleChild extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+        this.__linkvalue.resetSource(params.__linkvalue__Link__Internal);
+    }
 }
 class RecycleNormalComponent extends ViewPU {
     constructor(parent, params, __localStorage, elmtId = -1, paramsLambda = undefined, extraInfo) {
@@ -453,6 +442,8 @@ class RecycleNormalComponent extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 class RecycleAnimationTest extends ViewPU {
@@ -505,6 +496,8 @@ class RecycleAnimationTest extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 registerNamedRoute(() => new RecycleHomeComponent(undefined, {}), "", { bundleName: "com.example.application", moduleName: "application", pagePath: "pages/utForPartialUpdate/render_decorator/@recycle/recycle", pageFullPath: "application/entry/src/main/ets/pages/utForPartialUpdate/render_decorator/@recycle/recycle", integratedHsp: "false", moduleType: "followWithHap" });

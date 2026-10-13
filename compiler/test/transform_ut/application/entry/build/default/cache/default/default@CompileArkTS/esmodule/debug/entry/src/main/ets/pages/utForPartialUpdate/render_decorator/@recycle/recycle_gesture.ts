@@ -99,5 +99,7 @@ class GestureTest extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 //# sourceMappingURL=recycle_gesture.js.map

@@ -53,6 +53,9 @@ class LinkComponent extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+        this.__counter.resetSource(params.__counter__Link__Internal);
+    }
 }
 class ParentComponent extends ViewPU {
     constructor(parent, params, __localStorage, elmtId = -1, paramsLambda = undefined, extraInfo) {
@@ -96,6 +99,7 @@ class ParentComponent extends ViewPU {
                     ViewPU.create(componentCall);
                     let paramsLambda = () => {
                         return {
+                            __counter__Link__Internal: this.__value,
                             counter: this.value
                         };
                     };
@@ -110,6 +114,8 @@ class ParentComponent extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
     static getEntryName() {
         return "ParentComponent";

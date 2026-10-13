@@ -92,6 +92,8 @@ class MyComponent extends View {
         If.pop();
         Column.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 loadDocument(new MyComponent("1", undefined, {}));
 //# sourceMappingURL=if.js.map

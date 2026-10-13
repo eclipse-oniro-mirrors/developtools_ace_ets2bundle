@@ -89,6 +89,8 @@ class PageTransitionExample1 extends View {
         });
         PageTransition.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 loadDocument(new PageTransitionExample1("1", undefined, {}));
 //# sourceMappingURL=pageTransition.js.map

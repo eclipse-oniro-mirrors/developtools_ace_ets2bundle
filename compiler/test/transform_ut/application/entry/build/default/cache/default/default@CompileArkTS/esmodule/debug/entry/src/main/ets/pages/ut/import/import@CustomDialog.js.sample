@@ -91,6 +91,8 @@ class CustomDialogUser extends View {
         Button.pop();
         Column.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 loadDocument(new CustomDialogUser("1", undefined, {}));
 //# sourceMappingURL=import@CustomDialog.js.map

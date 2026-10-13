@@ -36,6 +36,8 @@ class HomePreviewComponent extends View {
         Text.fontSize(50);
         Text.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 class HomePreviewComponent_Preview extends View {
     constructor(compilerAssignedUniqueChildId, parent, params, localStorage) {
@@ -61,6 +63,8 @@ class HomePreviewComponent_Preview extends View {
             View.create(earlierCreatedChild_2);
         }
         Column.pop();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 loadDocument(new HomePreviewComponent("1", undefined, {}));

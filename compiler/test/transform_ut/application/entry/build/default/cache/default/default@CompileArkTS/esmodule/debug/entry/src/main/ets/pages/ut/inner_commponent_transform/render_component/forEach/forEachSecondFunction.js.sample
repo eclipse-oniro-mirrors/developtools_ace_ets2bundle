@@ -57,6 +57,8 @@ class MyComponent extends View {
         ForEach.pop();
         Column.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 loadDocument(new MyComponent("1", undefined, {}));
 //# sourceMappingURL=forEachSecondFunction.js.map

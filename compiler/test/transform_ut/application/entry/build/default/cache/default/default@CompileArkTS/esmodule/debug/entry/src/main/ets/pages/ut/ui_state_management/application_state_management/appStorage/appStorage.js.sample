@@ -72,6 +72,9 @@ class MyComponent extends View {
         Button.pop();
         Row.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+        this.__lang.resetSource();
+    }
 }
 loadDocument(new MyComponent("1", undefined, {}));
 //# sourceMappingURL=appStorage.js.map

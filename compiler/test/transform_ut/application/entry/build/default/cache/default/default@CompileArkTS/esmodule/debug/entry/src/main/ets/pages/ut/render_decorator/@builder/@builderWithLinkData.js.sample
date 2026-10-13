@@ -39,6 +39,9 @@ class TitleComp extends View {
         Text.create(this.title);
         Text.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+        this.__title.resetSource(params.__title__Link__Internal);
+    }
 }
 class TestPage extends View {
     constructor(compilerAssignedUniqueChildId, parent, params, localStorage) {
@@ -75,6 +78,8 @@ class TestPage extends View {
         Flex.create();
         this.TitleCompView(this);
         Flex.pop();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 loadDocument(new TestPage("1", undefined, {}));

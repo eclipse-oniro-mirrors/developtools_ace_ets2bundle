@@ -80,6 +80,9 @@ class LocalStorageComponent extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+        this.__objectName.resetSource();
+    }
     static getEntryName() {
         return "LocalStorageComponent";
     }

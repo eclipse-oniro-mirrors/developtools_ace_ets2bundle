@@ -67,6 +67,8 @@ class FancyUse extends View {
         Button.pop();
         Column.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 loadDocument(new FancyUse("1", undefined, {}));
 //# sourceMappingURL=@styles.js.map

@@ -58,6 +58,8 @@ class TapGestureExample extends View {
         Text.pop();
         Flex.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 loadDocument(new TapGestureExample("1", undefined, {}));
 //# sourceMappingURL=tapGesture.js.map

@@ -106,9 +106,13 @@ class ImportTest extends ViewPU {
                     ViewPU.create(componentCall);
                     let paramsLambda = () => {
                         return {
+                            __LinkComponent2Link1__Link__Internal: this.__myState1,
                             LinkComponent2Link1: this.myState1,
+                            __LinkComponent2Link2__Link__Internal: this.__myState2,
                             LinkComponent2Link2: this.myState2,
+                            __LinkComponent2Link3__Link__Internal: this.__myState3,
                             LinkComponent2Link3: this.myState3,
+                            __LinkComponent2Link4__Link__Internal: this.__myState4,
                             LinkComponent2Link4: this.myState4,
                             indexState1: { count: 1 },
                             indexState2: 1,
@@ -145,10 +149,15 @@ class ImportTest extends ViewPU {
                     ViewPU.create(componentCall);
                     let paramsLambda = () => {
                         return {
+                            __LinkComponent1Link1__Link__Internal: this.__myState1,
                             LinkComponent1Link1: this.myState1,
+                            __LinkComponent1Link2__Link__Internal: this.__myState2,
                             LinkComponent1Link2: this.myState2,
+                            __LinkComponent1Link3__Link__Internal: this.__myState3,
                             LinkComponent1Link3: this.myState3,
+                            __LinkComponent1Link4__Link__Internal: this.__myState4,
                             LinkComponent1Link4: this.myState4,
+
                             indexState1: { count: 1 },
                             indexState2: 1,
                             indexState3: true,
@@ -176,9 +185,13 @@ class ImportTest extends ViewPU {
                     ViewPU.create(componentCall);
                     let paramsLambda = () => {
                         return {
+                            __DefaultComponentLink1__Link__Internal: this.__myState1,
                             DefaultComponentLink1: this.myState1,
+                            __DefaultComponentLink2__Link__Internal: this.__myState2,
                             DefaultComponentLink2: this.myState2,
+                            __DefaultComponentLink3__Link__Internal: this.__myState3,
                             DefaultComponentLink3: this.myState3,
+                            __DefaultComponentLink4__Link__Internal: this.__myState4,
                             DefaultComponentLink4: this.myState4,
                             myVar: 100,
                             myVar2: 100
@@ -207,9 +220,13 @@ class ImportTest extends ViewPU {
                     ViewPU.create(componentCall);
                     let paramsLambda = () => {
                         return {
+                            __LinkComponent3Link1__Link__Internal: this.__myState1,
                             LinkComponent3Link1: this.myState1,
+                            __LinkComponent3Link2__Link__Internal: this.__myState2,
                             LinkComponent3Link2: this.myState2,
+                            __LinkComponent3Link3__Link__Internal: this.__myState3,
                             LinkComponent3Link3: this.myState3,
+                            __LinkComponent3Link4__Link__Internal: this.__myState4,
                             LinkComponent3Link4: this.myState4,
                             indexState1: { count: 1 },
                             indexState2: 1,
@@ -238,9 +255,13 @@ class ImportTest extends ViewPU {
                     ViewPU.create(componentCall);
                     let paramsLambda = () => {
                         return {
+                            __AMDComponentLink1__Link__Internal: this.__myState1,
                             AMDComponentLink1: this.myState1,
+                            __AMDComponentLink2__Link__Internal: this.__myState2,
                             AMDComponentLink2: this.myState2,
+                            __AMDComponentLink3__Link__Internal: this.__myState3,
                             AMDComponentLink3: this.myState3,
+                            __AMDComponentLink4__Link__Internal: this.__myState4,
                             AMDComponentLink4: this.myState4,
                             myVar: 100,
                             myVar2: 100
@@ -269,9 +290,13 @@ class ImportTest extends ViewPU {
                     ViewPU.create(componentCall);
                     let paramsLambda = () => {
                         return {
+                            __LinkComponent3Link1__Link__Internal: this.__myState1,
                             LinkComponent3Link1: this.myState1,
+                            __LinkComponent3Link2__Link__Internal: this.__myState2,
                             LinkComponent3Link2: this.myState2,
+                            __LinkComponent3Link3__Link__Internal: this.__myState3,
                             LinkComponent3Link3: this.myState3,
+                            __LinkComponent3Link4__Link__Internal: this.__myState4,
                             LinkComponent3Link4: this.myState4,
                             indexState1: { count: 1 },
                             indexState2: 1,
@@ -290,6 +315,8 @@ class ImportTest extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
     static getEntryName() {
         return "ImportTest";

@@ -90,6 +90,8 @@ class HomeComponent extends ViewPU {
         this.updateDirtyElements();
         PUV2ViewBase.contextStack && PUV2ViewBase.contextStack.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
     static getEntryName() {
         return "HomeComponent";
     }
@@ -128,6 +130,9 @@ class Chind extends ViewPU {
         PUV2ViewBase.contextStack && PUV2ViewBase.contextStack.push(this);
         this.updateDirtyElements();
         PUV2ViewBase.contextStack && PUV2ViewBase.contextStack.pop();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
+        this.__message.resetSource(params.__message__Link__Internal);
     }
 }
 registerNamedRoute(() => new HomeComponent(undefined, {}), "", { bundleName: "com.example.application", moduleName: "application", pagePath: "pages/utForPartialUpdate/render_decorator/@localBuilder/@localBuilder", pageFullPath: "application/entry/src/main/ets/pages/utForPartialUpdate/render_decorator/@localBuilder/@localBuilder", integratedHsp: "false", moduleType: "followWithHap" });

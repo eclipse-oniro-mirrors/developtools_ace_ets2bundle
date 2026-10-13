@@ -63,6 +63,8 @@ class CompA extends View {
         Button.pop();
         Column.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 class CompB extends View {
     constructor(compilerAssignedUniqueChildId, parent, params, localStorage) {
@@ -85,6 +87,8 @@ class CompB extends View {
             View.create(earlierCreatedChild_3);
         }
         Column.pop();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 class CompC extends View {
@@ -116,6 +120,9 @@ class CompC extends View {
         Text.pop();
         Button.pop();
         Column.pop();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
+        this.__reInitializeConsume__Internal("reviewVote", "reviewVotes");
     }
 }
 loadDocument(new CompA("1", undefined, {}));

@@ -93,6 +93,8 @@ class TestObjectLink extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
     static getEntryName() {
         return "TestObjectLink";
     }
@@ -132,6 +134,8 @@ class TestObjectLink_Child extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 registerNamedRoute(() => new TestObjectLink(undefined, {}), "", { bundleName: "com.example.application", moduleName: "application", pagePath: "pages/utForPartialUpdate/ui_state_management/others/@observed_@objectLink/@observed_@objectLink1", pageFullPath: "application/entry/src/main/ets/pages/utForPartialUpdate/ui_state_management/others/@observed_@objectLink/@observed_@objectLink1", integratedHsp: "false", moduleType: "followWithHap" });

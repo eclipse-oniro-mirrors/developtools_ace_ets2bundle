@@ -42,6 +42,8 @@ class Index extends View {
     Row.create();
     Row.pop();
   }
+  __resetStateVarsOnReuse__Internal(params) {
+  }
 }
 loadDocument(new Index("1", undefined, {}));
 //# sourceMappingURL=@InsightIntentFunction.js.map

@@ -124,6 +124,8 @@ class MyComponent extends View {
         LazyForEach.pop();
         List.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 loadDocument(new MyComponent("1", undefined, {}));
 //# sourceMappingURL=lazyForEach.js.map

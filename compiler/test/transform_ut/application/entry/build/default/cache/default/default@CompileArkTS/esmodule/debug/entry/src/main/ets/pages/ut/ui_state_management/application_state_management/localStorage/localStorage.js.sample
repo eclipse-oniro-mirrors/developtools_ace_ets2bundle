@@ -63,6 +63,9 @@ class LocalStorageComponent extends View {
         Text.pop();
         Column.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+        this.__objectName.resetSource();
+    }
 }
 loadDocument(new LocalStorageComponent("1", undefined, {}, storage));
 //# sourceMappingURL=localStorage.js.map

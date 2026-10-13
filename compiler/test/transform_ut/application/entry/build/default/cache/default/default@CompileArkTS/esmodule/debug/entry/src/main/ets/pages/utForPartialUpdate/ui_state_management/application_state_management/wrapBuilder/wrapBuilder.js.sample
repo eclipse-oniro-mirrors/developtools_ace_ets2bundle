@@ -126,6 +126,8 @@ class TestWrapperBuilder extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
     static getEntryName() {
         return "TestWrapperBuilder";
     }
@@ -240,6 +242,8 @@ class TestWrapperBuilderChildTwo extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 registerNamedRoute(() => new TestWrapperBuilder(undefined, {}), "", { bundleName: "com.example.application", moduleName: "application", pagePath: "pages/utForPartialUpdate/ui_state_management/application_state_management/wrapBuilder/wrapBuilder", pageFullPath: "application/entry/src/main/ets/pages/utForPartialUpdate/ui_state_management/application_state_management/wrapBuilder/wrapBuilder", integratedHsp: "false", moduleType: "followWithHap" });

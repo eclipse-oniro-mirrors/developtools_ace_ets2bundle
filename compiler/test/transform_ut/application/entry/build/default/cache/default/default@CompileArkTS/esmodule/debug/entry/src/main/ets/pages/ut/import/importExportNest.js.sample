@@ -165,6 +165,8 @@ class ImportTest extends View {
         }
         Column.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 loadDocument(new ImportTest("1", undefined, {}));
 //# sourceMappingURL=importExportNest.js.map

@@ -59,18 +59,6 @@ struct RecycleChild {
           .width(100)
       }
       .border({width: this.reguar_value, color: Color.Red, radius: 100})
-      
-      ListItem('true') {
-        Text('ListItem')
-          .width(this.width_value)
-          .height(100)
-      }
-      .width(this.width_value)
-      .height(100)
-
-      ListItem('true')
-        .width(this.width_value)
-        .height(100)
 
       Tabs({ barPosition: BarPosition.Start, index: 1, controller: this.controller}) {
         TabContent() {

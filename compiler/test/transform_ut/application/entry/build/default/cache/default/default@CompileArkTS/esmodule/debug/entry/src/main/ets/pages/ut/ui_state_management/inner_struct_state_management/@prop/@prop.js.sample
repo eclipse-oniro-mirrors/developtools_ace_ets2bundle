@@ -91,6 +91,8 @@ class ctComponent extends View {
         If.pop();
         Column.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 class PageComponent extends View {
     constructor(compilerAssignedUniqueChildId, parent, params, localStorage) {
@@ -142,6 +144,8 @@ class PageComponent extends View {
             View.create(earlierCreatedChild_2);
         }
         Column.pop();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 loadDocument(new PageComponent("1", undefined, {}));

@@ -62,6 +62,8 @@ class Index extends View {
         ComB(this.arr, this);
         Column.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 class ComA extends View {
     constructor(compilerAssignedUniqueChildId, parent, params, localStorage) {
@@ -79,6 +81,8 @@ class ComA extends View {
         Text.fontSize(30);
         Text.pop();
         Row.pop();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
 }
 loadDocument(new Index("1", undefined, {}));

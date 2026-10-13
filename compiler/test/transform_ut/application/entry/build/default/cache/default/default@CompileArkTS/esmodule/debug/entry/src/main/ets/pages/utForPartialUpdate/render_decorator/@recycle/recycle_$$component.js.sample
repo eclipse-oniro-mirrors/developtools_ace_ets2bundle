@@ -208,5 +208,7 @@ class $$Component extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 //# sourceMappingURL=recycle_$$component.js.map

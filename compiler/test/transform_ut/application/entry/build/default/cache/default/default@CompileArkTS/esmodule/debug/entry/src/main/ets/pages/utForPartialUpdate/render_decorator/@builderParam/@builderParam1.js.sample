@@ -51,6 +51,8 @@ class ChildComponent extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 class Index extends ViewPU {
     constructor(parent, params, __localStorage, elmtId = -1, paramsLambda = undefined, extraInfo) {
@@ -102,7 +104,10 @@ class Index extends ViewPU {
             __Recycle__.create();
         }, __Recycle__);
         {
-            this.observeRecycleComponentCreation("ChildComponent", (elmtId, isInitialRender, recycleNode = null) => {
+            if (this.__isGlobalPoolActive__Internal) {
+                Reusable(ChildComponent);
+            }
+            this.observeRecycleComponentCreation("ChildComponent", (elmtId, isInitialRender, recycleNode = null, isPreRender = false) => {
                 ViewStackProcessor.StartGetAccessRecordingFor(elmtId);
                 if (isInitialRender) {
                     let componentCall = recycleNode ? recycleNode : new ChildComponent(this, {
@@ -113,7 +118,23 @@ class Index extends ViewPU {
                             Row.pop();
                         }
                     }, undefined, elmtId, () => { }, { page: "test/transform_ut/application/entry/src/main/ets/pages/utForPartialUpdate/render_decorator/@builderParam/@builderParam1.ets", line: 40, col: 9 });
-                    ViewPU.createRecycle(componentCall, recycleNode !== null, "ChildComponent", () => {
+                    if (this.__isGlobalPoolActive__Internal) {
+                        let paramsLambda = () => {
+                            return {
+                                trailing: () => {
+                                    this.observeComponentCreation2((elmtId, isInitialRender) => {
+                                        Row.create();
+                                    }, Row);
+                                    Row.pop();
+                                }
+                            };
+                        };
+                        componentCall.paramsGenerator_ = paramsLambda;
+                    }
+                    ViewPU.createRecycle(componentCall, isPreRender ? recycleNode == null : recycleNode !== null, "ChildComponent", () => {
+                        if (this.__isGlobalPoolActive__Internal && this.__pushRecycleElmtIdToRenderStack__Internal && typeof this.__pushRecycleElmtIdToRenderStack__Internal === "function") {
+                            this.__pushRecycleElmtIdToRenderStack__Internal(recycleNode?.id__());
+                        }
                         if (recycleNode && typeof recycleNode.aboutToReuseInternal === "function") {
                             recycleNode.aboutToReuseInternal();
                         }
@@ -128,24 +149,29 @@ class Index extends ViewPU {
                             }
                             recycleNode.rerender();
                         }
+                        if (this.__isGlobalPoolActive__Internal && this.__popRecycleElmtIdFromRenderStack__Internal && typeof this.__popRecycleElmtIdFromRenderStack__Internal === "function") {
+                            this.__popRecycleElmtIdFromRenderStack__Internal();
+                        }
                     });
-                    let paramsLambda = () => {
-                        return {
-                            trailing: () => {
-                                this.observeComponentCreation2((elmtId, isInitialRender) => {
-                                    Row.create();
-                                }, Row);
-                                Row.pop();
-                            }
+                    if (!this.__isGlobalPoolActive__Internal) {
+                        let paramsLambda = () => {
+                            return {
+                                trailing: () => {
+                                    this.observeComponentCreation2((elmtId, isInitialRender) => {
+                                        Row.create();
+                                    }, Row);
+                                    Row.pop();
+                                }
+                            };
                         };
-                    };
-                    componentCall.paramsGenerator_ = paramsLambda;
+                        componentCall.paramsGenerator_ = paramsLambda;
+                    }
                 }
                 else {
                     this.updateStateVarsOfChildByElmtId(elmtId, {});
                 }
                 ViewStackProcessor.StopGetAccessRecording();
-            });
+            }, ChildComponent);
         }
         __Recycle__.pop();
         Column.pop();
@@ -153,6 +179,8 @@ class Index extends ViewPU {
     }
     rerender() {
         this.updateDirtyElements();
+    }
+    __resetStateVarsOnReuse__Internal(params) {
     }
     static getEntryName() {
       return "Index";

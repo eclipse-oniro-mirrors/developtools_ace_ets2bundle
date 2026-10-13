@@ -91,6 +91,9 @@ class MyComponent extends ViewPU {
     rerender() {
         this.updateDirtyElements();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+        this.__lang.resetSource();
+    }
     static getEntryName() {
         return "MyComponent";
     }

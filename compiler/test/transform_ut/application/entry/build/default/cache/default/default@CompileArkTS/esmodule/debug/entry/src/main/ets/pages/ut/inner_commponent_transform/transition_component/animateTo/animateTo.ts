@@ -196,6 +196,8 @@ class TransitionExample extends View {
         Column.pop();
         Flex.pop();
     }
+    __resetStateVarsOnReuse__Internal(params) {
+    }
 }
 loadDocument(new TransitionExample("1", undefined, {}));
 //# sourceMappingURL=animateTo.js.map
