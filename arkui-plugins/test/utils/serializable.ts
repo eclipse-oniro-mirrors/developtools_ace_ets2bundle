@@ -37,7 +37,9 @@ function concatObject<T extends JSONObject>(obj1: T | undefined, obj2: T | undef
 
     Object.keys(_obj2).forEach((key) => {
         if (result.hasOwnProperty(key)) {
-            if (
+            if (Array.isArray(_obj2[key]) && Array.isArray(result[key])) {
+                result[key] = [...result[key], ..._obj2[key]];
+            } else if (
                 typeof _obj2[key] === 'object' &&
                 typeof result[key] === 'object' &&
                 _obj2[key] !== null &&
