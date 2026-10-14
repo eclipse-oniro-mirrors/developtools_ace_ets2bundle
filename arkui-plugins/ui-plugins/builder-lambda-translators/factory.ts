@@ -346,7 +346,6 @@ export class factory {
             undefined
         );
         const newNode = arkts.factory.createArrowFunctionExpression(func);
-        newNode.setNoDebugLineFlag();
         return addMemoAnnotation(newNode);
     }
 

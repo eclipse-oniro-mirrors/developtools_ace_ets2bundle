@@ -18,6 +18,7 @@ import EventEmitter from 'events';
 import {
     CompileStrategy,
     JobInfo,
+    NodePositionInfo,
     PluginTestContext,
     ProcessEvent,
     SingleProgramContext,
@@ -43,10 +44,138 @@ function insertPlugin(driver: PluginDriver, plugin: PluginExecutor | undefined):
     return true;
 }
 
+function getIdentifierName(node: arkts.AstNode): string | undefined {
+    if (!arkts.isIdentifier(node)) {
+        return undefined;
+    }
+    return node.name;
+}
+
+function getClassPropertyName(node: arkts.AstNode): string | undefined {
+    if (!arkts.isClassProperty(node) || !node.key) {
+        return undefined;
+    }
+    if (arkts.isIdentifier(node.key)) {
+        return node.key.name;
+    }
+    return node.key.dumpSrc();
+}
+
+function getMethodDefinitionName(node: arkts.AstNode): string | undefined {
+    if (!arkts.isMethodDefinition(node) || !node.id) {
+        return undefined;
+    }
+    if (arkts.isIdentifier(node.id)) {
+        return node.id.name;
+    }
+    return node.id.dumpSrc();
+}
+
+function getCallExpressionName(node: arkts.AstNode): string | undefined {
+    if (!arkts.isCallExpression(node) || !node.expr) {
+        return undefined;
+    }
+    if (arkts.isIdentifier(node.expr)) {
+        return node.expr.name;
+    }
+    return node.expr.dumpSrc();
+}
+
+function getMemberExpressionName(node: arkts.AstNode): string | undefined {
+    if (!arkts.isMemberExpression(node) || !node.property) {
+        return undefined;
+    }
+    if (arkts.isIdentifier(node.property)) {
+        return node.property.name;
+    }
+    return node.property.dumpSrc();
+}
+
+const nodeNameResolvers: ((node: arkts.AstNode) => string | undefined)[] = [
+    getIdentifierName,
+    getClassPropertyName,
+    getMethodDefinitionName,
+    (node) => {
+        if (arkts.isClassDeclaration(node) && node.definition?.ident) {
+            return node.definition.ident.name;
+        }
+        return undefined;
+    },
+    (node) => {
+        if (arkts.isClassDefinition(node) && node.ident) {
+            return node.ident.name;
+        }
+        return undefined;
+    },
+    getCallExpressionName,
+    (node) => {
+        if (arkts.isVariableDeclaration(node)) {
+            return node.declarators.map((d) => d.id?.dumpSrc() ?? '').join(',');
+        }
+        return undefined;
+    },
+    getMemberExpressionName,
+    (node) => {
+        if (arkts.isExpressionStatement(node)) {
+            return node.expr?.dumpSrc() ?? '';
+        }
+        return undefined;
+    },
+];
+
+function getNodeName(node: arkts.AstNode): string {
+    try {
+        for (const resolver of nodeNameResolvers) {
+            const name = resolver(node);
+            if (name !== undefined) {
+                return name;
+            }
+        }
+    } catch (_) {
+    }
+    return '';
+}
+
+function collectPositions(node: arkts.AstNode | undefined, depth: number, out: NodePositionInfo[]): void {
+    if (!node || depth > 100) {
+        return;
+    }
+    try {
+        let nodeTypeStr: string;
+        try {
+            nodeTypeStr = arkts.getEnumName(arkts.Es2pandaAstNodeType, node.nodeType);
+        } catch (_) {
+            nodeTypeStr = String(node.nodeType);
+        }
+        const name = getNodeName(node);
+        const start = node.startPosition;
+        const end = node.endPosition;
+        out.push({
+            name,
+            nodeType: nodeTypeStr,
+            dumpSrc: node.dumpSrc().substring(0, 200),
+            startLine: start.getLine(),
+            startCol: start.getCol(),
+            endLine: end.getLine(),
+            endCol: end.getCol(),
+        });
+    } catch (_) {
+    }
+    try {
+        for (const child of node.getChildren()) {
+            collectPositions(child, depth + 1, out);
+        }
+    } catch (_) {
+    }
+}
+
 function collectPluginTextContextFromSourceProgram(program: arkts.Program, tracing: TraceOptions): PluginTestContext {
     const pluginTestContext: PluginTestContext = {};
     const script: arkts.ETSModule = program.ast as arkts.ETSModule;
     pluginTestContext.scriptSnapshot = script.dumpSrc();
+    const positions: NodePositionInfo[] = [];
+    collectPositions(script, 0, positions);
+    pluginTestContext.positions = positions;
     return pluginTestContext;
 }
 

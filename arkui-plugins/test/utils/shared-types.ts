@@ -20,10 +20,21 @@ export type PluginTesterId = string | `${string}:${string}`;
 
 export type PluginStateId = PluginState | `${PluginState}:${PluginTesterId}`;
 
+export interface NodePositionInfo {
+    name: string;
+    nodeType: string;
+    dumpSrc: string;
+    startLine: number;
+    startCol: number;
+    endLine: number;
+    endCol: number;
+}
+
 export interface SingleProgramContext {
     scriptSnapshot?: string;
     errors?: string[];
     warnings?: string[];
+    positions?: NodePositionInfo[];
 }
 
 export interface PluginTestContext extends SingleProgramContext {

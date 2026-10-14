@@ -161,6 +161,8 @@ export abstract class AstNode extends ArktsObject {
     public override onUpdate(original: AstNode): void {
         // Improve: Update modifiers only for specific AST nodes in the generated factory code
         this.modifierFlags = original.modifierFlags;
+        this.startPosition = original.startPosition;
+        this.endPosition = original.endPosition;
 
         global.es2panda._AstNodeOnUpdate(global.context, this.peer, original.peer);
     }
