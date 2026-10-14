@@ -154,7 +154,6 @@ __EntryWrapper.RegisterNamedRouter("", new __EntryWrapper(), ({
 } as NavInterface));
 @Entry() @Component() final struct Index extends CustomComponent<Index, __Options_Index> implements PageLifeCycle {
   public __initializeStruct(initializers: (__Options_Index | undefined), @Memo() content: ((()=> void) | undefined)): void {
-    this.myInit();
     const __myAppear__Internal = this.myAppear;
     const __myBuilt__Internal = this.myBuilt;
     const __myReuse__Internal = this.myReuse;
@@ -177,6 +176,7 @@ __EntryWrapper.RegisterNamedRouter("", new __EntryWrapper(), ({
         __myRecycle__Internal.unsafeCall();
       }),
     } as CustomComponentLifecycleObserver));
+    this.myInit();
   }
   
   public __updateStruct(initializers: (__Options_Index | undefined)): void {}
