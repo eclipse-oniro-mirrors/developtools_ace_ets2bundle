@@ -50,6 +50,8 @@ const INSIGHT_INTENT_FUNCTION_DECORATOR = 'InsightIntentFunction';
 const INSIGHT_INTENT_ENTITY_DECORATOR = 'InsightIntentEntity';
 const INSIGHT_INTENT_ENTRY_DECORATOR = 'InsightIntentEntry';
 const INSIGHT_INTENT_PAGE_DECORATOR = 'InsightIntentPage';
+// Base type names of an entity. A class decorated with @InsightIntentEntity must implement or inherit one of them.
+const ENTITY_BASE_TYPE_NAMES: string[] = ['IntentEntity', 'FileEntity'];
 
 interface DecoratorData {
     [key: string]: unknown;
@@ -2101,7 +2103,7 @@ export class InsightIntentHandler {
         const qualifiedImplementedTypeNames = (classNode.definition?.implements || [])
             .map((implementedType: { expr?: arkts.Expression }) => extractQualifiedTypeNameFromExpression(implementedType.expr))
             .filter((name: string | undefined): name is string => !!name);
-        let parentClassName: string | undefined = implementedTypeNames.find((typeName: string) => typeName === 'IntentEntity');
+        let parentClassName: string | undefined = implementedTypeNames.find((typeName: string) => ENTITY_BASE_TYPE_NAMES.includes(typeName));
         let qualifiedParentClassName: string | undefined = qualifiedImplementedTypeNames.find(
             (_: string, index: number) => implementedTypeNames[index] === parentClassName
         );
@@ -2126,12 +2128,12 @@ export class InsightIntentHandler {
         visited.add(classKey);
 
         const implementedTypeNames = extractImplementedTypeNames(classNode);
-        if (implementedTypeNames.includes('IntentEntity')) {
+        if (implementedTypeNames.some((name: string) => ENTITY_BASE_TYPE_NAMES.includes(name))) {
             return true;
         }
 
         const parentClassName = extractTypeNameFromExpression(classNode.definition?.super);
-        if (parentClassName === 'IntentEntity') {
+        if (parentClassName && ENTITY_BASE_TYPE_NAMES.includes(parentClassName)) {
             return true;
         }
         if (!parentClassName) {

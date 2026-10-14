@@ -82,6 +82,7 @@ class ParseIntent {
     this.currentFilePath = '';
     this.heritageClassSet = new Set<string>();
     this.heritageClassSet.add('IntentEntity_sdk');
+    this.heritageClassSet.add('FileEntity_sdk');
     this.heritageClassSet.add('InsightIntent.AppIntentEntity_sdk');
     this.heritageClassSet.add('insightIntent.AppIntentEntity_sdk');
     this.heritageClassSet.add('InsightIntentEntryExecutor_sdk');
@@ -795,8 +796,8 @@ class ParseIntent {
 
     const symbolName: string = symbol.getName();
 
-    // 检查是否是 IntentEntity 或其直接派生类型 AppIntentEntity
-    if (symbolName === 'IntentEntity' || symbolName === 'AppIntentEntity') {
+    // Check whether it is IntentEntity or its directly derived types AppIntentEntity and FileEntity
+    if (symbolName === 'IntentEntity' || symbolName === 'AppIntentEntity' || symbolName === 'FileEntity') {
       return true;
     }
     return false;
@@ -2031,6 +2032,7 @@ class ParseIntent {
     this.currentFilePath = '';
     this.heritageClassSet = new Set<string>();
     this.heritageClassSet.add('IntentEntity_sdk');
+    this.heritageClassSet.add('FileEntity_sdk');
     this.heritageClassSet.add('InsightIntent.AppIntentEntity_sdk');
     this.heritageClassSet.add('insightIntent.AppIntentEntity_sdk');
     this.heritageClassSet.add('InsightIntentEntryExecutor_sdk');
