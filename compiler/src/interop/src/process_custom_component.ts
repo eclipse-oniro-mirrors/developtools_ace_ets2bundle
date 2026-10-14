@@ -833,7 +833,7 @@ function createCustomComponent(newNode: ts.NewExpression, name: string, componen
                 ts.factory.createCallExpression(
                   ts.factory.createIdentifier('Reusable'),
                   undefined,
-                  [ts.factory.createIdentifier(name)]
+                  [componentNode.expression]
                 ),
               )
             ]
