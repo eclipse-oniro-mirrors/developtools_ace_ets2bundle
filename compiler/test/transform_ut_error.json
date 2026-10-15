@@ -1184,6 +1184,10 @@
         "type": "ERROR",
         "code": "10905228"
     },
+    "StructNameWarn": {
+        "message": "The struct 'date' cannot have the same name as the built-in attribute 'date'.",
+        "type": "WARN"
+    },
     "notConcurrentFunAster": {
         "message": "'@Concurrent' can not be used on 'Generator' function declaration.",
         "type": "ERROR",

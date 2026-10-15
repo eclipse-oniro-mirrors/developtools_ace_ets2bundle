@@ -362,6 +362,7 @@ export const UT_VALIDATE_PAGES: string[] = [
   'Decorators/vaildate_ui_syntax/OnlyStructDeco',
   'Decorators/vaildate_ui_syntax/state',
   'Decorators/vaildate_ui_syntax/StructNameInvalid',
+  'Decorators/vaildate_ui_syntax/StructNameWarn',
   'Decorators/vaildate_ui_syntax/StylesDuplicate',
   'Decorators/vaildate_ui_syntax/syncMonitorCheckWild',
   'Decorators/vaildate_ui_syntax/syncMonitorDuplicateDecorators',

@@ -489,6 +489,11 @@ function validateStruct(hasInnerComponentDecorator: boolean, componentName: stri
       `as the built-in attribute '${componentName}'.`;
     addLog(LogType.ERROR, message, component.pos, log, sourceFile, { code: '10905228' });
   }
+  if (COMPONENT_SYSTEMAPI_NAMES.has(componentName)) {
+    const message: string = `The struct '${componentName}' cannot have the same name ` +
+      `as the built-in attribute '${componentName}'.`;
+    addLog(LogType.WARN, message, component.pos, log, sourceFile);
+  }
   if (INNER_COMPONENT_NAMES.has(componentName)) {
     const message: string = `The struct '${componentName}' cannot have the same name ` +
       `as the built-in component '${componentName}'.`;
