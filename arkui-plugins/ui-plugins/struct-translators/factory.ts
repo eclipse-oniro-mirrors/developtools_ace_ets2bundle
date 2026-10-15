@@ -345,11 +345,11 @@ export class factory {
                 ...PropertyCache.getInstance().getInitializeBody(scope.name),
                 ...MonitorCache.getInstance().getCachedMonitors(scope.name),
                 ...SyncMonitorCache.getInstance().getCachedSyncMonitors(scope.name),
-                ...ComponentLifecycleCache.getInstance().getCachedInitMethodCalls(scope.name),
                 ...ComponentLifecycleCache.getInstance().getCachedLifecycleObserverCalls(
                     scope.name,
                     factory.generateLifecycleObserverCall
                 ),
+                ...ComponentLifecycleCache.getInstance().getCachedInitMethodCalls(scope.name),
                 ...ActiveInactiveCache.getInstance().getCachedCallStatements(scope.name),
             ]);
             modifiers = arkts.Es2pandaModifierFlags.MODIFIER_FLAGS_PUBLIC;

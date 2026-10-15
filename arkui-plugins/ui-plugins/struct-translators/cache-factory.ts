@@ -150,11 +150,11 @@ export class CacheFactory {
                 ...PropertyCache.getInstance().getInitializeBody(metadata.name),
                 ...MonitorCache.getInstance().getCachedMonitors(metadata.name, definition),
                 ...SyncMonitorCache.getInstance().getCachedSyncMonitors(metadata.name, definition),
-                ...ComponentLifecycleCache.getInstance().getCachedInitMethodCalls(metadata.name),
                 ...ComponentLifecycleCache.getInstance().getCachedLifecycleObserverCalls(
                     metadata.name,
                     StructFactory.generateLifecycleObserverCall
                 ),
+                ...ComponentLifecycleCache.getInstance().getCachedInitMethodCalls(metadata.name),
                 ...ActiveInactiveCache.getInstance().getCachedCallStatements(metadata.name),
             ]);
             if (PropertyCache.getInstance().shouldMemoUpdateInitializeStruct(metadata.name)) {

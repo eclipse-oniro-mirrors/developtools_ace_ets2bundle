@@ -141,7 +141,6 @@ __EntryWrapper.RegisterNamedRouter("", new __EntryWrapper(), ({
 } as NavInterface));
 @Entry() @Component() final struct Index extends CustomComponent<Index, __Options_Index> implements PageLifeCycle {
   public __initializeStruct(initializers: (__Options_Index | undefined), @Memo() content: ((()=> void) | undefined)): void {
-    this.myfunc();
     const __myfunc__Internal = this.myfunc;
     UIUtils.getLifecycle(this).addObserver(({
       aboutToAppear: (() => {
@@ -154,6 +153,7 @@ __EntryWrapper.RegisterNamedRouter("", new __EntryWrapper(), ({
       aboutToReuse: ((params: (ReuseObject | undefined)) => {}),
       aboutToRecycle: (() => {}),
     } as CustomComponentLifecycleObserver));
+    this.myfunc();
   }
   
   public __updateStruct(initializers: (__Options_Index | undefined)): void {}
