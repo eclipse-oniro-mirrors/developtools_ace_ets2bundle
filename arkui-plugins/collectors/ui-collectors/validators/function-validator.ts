@@ -17,6 +17,7 @@ import * as arkts from '@koalaui/libarkts';
 import { BaseValidator } from './base';
 import { FunctionInfo } from '../records';
 import {
+    checkBuilderPlaceholderNoParam,
     checkLifecycleDecorator,
     checkTrackDecorator,
     checkComponentV2StateUsage,
@@ -37,5 +38,6 @@ export class FunctionValidator extends BaseValidator<arkts.MethodDefinition, Fun
         checkConsumerProviderDecorator.bind(this)(node);
         checkNoVariablesChangeInBuild.bind(this)(node);
         checkObservedV2TraceUsageValidation.bind(this)(node);
+        checkBuilderPlaceholderNoParam.bind(this)(node);
     }
 }

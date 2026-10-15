@@ -16,8 +16,8 @@
   "aceProfilePath": "./dist/cache",
   "cachePath": "./dist/cache",
   "loaderOutPath": "./dist",
-  "compileSdkVersion": 20,
-  "compatibleSdkVersion": 20,
+  "compileSdkVersion": 26,
+  "compatibleSdkVersion": 26,
   "aceModuleJsonPath": "./demo/localtest/entry/src/main/module.json5",
   "bundleName": "com.example.myapplication",
   "useNormalizedOHMUrl": true,
@@ -36,9 +36,9 @@
   "allowEmptyBundleName": false,
   "declgenV2OutPath": "",
   "externalApiPaths": [
-    "workspace/out/sdk/ohos-sdk/linux/ets/static/api",
-    "workspace/out/sdk/ohos-sdk/linux/ets/static/kits",
-    "workspace/out/sdk/ohos-sdk/linux/ets/static/arkts"
+    "workspace/out/sdk/ohos-sdk/linux/ets/static/build-tools/ets-loader/runtimeapi/api",
+    "workspace/out/sdk/ohos-sdk/linux/ets/static/build-tools/ets-loader/runtimeapi/kits",
+    "workspace/out/sdk/ohos-sdk/linux/ets/static/build-tools/ets-loader/runtimeapi/arkts"
   ],
   "deviceTypes": [
     "phone"

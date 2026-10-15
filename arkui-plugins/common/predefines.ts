@@ -64,6 +64,12 @@ export const ARKUI_NAV_DESTINATION_SOURCE_NAME: string = 'arkui.component.navDes
 export const ARKUI_LOCAL_STORAGE_SOURCE_NAME: string = 'arkui.stateManagement.storage.localStorage';
 export const ARKUI_STATE_MANAGEMENT_DECORATOR_SOURCE_NAME: string = 'arkui.stateManagement.decorator';
 
+// Scroll placeholder contract: @Builder({ isPlaceholder: true }) helper names (shared with the
+// dynamic toolchain), imported from the builder module.
+export const BUILDER_DECORATOR_OPTION_IS_PLACEHOLDER: string = 'isPlaceholder';
+export const ACE_BEGIN_SCROLL_PLACEHOLDER: string = '__aceBeginScrollPlaceholder__';
+export const ACE_END_SCROLL_PLACEHOLDER: string = '__aceEndScrollPlaceholder__';
+
 export const LIB_UI_COMPONENTS_PATH: string = path.resolve(__dirname, '../components');
 export const PREVIEWER_RESOURCE_PATH: string = path.resolve(
     __dirname,

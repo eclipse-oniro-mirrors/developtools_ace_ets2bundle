@@ -18,6 +18,7 @@ import { BaseValidator } from './base';
 import { StructMethodInfo } from '../records';
 import {
     checkBuildRootNode,
+    checkBuilderMethodDecoratorArguments,
     checkComputedDecorator,
     checkComputedStateModification,
     checkComponentV2StateUsage,
@@ -55,6 +56,7 @@ export class StructMethodValidator extends BaseValidator<arkts.MethodDefinition,
         checkObservedV2TraceUsageValidation.bind(this)(node);
         checkMonitorDecorator.bind(this)(node);
         checkSyncMonitorDecorator.bind(this)(node);
+        checkBuilderMethodDecoratorArguments.bind(this)(node);
         const struct = arkts.unpackNonNullableNode<arkts.ClassDefinition>(metadata.structInfo!.definitionPtr!);
         checkComputedDecorator.bind(this)(node, struct);
     }

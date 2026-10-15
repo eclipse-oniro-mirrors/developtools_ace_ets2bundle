@@ -15,6 +15,7 @@
 
 export * from './check-attribute-no-invoke';
 export * from './check-build-root-node';
+export * from './check-builder-decorator-arguments';
 export * from './check-builder-param';
 export * from './check-component-componentV2-init';
 export * from './check-component-componentV2-mix-use';
