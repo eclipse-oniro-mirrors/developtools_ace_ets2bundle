@@ -797,7 +797,7 @@ function createCustomComponent(newNode: ts.NewExpression, name: string, componen
   if (isRecycleComponent) {
     componentAttrInfo.reuseId ? observeArgArr.unshift(componentAttrInfo.reuseId) :
       observeArgArr.unshift(ts.factory.createStringLiteral(name));
-    observeArgArr.push(ts.factory.createIdentifier(name));
+    observeArgArr.push(componentNode.expression);
   } else if (partialUpdateConfig.optimizeComponent) {
     observeArgArr.push(componentPop(name));
   }
