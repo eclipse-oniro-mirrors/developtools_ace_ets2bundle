@@ -5158,37 +5158,62 @@
     ],
     "builder_decorator_d3_strict_literal": [
         {
-            "message": "全局函数Builder装饰器对象isPlaceholder属性仅支持传入true/false",
+            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
             "type": "ERROR",
             "code": "10905133"
         },
         {
-            "message": "全局函数Builder装饰器对象isPlaceholder属性仅支持传入true/false",
+            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
             "type": "ERROR",
             "code": "10905133"
         },
         {
-            "message": "全局函数Builder装饰器对象isPlaceholder属性仅支持传入true/false",
+            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
             "type": "ERROR",
             "code": "10905133"
         },
         {
-            "message": "全局函数Builder装饰器对象isPlaceholder属性仅支持传入true/false",
+            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
             "type": "ERROR",
             "code": "10905133"
         },
         {
-            "message": "全局函数Builder装饰器对象isPlaceholder属性仅支持传入true/false",
+            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
             "type": "ERROR",
             "code": "10905133"
         },
         {
-            "message": "全局函数Builder装饰器对象isPlaceholder属性仅支持传入true/false",
+            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
             "type": "ERROR",
             "code": "10905133"
         },
         {
-            "message": "全局函数Builder装饰器对象isPlaceholder属性仅支持传入true/false",
+            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
+            "type": "ERROR",
+            "code": "10905133"
+        },
+        {
+            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
+            "type": "ERROR",
+            "code": "10905133"
+        },
+        {
+            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
+            "type": "ERROR",
+            "code": "10905133"
+        },
+        {
+            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
+            "type": "ERROR",
+            "code": "10905133"
+        },
+        {
+            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
+            "type": "ERROR",
+            "code": "10905133"
+        },
+        {
+            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
             "type": "ERROR",
             "code": "10905133"
         }

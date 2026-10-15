@@ -450,7 +450,7 @@ export class RewriteFactory {
         }
         if (checkIsBuilderFromInfo(metadata)) {
             arkts.Performance.getInstance().createDetailedEvent(getPerfName([1, 1, 3], 'rewriteBuilderMethod'));
-            const res = BuilderFactory.rewriteBuilderMethod(_node);
+            const res = BuilderFactory.rewriteBuilderMethod(_node, checkIsGlobalFunctionFromInfo(metadata));
             arkts.Performance.getInstance().stopDetailedEvent(getPerfName([1, 1, 3], 'rewriteBuilderMethod'));
             return res;
         }

@@ -17,6 +17,7 @@ import * as arkts from '@koalaui/libarkts';
 import { BaseValidator } from './base';
 import { StructPropertyInfo } from '../records';
 import {
+    checkBuilderFieldDecoratorArguments,
     checkComponentComponentV2MixUse,
     checkComponentV2StateUsage,
     checkComputedDecorator,
@@ -78,5 +79,6 @@ export class StructPropertyValidator extends BaseValidator<arkts.ClassProperty, 
         checkObservedV2TraceUsageValidation.bind(this)(node);
         checkMonitorDecorator.bind(this)(node);
         checkSyncMonitorDecorator.bind(this)(node);
+        checkBuilderFieldDecoratorArguments.bind(this)(node);
     }
 }

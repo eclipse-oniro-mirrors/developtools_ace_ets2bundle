@@ -17,6 +17,7 @@ import * as arkts from '@koalaui/libarkts';
 import { BaseValidator } from './base';
 import { NormalClassMethodInfo } from '../records';
 import {
+    checkBuilderMethodDecoratorArguments,
     checkComputedDecorator,
     checkComputedStateModification,
     checkConsumerProviderDecorator,
@@ -49,6 +50,7 @@ export class NormalClassMethodValidator extends BaseValidator<arkts.MethodDefini
         checkObservedV2TraceUsageValidation.bind(this)(node);
         checkMonitorDecorator.bind(this)(node);
         checkSyncMonitorDecorator.bind(this)(node);
+        checkBuilderMethodDecoratorArguments.bind(this)(node);
         const classDef = arkts.unpackNonNullableNode<arkts.ClassDefinition>(metadata.classInfo!.definitionPtr!);
         checkComputedDecorator.bind(this)(node, classDef);
     }

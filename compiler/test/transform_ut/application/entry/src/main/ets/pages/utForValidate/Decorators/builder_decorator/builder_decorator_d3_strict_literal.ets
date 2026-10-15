@@ -57,3 +57,38 @@ function missingKeyBuilder() {
 function unknownKeyOnlyBuilder() {
   Text('unknown only')
 }
+
+// D-3 (10905133): resolved variable values (const/let/enum) are not explicit boolean literals
+const constFlag: boolean = true;
+let letFlag: boolean = false;
+
+enum PlaceholderFlag {
+  ON = 1,
+  OFF = 2
+}
+
+@Builder({ isPlaceholder: constFlag })
+function constValueBuilder() {
+  Text('const value')
+}
+
+@Builder({ isPlaceholder: letFlag })
+function letValueBuilder() {
+  Text('let value')
+}
+
+@Builder({ isPlaceholder: PlaceholderFlag.ON })
+function enumValueBuilder() {
+  Text('enum value')
+}
+
+// D-3 (10905133): undefined / null are not explicit boolean literals either
+@Builder({ isPlaceholder: undefined })
+function undefinedValueBuilder() {
+  Text('undefined value')
+}
+
+@Builder({ isPlaceholder: null })
+function nullValueBuilder() {
+  Text('null value')
+}

@@ -20,8 +20,16 @@ import { factory as UIFactory } from '../ui-factory';
 import { addMemoAnnotation, MemoNames } from '../../collectors/memo-collectors/utils';
 import { coerceToAstNode } from '../../common/arkts-utils';
 import { generateBuilderCompatible, addcompatibleComponentImport, isFromBuilder1_1 } from '../interop/builder-interop';
+import { ImportCollector } from '../../common/import-collector';
 import { NodeCacheFactory } from '../../common/node-cache';
-import { NodeCacheNames } from '../../common/predefines';
+import {
+    ACE_BEGIN_SCROLL_PLACEHOLDER,
+    ACE_END_SCROLL_PLACEHOLDER,
+    ARKUI_BUILDER_SOURCE_NAME,
+    BUILDER_DECORATOR_OPTION_IS_PLACEHOLDER,
+    DecoratorNames,
+    NodeCacheNames,
+} from '../../common/predefines';
 import { MetaDataCollector } from '../../common/metadata-collector';
 
 export class BuilderFactory {
@@ -41,19 +49,114 @@ export class BuilderFactory {
     /**
      * rewrite `@Builder` method.
      */
-    static rewriteBuilderMethod<T extends arkts.AstNode = arkts.MethodDefinition>(node: T): arkts.MethodDefinition {
+    static rewriteBuilderMethod<T extends arkts.AstNode = arkts.MethodDefinition>(
+        node: T,
+        isGlobalFunction?: boolean
+    ): arkts.MethodDefinition {
         const _node = coerceToAstNode<arkts.MethodDefinition>(node);
         if (_node.kind === arkts.Es2pandaMethodDefinitionKind.METHOD_DEFINITION_KIND_GET) {
             return _node;
         }
         const newFunc = BuilderFactory.rewriteBuilderScriptFunction(_node.function!);
         const newFuncExpr = arkts.factory.createFunctionExpression(newFunc.id?.clone(), newFunc);
-        const result = arkts.factory.updateMethodDefinition(_node, _node.kind, _node.id, newFuncExpr, _node.modifierFlags, false, _node.overloads);
+        let result = arkts.factory.updateMethodDefinition(_node, _node.kind, _node.id, newFuncExpr, _node.modifierFlags, false, _node.overloads);
+        if (BuilderFactory.shouldInstrumentScrollPlaceholder(result, isGlobalFunction)) {
+            result = BuilderFactory.instrumentScrollPlaceholder(result);
+        }
         NodeCacheFactory.getInstance().getCache(NodeCacheNames.MEMO).refresh(_node, result);
         NodeCacheFactory.getInstance().getCache(NodeCacheNames.MEMO).refreshUpdate(_node, result);
         NodeCacheFactory.getInstance().getCache(NodeCacheNames.MEMO).refresh(_node.function, result.function);
         NodeCacheFactory.getInstance().getCache(NodeCacheNames.MEMO).refreshUpdate(_node.function, result.function);
         return result
+    }
+
+    /**
+     * Decide whether the rewritten `@Builder` method is a global parameterless placeholder
+     * builder (`@Builder({ isPlaceholder: true })`) whose product carries the scroll
+     * placeholder scope instrumentation. Only the cache-path call site knows the enclosing
+     * context, so instrumentation requires `isGlobalFunction === true`.
+     */
+    private static shouldInstrumentScrollPlaceholder(
+        node: arkts.MethodDefinition,
+        isGlobalFunction?: boolean
+    ): boolean {
+        if (isGlobalFunction !== true) {
+            return false;
+        }
+        if (MetaDataCollector.getInstance().isDeclaration) {
+            return false;
+        }
+        const func = node.function;
+        const builderAnnotation = func?.annotations?.find(
+            (annotation) => annotation.expr && arkts.isIdentifier(annotation.expr) &&
+                annotation.expr.name === DecoratorNames.BUILDER
+        );
+        if (!builderAnnotation || !func || func.params.length !== 0) {
+            return false;
+        }
+        return BuilderFactory.getIsPlaceholderOption(builderAnnotation) === true;
+    }
+
+    /**
+     * Read the `isPlaceholder` option of a `Builder` annotation usage. Only an explicit
+     * boolean literal counts; any other form yields undefined.
+     */
+    private static getIsPlaceholderOption(annotation: arkts.AnnotationUsage): boolean | undefined {
+        for (const property of annotation.properties) {
+            if (
+                arkts.isClassProperty(property) &&
+                property.key &&
+                arkts.isIdentifier(property.key) &&
+                property.key.name === BUILDER_DECORATOR_OPTION_IS_PLACEHOLDER &&
+                property.value &&
+                arkts.isBooleanLiteral(property.value)
+            ) {
+                return property.value.value;
+            }
+        }
+        return undefined;
+    }
+
+    /**
+     * Insert the scroll placeholder scope instrumentation into the builder body:
+     * `__aceBeginScrollPlaceholder__();` first, `__aceEndScrollPlaceholder__();` last,
+     * and register the helper imports.
+     */
+    private static instrumentScrollPlaceholder(node: arkts.MethodDefinition): arkts.MethodDefinition {
+        ImportCollector.getInstance().collectSource(ACE_BEGIN_SCROLL_PLACEHOLDER, ARKUI_BUILDER_SOURCE_NAME);
+        ImportCollector.getInstance().collectImport(ACE_BEGIN_SCROLL_PLACEHOLDER);
+        ImportCollector.getInstance().collectSource(ACE_END_SCROLL_PLACEHOLDER, ARKUI_BUILDER_SOURCE_NAME);
+        ImportCollector.getInstance().collectImport(ACE_END_SCROLL_PLACEHOLDER);
+        const createPlaceholderCall = (name: string): arkts.ExpressionStatement =>
+            arkts.factory.createExpressionStatement(
+                arkts.factory.createCallExpression(
+                    arkts.factory.createIdentifier(name),
+                    [],
+                    undefined,
+                    false,
+                    false
+                )
+            );
+        const func = node.function!;
+        const body = func.body;
+        if (!body || !arkts.isBlockStatement(body)) {
+            return node;
+        }
+        const newBody = arkts.factory.updateBlockStatement(body, [
+            createPlaceholderCall(ACE_BEGIN_SCROLL_PLACEHOLDER),
+            ...body.statements,
+            createPlaceholderCall(ACE_END_SCROLL_PLACEHOLDER),
+        ]);
+        const newFunc = UIFactory.updateScriptFunction(func, { body: newBody });
+        return arkts.factory.updateMethodDefinition(
+            node,
+            node.kind,
+            node.id,
+            arkts.factory.createFunctionExpression(newFunc.id?.clone(), newFunc),
+            node.modifierFlags,
+            false,
+            node.overloads
+        );
     }
 
     /**

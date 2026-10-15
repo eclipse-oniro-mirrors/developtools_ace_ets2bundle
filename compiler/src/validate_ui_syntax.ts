@@ -896,7 +896,7 @@ function validateMemberBuilderDecoratorArguments(node: ts.MethodDeclaration,
   if (builderDecorator && ts.isCallExpression(builderDecorator.expression) &&
     builderDecorator.expression.arguments.length) {
     addLog(LogType.ERROR,
-      "The '@Builder' decorator can only pass arguments when decorating a global function",
+      'The \'@Builder\' decorator can only pass arguments when decorating a global function',
       builderDecorator.getStart(), log, sourceFileNode,
       { code: ERROR_CODE_BUILDER_DECORATOR_ONLY_GLOBAL });
   }
@@ -916,7 +916,7 @@ function validateGlobalBuilderDecoratorArguments(node: ts.FunctionDeclaration,
     // undefined has exactly one meaning here: the decorator passes arguments that
     // are not a single options object literal
     addLog(LogType.ERROR,
-      "The '@Builder' decorator only supports passing a single object literal",
+      'The \'@Builder\' decorator only supports passing a single object literal',
       pos, log, sourceFileNode, { code: ERROR_CODE_BUILDER_DECORATOR_LITERAL_ONLY });
     return;
   }
@@ -924,13 +924,13 @@ function validateGlobalBuilderDecoratorArguments(node: ts.FunctionDeclaration,
     // non-empty literal carries no explicit boolean isPlaceholder: key missing,
     // misspelled, or value not a boolean literal
     addLog(LogType.ERROR,
-      "全局函数Builder装饰器对象isPlaceholder属性仅支持传入true/false",
+      'The \'isPlaceholder\' option of the \'@Builder\' decorator only supports passing true/false',
       pos, log, sourceFileNode, { code: ERROR_CODE_BUILDER_PLACEHOLDER_BOOL_ONLY });
     return;
   }
   if (options.isPlaceholder && node.parameters.length) {
     addLog(LogType.ERROR,
-      "The '@Builder' function cannot have parameters when it serves as a placeholder",
+      'The \'@Builder\' function cannot have parameters when it serves as a placeholder',
       pos, log, sourceFileNode, { code: ERROR_CODE_BUILDER_PLACEHOLDER_NO_PARAM });
   }
 }
