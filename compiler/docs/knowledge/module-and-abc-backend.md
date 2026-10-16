@@ -9,8 +9,10 @@ genAbc.buildStart
   → initArkProjectConfig / cache / SourceMapGenerator / preload 初始化
 genAbc.transform
   → preserveSourceMap / JS lazy import / ModuleSourceFile.newSourceFile
-genAbc.beforeBuildEnd + moduleParsed
-  → linter、声明、singleFileEmit 等补充检查
+genAbc.afterTransform
+  → singleFileEmit 同步改写模块请求、写入中间源码并汇总单文件 sourceMap
+genAbc.beforeBuildEnd
+  → linter、声明等补充检查
 genAbc.buildEnd
   → generateModuleAbc → processModuleSourceFiles → ModuleMode
   → filesInfo.txt + npmEntries.txt + modules.cache → es2abc → modules.abc
@@ -47,6 +49,8 @@ bytecode HAR 与 customized HAR 的 ABC 输入使用 `${abcPath};;;;${pkgName};`
 - recordName 错误必须按 Rollup `moduleInfo.meta`/工程配置 → `ModuleMode` → `src/ark_utils.ts` → filesInfo 排查；`ModuleSourceFile` 只用于核对物化后的源码与 cache 路径。
 - 禁止调整普通源码行的 filesInfo 七字段顺序，也不得把特殊 HAR 行强制改成七字段；修改描述文件或 es2abc 参数前必须确认消费格式与模式分支。
 - `generateModuleAbc()` 遇上游 error 或非 ESMODULE 会提前返回；不要把“未生成”直接归因于子进程。
+- `singleFileEmit` 的同步 `afterTransform(moduleInfo)` 要求模块 AST 和依赖映射已就绪；当前同步落盘路径适用于无插桩、无源码混淆的构建。
+- 批量落盘仍需 `await processModuleRequest()`，并使用原异步 sourceMap 合并；同步请求处理接口仅由单文件落盘调用。
 - `compileHar` 且非 bytecode HAR 等分支可能只生成 sourceMap；判断缺失 ABC 前必须核对配置。
 - 不要直接编辑 cache 中间文件验证修复；应从生产它的源码和元数据修正。
 - ABC 未生成必须按中间源码 → `ModuleSourceFile` → 上游 error/模式 → module list → filesInfo → 子进程顺序定位。

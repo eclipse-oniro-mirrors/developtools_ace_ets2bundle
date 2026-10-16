@@ -32,13 +32,15 @@ import {
   OhmUrlParams,
   getPackageInfo
 } from '../../../ark_utils';
-import { writeFileSyncByNode } from '../../../process_module_files';
+import { writeFileSyncByNode, writeFileSyncByNodeSync } from '../../../process_module_files';
 import {
   isJsonSourceFile,
   isJsSourceFile,
   updateSourceMap,
-  writeFileContentToTempDir
+  writeFileContentToTempDir,
+  writeFileContentToTempDirSync
 } from '../utils';
+import { updateSourceMapSync } from '../source_map_utils';
 import { toUnixPath } from '../../../utils';
 import { SourceMapGenerator } from '../generate_sourcemap';
 import {
@@ -500,7 +502,7 @@ export class ModuleSourceFile {
     return ModuleSourceFile.sourceFiles;
   }
 
-  static async processSingleModuleSourceFile(rollupObject: Object, moduleId: string, parentEvent: CompileEvent | undefined): Promise<void> {
+  static processSingleModuleSourceFile(rollupObject: Object, moduleId: string, parentEvent: CompileEvent | undefined): void {
     if (!ModuleSourceFile.isEnvInitialized) {
       this.initPluginEnv(rollupObject);
       ModuleSourceFile.setProcessMock(rollupObject);
@@ -524,11 +526,11 @@ export class ModuleSourceFile {
         //compileHar: compile closed source har of project, which convert .ets to .d.ts and js, doesn't transform module request.
         const eventBuildModuleSourceFile = createAndStartEvent(parentEvent, 'build module source files');
         PreloadFileModules.collectModuleIds(moduleId);
-        await moduleSourceFile.processModuleRequest(rollupObject, eventBuildModuleSourceFile);
+        moduleSourceFile.processModuleRequestSync(rollupObject, eventBuildModuleSourceFile);
         stopEvent(eventBuildModuleSourceFile);
       }
       const eventWriteSourceFile = createAndStartEvent(parentEvent, 'write source file');
-      await moduleSourceFile.writeSourceFile(eventWriteSourceFile);
+      moduleSourceFile.writeSourceFileSync(eventWriteSourceFile);
       SourceMapGenerator.getInstance().buildModuleSourceMapInfoSingle(eventWriteSourceFile);
       stopEvent(eventWriteSourceFile);
     }
@@ -598,6 +600,16 @@ export class ModuleSourceFile {
     } else {
       await writeFileContentToTempDir(this.moduleId, <string> this.source, ModuleSourceFile.projectConfig,
         printObfLogger, parentEvent, this.metaInfo);
+    }
+  }
+
+  private writeSourceFileSync(parentEvent: CompileEvent | undefined): void {
+    if (this.isSourceNode && !isJsSourceFile(this.moduleId)) {
+      writeFileSyncByNodeSync(<ts.SourceFile> this.source, ModuleSourceFile.projectConfig, this.metaInfo,
+        this.moduleId, parentEvent);
+    } else {
+      writeFileContentToTempDirSync(this.moduleId, <string> this.source, ModuleSourceFile.projectConfig,
+        parentEvent, this.metaInfo);
     }
   }
 
@@ -771,6 +783,30 @@ export class ModuleSourceFile {
   }
 
   private async processTransformedJsModuleRequest(rollupObject: Object): Promise<void> {
+    const { code, hasDynamicImport } = this.transformJsModuleRequest(rollupObject);
+    if (hasDynamicImport) {
+      const { key, updatedMap } = this.getTransformedJsSourceMap(code);
+      const sourceMapGenerator = SourceMapGenerator.getInstance();
+      const sourcemap = await updateSourceMap(sourceMapGenerator.getSourceMap(key), updatedMap);
+      sourceMapGenerator.fillSourceMapPackageInfo(this.moduleId, sourcemap);
+      sourceMapGenerator.updateSourceMap(key, sourcemap);
+    }
+    this.source = code.toString();
+  }
+
+  private processTransformedJsModuleRequestSync(rollupObject: Object): void {
+    const { code, hasDynamicImport } = this.transformJsModuleRequest(rollupObject);
+    if (hasDynamicImport || code.hasChanged()) {
+      const { key, updatedMap } = this.getTransformedJsSourceMap(code);
+      const sourceMapGenerator = SourceMapGenerator.getInstance();
+      const sourcemap = updateSourceMapSync(sourceMapGenerator.getSourceMap(key), updatedMap);
+      sourceMapGenerator.fillSourceMapPackageInfo(this.moduleId, sourcemap);
+      sourceMapGenerator.updateSourceMap(key, sourcemap);
+    }
+    this.source = code.toString();
+  }
+
+  private transformJsModuleRequest(rollupObject: Object): { code: MagicString, hasDynamicImport: boolean } {
     const moduleInfo: Object = rollupObject.getModuleInfo(this.moduleId);
     const importMap: Object = moduleInfo.importedIdMaps;
     const code: MagicString = new MagicString(<string> this.source);
@@ -816,25 +852,22 @@ export class ModuleSourceFile {
       }
     }
 
-    if (hasDynamicImport) {
-      // update sourceMap
-      const relativeSourceFilePath: string = this.moduleId.startsWith(ModuleSourceFile.projectConfig.projectRootPath) ?
-        toUnixPath(this.moduleId.replace(ModuleSourceFile.projectConfig.projectRootPath + path.sep, '')) :
-        toUnixPath(this.moduleId.replace(this.metaInfo.belongProjectPath, ''));
-      const updatedMap: Object = code.generateMap({
-        source: relativeSourceFilePath,
-        file: `${path.basename(this.moduleId)}`,
-        includeContent: false,
-        hires: true
-      });
-      const sourceMapGenerator = SourceMapGenerator.getInstance();
-      const key = sourceMapGenerator.isNewSourceMaps() ? this.moduleId : relativeSourceFilePath;
-      const sourcemap = await updateSourceMap(sourceMapGenerator.getSourceMap(key), updatedMap);
-      sourceMapGenerator.fillSourceMapPackageInfo(this.moduleId, sourcemap);
-      sourceMapGenerator.updateSourceMap(key, sourcemap);
-    }
+    return { code, hasDynamicImport };
+  }
 
-    this.source = code.toString();
+  private getTransformedJsSourceMap(code: MagicString): { key: string, updatedMap: Object } {
+    const relativeSourceFilePath: string = this.moduleId.startsWith(ModuleSourceFile.projectConfig.projectRootPath) ?
+      toUnixPath(this.moduleId.replace(ModuleSourceFile.projectConfig.projectRootPath + path.sep, '')) :
+      toUnixPath(this.moduleId.replace(this.metaInfo.belongProjectPath, ''));
+    const updatedMap: Object = code.generateMap({
+      source: relativeSourceFilePath,
+      file: `${path.basename(this.moduleId)}`,
+      includeContent: false,
+      hires: true
+    });
+    const sourceMapGenerator = SourceMapGenerator.getInstance();
+    const key = sourceMapGenerator.isNewSourceMaps() ? this.moduleId : relativeSourceFilePath;
+    return { key, updatedMap };
   }
 
   private static collectRecordNameMockFile(rollupObject: Object, ohmUrl: string): void {
@@ -922,6 +955,30 @@ export class ModuleSourceFile {
     } else {
       const eventProcessTransformedJsModuleRequest = createAndStartEvent(parentEvent, 'process transformed Js module request');
       await this.processTransformedJsModuleRequest(rollupObject);
+      stopEvent(eventProcessTransformedJsModuleRequest);
+    }
+  }
+
+  private processModuleRequestSync(rollupObject: Object, parentEvent: CompileEvent): void {
+    if (isJsonSourceFile(this.moduleId)) {
+      return;
+    }
+    if (isJsSourceFile(this.moduleId)) {
+      const eventProcessJsModuleRequest = createAndStartEvent(parentEvent, 'process Js module request');
+      this.processJsModuleRequest(rollupObject);
+      stopEvent(eventProcessJsModuleRequest);
+      return;
+    }
+
+    // Only when files were transformed to ts, the corresponding ModuleSourceFile were initialized with sourceFile node,
+    // if files were transformed to js, ModuleSourceFile were initialized with srouce string.
+    if (this.isSourceNode) {
+      const eventProcessTransformedTsModuleRequest = createAndStartEvent(parentEvent, 'process transformed Ts module request');
+      this.processTransformedTsModuleRequest(rollupObject);
+      stopEvent(eventProcessTransformedTsModuleRequest);
+    } else {
+      const eventProcessTransformedJsModuleRequest = createAndStartEvent(parentEvent, 'process transformed Js module request');
+      this.processTransformedJsModuleRequestSync(rollupObject);
       stopEvent(eventProcessTransformedJsModuleRequest);
     }
   }
