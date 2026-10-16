@@ -713,12 +713,17 @@ export async function writeObfuscatedSourceCode(moduleInfo: ModuleInfo, logger: 
     endFilesEvent(moduleInfo.buildFilePath, undefined, true);
     return;
   }
-  mkdirsSync(path.dirname(moduleInfo.buildFilePath));
   if (!compileToolIsRollUp()) {
+    mkdirsSync(path.dirname(moduleInfo.buildFilePath));
     await writeMinimizedSourceCode(moduleInfo.content, moduleInfo.buildFilePath, logger, projectConfig.compileHar);
     return;
   }
 
+  writeUnobfuscatedSourceCode(moduleInfo);
+}
+
+export function writeUnobfuscatedSourceCode(moduleInfo: ModuleInfo): void {
+  mkdirsSync(path.dirname(moduleInfo.buildFilePath));
   if (moduleInfo.originSourceFilePath) {
     const originSourceFilePath = toUnixPath(moduleInfo.originSourceFilePath);
     let genFileInHar: GeneratedFileInHar = harFilesRecord.get(originSourceFilePath);

@@ -54,13 +54,13 @@ export function genAbc() {
     },
     shouldInvalidCache: shouldInvalidCache,
     transform: transformForModule,
-    moduleParsed(moduleInfo: moduleInfoType): void {
+    afterTransform(moduleInfo: moduleInfoType): boolean {
       // Process single ModuleSourceFile
       if (!this.share.projectConfig.singleFileEmit) {
-        return;
+        return false;
       }
-      const hookEventFactory: CompileEvent | undefined = getHookEventFactory(this.share, 'genAbc', 'moduleParsed');
-      ModuleSourceFile.processSingleModuleSourceFile(this, moduleInfo.id, hookEventFactory);    
+      ModuleSourceFile.processSingleModuleSourceFile(this, moduleInfo.id, undefined);
+      return true;
     },
     beforeBuildEnd: {
       // [pre] means this handler running in first at the stage of beforeBuildEnd.

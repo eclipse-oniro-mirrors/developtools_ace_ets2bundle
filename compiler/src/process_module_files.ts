@@ -31,8 +31,10 @@ import {
   newSourceMaps as webpackNewSourceMaps,
   transformModuleSpecifier,
   writeObfuscatedSourceCode,
+  writeUnobfuscatedSourceCode,
   writeFileSyncCaseAware,
 } from './ark_utils';
+import type { ModuleInfo } from './ark_utils';
 import { processSystemApi } from './validate_ui_syntax';
 import { isDebug } from './fast_build/ark_compiler/utils';
 import { getRelativeSourcePath } from './fast_build/ark_compiler/common/ob_config_resolver';
@@ -44,10 +46,49 @@ import {
 
 export const SRC_MAIN: string = 'src/main';
 
+interface PreparedSourceFile {
+  moduleInfo: ModuleInfo;
+  sourceMaps: Object;
+}
+
 export async function writeFileSyncByNode(node: ts.SourceFile, projectConfig: Object, metaInfo: Object, moduleId?: string,
   parentEvent?: CompileEvent, logger?: Object): Promise<void> {
   const eventWriteFileSyncByNode = createAndStartEvent(parentEvent, 'write file sync by node');
-  const eventGenContentAndSourceMapInfo = createAndStartEvent(eventWriteFileSyncByNode, 'generate content and source map information');
+  const preparedSourceFile = prepareSourceFile(node, projectConfig, metaInfo, moduleId, eventWriteFileSyncByNode);
+  if (!preparedSourceFile) {
+    return;
+  }
+  if (!isDebug(projectConfig)) {
+    const eventWriteObfuscatedSourceCode = createAndStartEvent(eventWriteFileSyncByNode, 'write obfuscated source code');
+    await writeObfuscatedSourceCode(preparedSourceFile.moduleInfo, logger, projectConfig, preparedSourceFile.sourceMaps);
+    stopEvent(eventWriteObfuscatedSourceCode);
+    return;
+  }
+  mkdirsSync(path.dirname(preparedSourceFile.moduleInfo.buildFilePath));
+  writeFileSyncCaseAware(preparedSourceFile.moduleInfo.buildFilePath, preparedSourceFile.moduleInfo.content);
+  stopEvent(eventWriteFileSyncByNode);
+}
+
+// Synchronous Rollup singleFileEmit path without source code obfuscation.
+export function writeFileSyncByNodeSync(node: ts.SourceFile, projectConfig: Object, metaInfo: Object, moduleId?: string,
+  parentEvent?: CompileEvent): void {
+  const eventWriteFileSyncByNode = createAndStartEvent(parentEvent, 'write file sync by node');
+  const preparedSourceFile = prepareSourceFile(node, projectConfig, metaInfo, moduleId, eventWriteFileSyncByNode);
+  if (!preparedSourceFile) {
+    return;
+  }
+  if (!isDebug(projectConfig)) {
+    writeUnobfuscatedSourceCode(preparedSourceFile.moduleInfo);
+  } else {
+    mkdirsSync(path.dirname(preparedSourceFile.moduleInfo.buildFilePath));
+    writeFileSyncCaseAware(preparedSourceFile.moduleInfo.buildFilePath, preparedSourceFile.moduleInfo.content);
+  }
+  stopEvent(eventWriteFileSyncByNode);
+}
+
+function prepareSourceFile(node: ts.SourceFile, projectConfig: Object, metaInfo: Object, moduleId: string | undefined,
+  parentEvent: CompileEvent | undefined): PreparedSourceFile | undefined {
+  const eventGenContentAndSourceMapInfo = createAndStartEvent(parentEvent, 'generate content and source map information');
   const mixedInfo: { content: string, sourceMapJson: ts.RawSourceMap } = genContentAndSourceMapInfo(node, moduleId, projectConfig, metaInfo);
   const sourceMapGenerator = SourceMapGenerator.getInstance();
   stopEvent(eventGenContentAndSourceMapInfo);
@@ -62,15 +103,16 @@ export async function writeFileSyncByNode(node: ts.SourceFile, projectConfig: Ob
    * Note: current realization is related to the moduleId mechanism in the rollup framework, which is needed to be reconsidered to improve the code robustness.
    * In the current realization, when moduleId mechanism is changed, there would be a compilation error.
    */
-  let temporaryFile: string = genTemporaryPath(moduleId ? moduleId : node.fileName, projectConfig.projectPath, process.env.cachePath,
+  const filePath: string = moduleId || node.fileName;
+  let temporaryFile: string = genTemporaryPath(filePath, projectConfig.projectPath, process.env.cachePath,
     projectConfig, metaInfo);
   if (temporaryFile.length === 0) {
-    return;
+    return undefined;
   }
   if (temporaryFile.endsWith(EXTNAME_ETS)) {
     temporaryFile = temporaryFile.replace(/\.ets$/, EXTNAME_TS);
   }
-  let relativeFilePath = getRelativeSourcePath(moduleId ? moduleId : node.fileName, projectConfig.projectRootPath, metaInfo?.belongProjectPath);
+  const relativeFilePath = getRelativeSourcePath(filePath, projectConfig.projectRootPath, metaInfo?.belongProjectPath);
   let sourceMaps: Object;
   if (process.env.compileTool === 'rollup') {
     const key = sourceMapGenerator.isNewSourceMaps() ? moduleId! : relativeFilePath;
@@ -81,21 +123,16 @@ export async function writeFileSyncByNode(node: ts.SourceFile, projectConfig: Ob
     webpackNewSourceMaps[relativeFilePath] = mixedInfo.sourceMapJson;
     sourceMaps = webpackNewSourceMaps;
   }
-  if (!isDebug(projectConfig)) {
-    const eventWriteObfuscatedSourceCode = createAndStartEvent(eventWriteFileSyncByNode, 'write obfuscated source code');
-    await writeObfuscatedSourceCode({
-        content: mixedInfo.content,
-        buildFilePath: temporaryFile,
-        relativeSourceFilePath: relativeFilePath,
-        originSourceFilePath: node.fileName,
-        rollupModuleId: moduleId ? moduleId : undefined
-      }, logger, projectConfig, sourceMaps);
-    stopEvent(eventWriteObfuscatedSourceCode);
-    return;
-  }
-  mkdirsSync(path.dirname(temporaryFile));
-  writeFileSyncCaseAware(temporaryFile, mixedInfo.content);
-  stopEvent(eventWriteFileSyncByNode);
+  return {
+    moduleInfo: {
+      content: mixedInfo.content,
+      buildFilePath: temporaryFile,
+      relativeSourceFilePath: relativeFilePath,
+      originSourceFilePath: node.fileName,
+      rollupModuleId: moduleId || undefined
+    },
+    sourceMaps: sourceMaps
+  };
 }
 
 function genContentAndSourceMapInfo(node: ts.SourceFile, moduleId: string | undefined, projectConfig: Object, metaInfo: Object): Object {

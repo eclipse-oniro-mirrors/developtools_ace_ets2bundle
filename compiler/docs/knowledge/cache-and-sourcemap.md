@@ -24,8 +24,9 @@ etsChecker → etsTransform → genAbc meta → ModuleMode file/hash cache
 | `genAbc.buildStart` | `SourceMapGenerator.init()` | generator 绑定本轮 Rollup 对象 |
 | `etsTransform.transform` | TS emit 生成 map | emit 输出 map |
 | `genAbc.transform` | 保存 combined sourcemap 并补包信息 | `preserveSourceMap()` / `updateSourceMap()` |
-| `ModuleSourceFile` 处理 TS `SourceFile` | 经 `src/process_module_files.ts` 的 `writeFileSyncByNode()` 重打印节点并更新 map | cache 源码与重生成 map 对齐 |
-| `ModuleSourceFile` 处理 JS/string | 经 `src/fast_build/ark_compiler/utils.ts` 的 `writeFileContentToTempDir()` 写临时源码，不再更新 map | 使用 `genAbc.transform` 已 preserve 的 map |
+| `ModuleSourceFile` 处理 TS `SourceFile` | 经 `src/process_module_files.ts` 的 writer 重打印节点并更新 map；单文件使用同步 writer | cache 源码与重生成 map 对齐 |
+| `ModuleSourceFile` 处理 JS/string | 已转换为 JS 的 TS/ETS 在请求改写时合并 map；单文件遇到动态 import 或代码实际变化时同步合并，批量仍保留原异步动态 import 合并 | 改写后的 JS → 改写前的 JS → 原始 TS/ETS；原生 JS 保留已有 map |
+| `genAbc.afterTransform` | 写入单文件源码后，在新格式单文件汇总开启时，将 map 从 `sourceMaps` 移入 `sourceMapsResult` | `buildModuleSourceMapInfoSingle()` 只更新内存，最终 map 文件仍在构建结束阶段汇总写出 |
 | `ModuleMode.generateAbc` | 构建/合并模块 sourceMap | debug/release 输出或 cache map |
 | `genAbc.cleanUp` | 清理内存对象 | 下一轮无陈旧条目 |
 

@@ -44,6 +44,7 @@ import {
 import {
   tryMangleFileName,
   writeObfuscatedSourceCode,
+  writeUnobfuscatedSourceCode,
   writeFileSyncCaseAware,
 } from '../../ark_utils';
 import { AOT_FULL, AOT_PARTIAL, AOT_TYPE } from '../../pre_define';
@@ -164,16 +165,7 @@ export async function writeFileContentToTempDir(id: string, content: string, pro
     return;
   }
 
-  let filePath: string;
-  if (projectConfig.compileHar) {
-    // compileShared: compile shared har of project
-    filePath = genTemporaryPath(id,
-      projectConfig.compileShared ? projectConfig.projectRootPath : projectConfig.moduleRootPath,
-      projectConfig.compileShared ? path.resolve(projectConfig.aceModuleBuild, '../etsFortgz') : projectConfig.cachePath,
-      projectConfig, metaInfo, projectConfig.compileShared);
-  } else {
-    filePath = genTemporaryPath(id, projectConfig.projectPath, projectConfig.cachePath, projectConfig, metaInfo);
-  }
+  const filePath = getTemporarySourceFilePath(id, projectConfig, metaInfo);
 
   const eventWriteFileContent = createAndStartEvent(parentEvent, 'write file content');
   switch (path.extname(id)) {
@@ -193,6 +185,64 @@ export async function writeFileContentToTempDir(id: string, content: string, pro
       break;
   }
   stopEvent(eventWriteFileContent);
+}
+
+// Single-file emit writes the non-obfuscated output before the synchronous hook returns.
+export function writeFileContentToTempDirSync(id: string, content: string, projectConfig: Object,
+  parentEvent: CompileEvent | undefined, metaInfo: Object): void {
+  if (isCommonJsPluginVirtualFile(id) || !isCurrentProjectFiles(id, projectConfig)) {
+    return;
+  }
+
+  let filePath = getTemporarySourceFilePath(id, projectConfig, metaInfo);
+  const eventWriteFileContent = createAndStartEvent(parentEvent, 'write file content');
+  try {
+    switch (path.extname(id)) {
+      case EXTNAME_ETS:
+      case EXTNAME_TS:
+      case EXTNAME_JS:
+      case EXTNAME_MJS:
+      case EXTNAME_CJS:
+        if (!isSpecifiedExt(id, EXTNAME_JS)) {
+          filePath = changeFileExtension(filePath, EXTNAME_JS);
+        }
+        if (!isDebug(projectConfig)) {
+          writeUnobfuscatedSourceCode({content, buildFilePath: filePath,
+            relativeSourceFilePath: getRelativeSourcePath(id, projectConfig.projectRootPath, metaInfo?.belongProjectPath),
+            originSourceFilePath: id, rollupModuleId: id});
+          return;
+        }
+        mkdirsSync(path.dirname(filePath));
+        writeFileSyncCaseAware(filePath, content, 'utf-8');
+        break;
+      case EXTNAME_JSON:
+      {
+        const newFilePath = tryMangleFileName(filePath, projectConfig, id, projectConfig.isBytecodeObfEnabled);
+        mkdirsSync(path.dirname(newFilePath));
+        writeFileSyncCaseAware(newFilePath, content ?? '');
+        break;
+      }
+      default:
+        break;
+    }
+  } finally {
+    stopEvent(eventWriteFileContent);
+  }
+}
+
+function getTemporarySourceFilePath(id: string, projectConfig: Object, metaInfo: Object): string {
+  let filePath: string;
+  if (projectConfig.compileHar) {
+    // compileShared: compile shared har of project
+    filePath = genTemporaryPath(id,
+      projectConfig.compileShared ? projectConfig.projectRootPath : projectConfig.moduleRootPath,
+      projectConfig.compileShared ? path.resolve(projectConfig.aceModuleBuild, '../etsFortgz') : projectConfig.cachePath,
+      projectConfig, metaInfo, projectConfig.compileShared);
+  } else {
+    filePath = genTemporaryPath(id, projectConfig.projectPath, projectConfig.cachePath, projectConfig, metaInfo);
+  }
+
+  return filePath;
 }
 
 async function writeFileContent(sourceFilePath: string, filePath: string, content: string,
