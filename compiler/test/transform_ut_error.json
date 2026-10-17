@@ -5221,5 +5221,101 @@
             "type": "ERROR",
             "code": "10905133"
         }
+    ],
+    "globalStylesArgsError": [
+        {
+            "message": "'@Styles' decorated functions and methods cannot have arguments.",
+            "type": "ERROR",
+            "code": "10905110"
+        },
+        {
+            "message": "'@Styles' decorated functions and methods cannot have arguments.",
+            "type": "ERROR",
+            "code": "10905110"
+        }
+    ],
+    "builderParamV2InitError": [
+        {
+            "message": "'@BuilderParam' property can only initialized by '@Builder' function.",
+            "type": "ERROR",
+            "code": "10905107"
+        },
+        {
+            "message": "'@BuilderParam' property can only initialized by '@Builder' function.",
+            "type": "ERROR",
+            "code": "10905107"
+        }
+    ],
+    "toggleButtonMultiChildError": [
+        {
+            "message": "When the component 'Toggle' set 'type' as 'Button', it can only have a single child component.",
+            "type": "ERROR",
+            "code": "10905221"
+        },
+        {
+            "message": "When the component 'Toggle' set 'type' as 'Button', it can only have a single child component.",
+            "type": "ERROR",
+            "code": "10905221"
+        }
+    ],
+    "toggleCheckboxChildError": [
+        {
+            "message": "When the component 'Toggle' set 'type' as 'Checkbox', it can't have any child.",
+            "type": "ERROR",
+            "code": "10905223"
+        },
+        {
+            "message": "When the component 'Toggle' set 'type' as 'Switch', it can't have any child.",
+            "type": "ERROR",
+            "code": "10905223"
+        }
+    ],
+    "computedTwoWayBindError": [
+        {
+            "message": "A property decorated by '@Computed' cannot be used with two-bind syntax.",
+            "type": "ERROR",
+            "code": "10905129"
+        }
+    ],
+    "dollarEventBindingError": [
+        {
+            "message": "When the two-way binding syntax is used, do not assign a value to '@Event' variable '$value' because the framework generates the default assignment.",
+            "type": "ERROR",
+            "code": "10905358"
+        }
+    ],
+    "lifecycleDecoratorParamsError": [
+        {
+            "message": "Methods decorated with '@ComponentAppear' cannot have input parameters.",
+            "type": "ERROR",
+            "code": "10905371"
+        },
+        {
+            "message": "Methods decorated with '@ComponentInit' cannot have input parameters.",
+            "type": "ERROR",
+            "code": "10905371"
+        },
+        {
+            "message": "Methods decorated with '@ComponentBuilt' cannot have input parameters.",
+            "type": "ERROR",
+            "code": "10905371"
+        }
+    ],
+    "objectLinkNonObservedError": [
+        {
+            "message": "'@ObjectLink' cannot be used with this type. Apply it only to classes decorated by '@ObservedV2' or initialized using the return value of 'makeV1Observed'.",
+            "type": "ERROR",
+            "code": "10905307"
+        },
+        {
+            "message": "'@ObjectLink' cannot be used with this type. Apply it only to classes decorated by '@ObservedV2' or initialized using the return value of 'makeV1Observed'.",
+            "type": "ERROR",
+            "code": "10905307"
+        },
+        {
+            "message": "'@ObjectLink' cannot be used with this type. Apply it only to classes decorated by '@ObservedV2' or initialized using the return value of 'makeV1Observed'.",
+            "type": "ERROR",
+            "code": "10905307"
+        }
     ]
 }
