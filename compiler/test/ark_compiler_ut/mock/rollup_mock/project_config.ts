@@ -124,6 +124,8 @@ class ProjectConfig {
   projectRootPath: string;
   pkgContextInfo: object;
   useNormalizedOHMUrl: boolean = false;
+  arkTSVersion: string = '1.1';
+  enableAccurateNullChecks: boolean = false;
   dependencyAliasMap: Map<string, string>;
   byteCodeHarInfo: object;
   entryObj: object;

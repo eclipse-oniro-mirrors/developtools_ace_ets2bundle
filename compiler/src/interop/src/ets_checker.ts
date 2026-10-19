@@ -147,6 +147,7 @@ export interface LanguageServiceCache {
   autoLazyFilterExclude?: string[];
   useDeclarationFileSignature?: boolean;
   strictCheckerOnly?: boolean;
+  enableAccurateNullChecks?: boolean;
   tsImportSoCheck?: boolean;
   obfuscationRuleHash?: string;
 }
@@ -262,6 +263,7 @@ function setCompilerOptions(resolveModulePaths: string[]): void {
     'isCompileJsHar': isCompileJsHar(),
     'moduleRootPath': projectConfig.moduleRootPath,
     'strictCheckerOnly': projectConfig.strictCheckerOnly,
+    'enableAccurateNullChecks': isAccurateNullChecksEnabled(),
     'tsImportSoCheck': projectConfig.tsImportSoCheck,
   });
   if (projectConfig.compileMode === ESMODULE) {
@@ -295,6 +297,11 @@ function checkArkTSVersion(): void {
     etsCheckerLogger.error('\u001b[31m' + logMessage);
     tsImportSendable = false;
   }
+}
+
+function isAccurateNullChecksEnabled(): boolean {
+  return getArkTSVersion() === ArkTSVersion.ArkTS_1_1 &&
+    projectConfig.enableAccurateNullChecks === true;
 }
 
 // Change target to enum's value，e.g: "es2021" => ts.ScriptTarget.ES2021
@@ -578,6 +585,7 @@ function getOrCreateLanguageService(servicesHost: ts.LanguageServiceHost, rootFi
     rollupShareObject.projectConfig.autoLazyFilter.exclude : undefined;
   const currentUseDeclarationFileSignature: boolean | undefined = rollupShareObject?.projectConfig?.useDeclarationFileSignature;
   const currentStrictCheckerOnly: boolean | undefined = rollupShareObject?.projectConfig?.strictCheckerOnly;
+  const currentEnableAccurateNullChecks: boolean = isAccurateNullChecksEnabled();
   const currentTsImportSoCheck: boolean | undefined = rollupShareObject?.projectConfig?.tsImportSoCheck;
   const lastHash: string | undefined = cache?.pkgJsonFileHash;
   const lastTargetESVersion: ts.ScriptTarget | undefined = cache?.targetESVersion;
@@ -585,6 +593,7 @@ function getOrCreateLanguageService(servicesHost: ts.LanguageServiceHost, rootFi
   const lastMaxFlowDepth: number | undefined = cache?.maxFlowDepth;
   const lastUseDeclarationFileSignature: boolean | undefined = cache?.useDeclarationFileSignature;
   const lastStrictCheckerOnly: boolean | undefined = cache?.strictCheckerOnly;
+  const lastEnableAccurateNullChecks: boolean | undefined = cache?.enableAccurateNullChecks;
   const lastTsImportSoCheck: boolean | undefined = cache?.tsImportSoCheck;
   const hashDiffers: boolean | undefined = currentHash && lastHash && currentHash !== lastHash;
   const shouldRebuildForDepDiffers: boolean | undefined = reuseLanguageServiceForDepChange ?
@@ -605,11 +614,12 @@ function getOrCreateLanguageService(servicesHost: ts.LanguageServiceHost, rootFi
   const autoLazyFilterDiff: boolean = autoLazyFilterIncludeDiff || autoLazyFilterExcludeDiff;
   const useDeclarationFileSignatureDiff: boolean = checkValueDiff(lastUseDeclarationFileSignature, currentUseDeclarationFileSignature);
   const strictCheckerOnlyDiff: boolean = checkValueDiff(lastStrictCheckerOnly, currentStrictCheckerOnly);
+  const enableAccurateNullChecksDiff: boolean = checkValueDiff(lastEnableAccurateNullChecks, currentEnableAccurateNullChecks);
   const tsImportSoCheckDiff: boolean = checkValueDiff(lastTsImportSoCheck, currentTsImportSoCheck);
   const onlyDeleteBuildInfoCache: boolean | undefined = tsImportSendableDiff || maxFlowDepthDiffers || skipOhModulesLintDiff ||
     enableStrictCheckOHModuleDiff || disableStrictCheckPathsDiff || disableSendableCheckRulesDiff ||
     mixCompileDiff || typesDiff || autoLazyImportDiff || autoLazyFilterDiff ||
-    useDeclarationFileSignatureDiff || strictCheckerOnlyDiff || tsImportSoCheckDiff;
+    useDeclarationFileSignatureDiff || strictCheckerOnlyDiff || enableAccurateNullChecksDiff || tsImportSoCheckDiff;
   const shouldInvalidCache: boolean | undefined = targetESVersionDiffers || useTsHarDiff;
   const shouldRebuild: boolean | undefined = shouldRebuildForDepDiffers || shouldInvalidCache || onlyDeleteBuildInfoCache ||
     obfuscationRuleHashDiffers;
@@ -634,6 +644,7 @@ function getOrCreateLanguageService(servicesHost: ts.LanguageServiceHost, rootFi
       ['autoLazyFilterDiff', autoLazyFilterDiff],
       ['useDeclarationFileSignatureDiff', useDeclarationFileSignatureDiff],
       ['strictCheckerOnlyDiff', strictCheckerOnlyDiff],
+      ['enableAccurateNullChecksDiff', enableAccurateNullChecksDiff],
       ['tsImportSoCheckDiff', tsImportSoCheckDiff]
     ];
     const diffsSummary: string = diffFlags.filter(([, diff]) => !!diff).map(([name]) => name).join(', ');
@@ -671,6 +682,7 @@ function getOrCreateLanguageService(servicesHost: ts.LanguageServiceHost, rootFi
     preMixCompile: mixCompile,
     useDeclarationFileSignature: currentUseDeclarationFileSignature,
     strictCheckerOnly: currentStrictCheckerOnly,
+    enableAccurateNullChecks: currentEnableAccurateNullChecks,
     tsImportSoCheck: currentTsImportSoCheck,
     obfuscationRuleHash: currentObfuscationRuleHash,
     autoLazyImport: currentAutoLazyImport,
