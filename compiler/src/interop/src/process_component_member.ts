@@ -1430,7 +1430,7 @@ function validateNonObservedClassType(propertyName: ts.Identifier, decorator: st
     log.push({
       type: projectConfig.optLazyForEach ? LogType.WARN : LogType.ERROR,
       message: `'${decorator}' cannot be used with this type.` +
-        ` Apply it only to classes decorated by '${COMPONENT_OBSERVEDV2_DECORATOR}' or initialized using the return value of 'makeV1Observed'.`,
+        ` Apply it only to classes decorated by '${COMPONENT_OBSERVED_DECORATOR}' or initialized using the return value of 'makeV1Observed'.`,
       pos: propertyName.getStart(),
       code: '10905307'
     });
