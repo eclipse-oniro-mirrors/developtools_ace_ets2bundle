@@ -46,6 +46,7 @@
         "supportEmptyBranchInLazyLoading",
         "autoAdjustScrollBarMargin",
         "enableScrollWithMouse",
-        "scrollBarHeight"
+        "scrollBarHeight",
+        "enableScrollWithKeyboard"
     ]
 }
