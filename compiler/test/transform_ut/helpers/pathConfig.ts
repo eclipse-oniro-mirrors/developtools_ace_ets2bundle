@@ -172,6 +172,7 @@ export const UT_PARTIAL_UPFATE_PAGES: string[] = [
   'render_decorator/@recycle/recycle_globalReuse_import_namespace',
   'render_decorator/@recycle/recycle_globalReuse_import_common',
   'render_decorator/@recycle/recycle_globalReuse_link',
+  'render_decorator/@recycle/recycleV2_import_namespace',
   'render_decorator/@recycle/recycle',
   'render_decorator/@styles/@styles',
   'render_decorator/@styles/@stylesExport',
