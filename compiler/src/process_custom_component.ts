@@ -839,10 +839,12 @@ function createCustomComponent(newNode: ts.NewExpression, name: string, componen
   );
 }
 
-function generateReuseOrCreateArgArr(componentNode: ts.CallExpression, componentAttrInfo: ComponentAttrInfo, 
+function generateReuseOrCreateArgArr(componentNode: ts.CallExpression, componentAttrInfo: ComponentAttrInfo,
   name: string, newNode: ts.NewExpression): ts.ObjectLiteralElementLike[] {
   const reuseParamsArr: ts.ObjectLiteralElementLike[] = [];
-  if (componentNode.expression && ts.isIdentifier(componentNode.expression)) {
+  if (componentNode.expression && (ts.isIdentifier(componentNode.expression) ||
+    ts.isPropertyAccessExpression(componentNode.expression) ||
+    ts.isPropertyAccessChain(componentNode.expression))) {
     reuseParamsArr.push(ts.factory.createPropertyAssignment(
       ts.factory.createIdentifier(constantDefine.COMPONENT_CLASS),
       componentNode.expression
