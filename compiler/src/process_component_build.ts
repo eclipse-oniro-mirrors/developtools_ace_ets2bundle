@@ -645,8 +645,7 @@ export function transferBuilderCall(node: ts.ExpressionStatement, name: string,
 
 function builderCallNode(node: ts.CallExpression): ts.Expression {
   let newNode: ts.Expression;
-  if (node.expression && ts.isPropertyAccessExpression(node.expression) &&
-    node.expression.questionDotToken && node.expression.questionDotToken.kind === ts.SyntaxKind.QuestionDotToken) {
+  if (node.expression && hasOptionalChain(node.expression)) {
     newNode = ts.factory.createCallChain(
       ts.factory.createPropertyAccessChain(
         node.expression,
@@ -668,6 +667,44 @@ function builderCallNode(node: ts.CallExpression): ts.Expression {
     );
   }
   return newNode;
+}
+
+function hasOptionalChain(
+  expr: ts.Expression
+): boolean {
+  if (!isCompatibleVersionOverTarget(26)) {
+    return ts.isPropertyAccessExpression(expr) &&
+      expr.questionDotToken &&
+      expr.questionDotToken.kind === ts.SyntaxKind.QuestionDotToken;
+  }
+ 
+  let currentExp: ts.Expression | undefined = expr;
+ 
+  while (currentExp) {
+    if (ts.isNonNullExpression(currentExp)) {
+      currentExp = currentExp.expression;
+      continue;
+    }
+ 
+    if (isChainExpression(currentExp) && currentExp.questionDotToken &&
+      currentExp.questionDotToken.kind &&
+      currentExp.questionDotToken.kind === ts.SyntaxKind.QuestionDotToken) {
+      return true;
+    }
+    currentExp = isChainExpression(currentExp) ? currentExp.expression : undefined;
+  }
+ 
+  return false;
+ 
+  function isChainExpression(
+    node: ts.Expression
+  ): node is ts.PropertyAccessExpression | ts.ElementAccessExpression | ts.CallExpression {
+    return (
+      ts.isPropertyAccessExpression(node) ||
+      ts.isElementAccessExpression(node) ||
+      ts.isCallExpression(node)
+    );
+  }
 }
 
 function traverseBuilderParams(node: ts.ObjectLiteralExpression,
