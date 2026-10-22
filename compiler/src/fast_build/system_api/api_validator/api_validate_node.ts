@@ -16,11 +16,10 @@
 import ts from 'typescript';
 import fs from 'fs';
 import path from 'path';
-import { SdkComparisonHelper } from './api_validate_utils';
+import { SdkComparisonHelper, findImpliedGuardExpression, isNodeInGuardPattern } from './api_validate_utils';
 import {
   getValueChecker,
   getFormatChecker,
-  isOpenHarmonyRuntime,
   defaultFormatCheckerCompatibileIntegerAndMSF,
   defaultValueChecker,
   getValidDecoratorFromNode,
@@ -44,7 +43,7 @@ import {
   SYSCAP_TAG_CONDITION_CHECK_WARNING,
   API_INTERFACE_WHITE_LIST
 } from '../api_check_define';
-import { fileDeviceCheckPlugin, fileAvailableCheckPlugin, suppressWarningsCheckPlugin, projectConfig, globalProgram } from '../../../../main';
+import { fileDeviceCheckPlugin, suppressWarningsCheckPlugin, projectConfig, globalProgram } from '../../../../main';
 
 /**
  * Validator interface for node suppression checks.
@@ -379,10 +378,10 @@ export class UndefinedCheckValidator extends BaseValidator implements NodeValida
 
 /**
 * Validator that checks if a node is wrapped in an SDK version comparison.
-* 
+*
 * A node is considered valid if it's used within an if statement that checks
 * the SDK version before using the API.
-* 
+*
 * Example:
 * ```typescript
 * if (deviceInfo.sdkApiVersion >= 21) {
@@ -469,7 +468,46 @@ export class SdkComparisonValidator extends BaseValidator implements NodeValidat
       return false;
     }
 
-    return (this.findParentNode(node, (parent) => this.checkApiAvailableVersionParts(node, parent) || this.isParentIfSdkComparison(node, parent)) !== null)
+    if (this.findParentNode(node, (parent) => this.isParentIfSdkComparison(node, parent)) !== null) {
+      return true;
+    }
+    return this.isNodeInApiAvailableGuardPattern(node);
+  }
+
+  /**
+   * 守卫结构的判定：else/卫语句/三元/then。
+   */
+  private isNodeInApiAvailableGuardPattern(node: ts.Node): boolean {
+    try {
+     
+      return isNodeInGuardPattern(
+        node,
+        (guardExpression, impliedConditionValue) =>
+          this.isApiAvailableGuardImpliedTrue(guardExpression, impliedConditionValue)
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * 判断守卫条件里的 apiAvailable 调用是否成立（成立→消除告警）。
+   * 参数处理（解析、校验、比版本）交给 isApiAvailableHelper
+   */
+  private isApiAvailableGuardImpliedTrue(guardExpression: ts.Expression, impliedConditionValue: boolean): boolean {
+    // 从条件里找出为真的 apiAvailable 调用（处理括号/取反/&& 链）
+    const expression = findImpliedGuardExpression(
+      guardExpression,
+      impliedConditionValue,
+      (candidate: ts.Expression, candidateValue: boolean) => candidateValue &&
+        ts.isCallExpression(candidate) &&
+        candidate.expression.getText().includes(SDK_CONSTANTS.OPEN_SOURCE_APIAVAILABLE_INFO)
+    );
+    if (!expression || !ts.isCallExpression(expression)) {
+      return false;
+    }
+    // 字面量 / const / enum / import 参数统一走 isApiAvailableHelper
+    return this.sdkComparisonHelper.isApiAvailableHelper(expression);
   }
 
   /**
@@ -485,7 +523,6 @@ export class SdkComparisonValidator extends BaseValidator implements NodeValidat
     }
 
     try {
-      
       const isInThenBlock = this.isNodeInIfThenBlock(node, parent);
       if (!isInThenBlock) {
         return false;
@@ -497,28 +534,6 @@ export class SdkComparisonValidator extends BaseValidator implements NodeValidat
     }
   }
 
-  /**
-   * Checks if a parent if-statement contains a valid apiAvailable comparison.
-   * @param parent  - Parent node to check
-   * @returns True if parent is valid apiAvailable if-statement
-   */
-  private checkApiAvailableVersionParts(node: ts.Node, parent: ts.Node): boolean {
-    if (!ts.isIfStatement(parent)) {
-      return false;
-    }
-
-    try {
-
-      const isInThenBlock = this.isNodeInIfThenBlock(node, parent);
-      if (!isInThenBlock) {
-        return false;
-      }
-
-      return this.sdkComparisonHelper.isApiAvailableHelper(parent.expression);
-    } catch {
-      return false;
-    }
-  }
 }
 
 /**

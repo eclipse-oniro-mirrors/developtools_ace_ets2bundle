@@ -24,7 +24,7 @@ import {
   checkIntegerMoreVersion,
   isOpenHarmonyRuntime
 } from '../api_check_utils';
-import { validateApiAvailableArgument } from './apiAvailable_validate_utils';
+import { checkApiAvailableLiteral } from './apiAvailable_validate_utils';
 import {
   SINCE_TAG_NAME,
   ComparisonSenario,
@@ -39,6 +39,167 @@ import {
   SDK_CONSTANTS
 } from './api_validate_node';
 
+/**
+ * 从条件表达式按规则推出哪个子表达式为真：括号透明、取反翻转值、&& 为真则两侧都真。
+ * 叶子（比如是不是 apiAvailable 调用）由注入的判定函数决定，引擎本身不认守卫类型。
+ */
+export function findImpliedGuardExpression(
+  expression: ts.Expression | undefined,
+  value: boolean,
+  leaf: GuardTruthPredicate
+): ts.Expression | null {
+  if (!expression) {
+    return null;
+  }
+  let current: ts.Expression = expression;
+  while (ts.isParenthesizedExpression(current)) {
+    current = current.expression;
+  }
+  if (ts.isPrefixUnaryExpression(current) && current.operator === ts.SyntaxKind.ExclamationToken) {
+    return findImpliedGuardExpression(current.operand, !value, leaf);
+  }
+  if (ts.isBinaryExpression(current)) {
+    const operator: ts.SyntaxKind = current.operatorToken.kind;
+    if (value && operator === ts.SyntaxKind.AmpersandAmpersandToken) {
+      return findImpliedGuardExpression(current.left, true, leaf) ||
+        findImpliedGuardExpression(current.right, true, leaf);
+    }
+    if (operator === ts.SyntaxKind.BarBarToken) {
+      return null;
+    }
+  }
+  return leaf(current, value) ? current : null;
+}
+
+/** 叶子判定：已知表达式为真/假时，判断它是不是守卫调用。 */
+export type GuardTruthPredicate = (expression: ts.Expression, value: boolean) => boolean;
+
+/**
+ * 逐层上溯检查 API 调用是否在四种守卫形态内：
+ * 1. else branch:  if (!guard) {...} else { api() }
+ * 2. guard clause: if (!guard) { return; } api();
+ * 3. ternary:      guard ? api() : fallback   (and the negated mirror)
+ * 4. then branch:  if (guard) { api() }       (covers && chains)
+ */
+export function isNodeInGuardPattern(node: ts.Node, isGuard: GuardTruthPredicate): boolean {
+  let current: ts.Node = node.parent;
+  while (current) {
+    if (checkElseBranchAt(node, current, isGuard) ||
+      checkGuardClauseAt(current, isGuard) ||
+      checkTernaryAt(node, current, isGuard) ||
+      checkThenBranchAt(node, current, isGuard)) {
+      return true;
+    }
+    current = current.parent;
+  }
+  
+  return false;
+}
+
+/** 判断节点是否落在 if 语句的 then 块内。 */
+function isNodeInIfThenBlock(node: ts.Node, ifStatement: ts.IfStatement): boolean {
+  if (!ifStatement.thenStatement) {
+    return false;
+  }
+  // 节点区间完全落在 then 块区间内，即在 then 块里
+  const nodeStart = node.getStart();
+  const nodeEnd = node.getEnd();
+  const thenStart = ifStatement.thenStatement.getStart();
+  const thenEnd = ifStatement.thenStatement.getEnd();
+  return nodeStart >= thenStart && nodeEnd <= thenEnd;
+}
+
+/**
+ * else 分支守卫：API 调用在 if 的 else 分支内。
+ * if (!deviceInfo.apiAvailable(18)) { 
+ * } else { 
+ *   a.b();
+ * }
+ */
+function checkElseBranchAt(node: ts.Node, ancestor: ts.Node, isGuard: GuardTruthPredicate): boolean {
+  // 祖先必须是 if 且带 else 分支，否则不是本形态
+  if (!ts.isIfStatement(ancestor) || !ancestor.elseStatement) {
+    return false;
+  }
+  // node 要落在 else 分支的源码区间内，且条件为假时蕴含守卫为真
+  const inElseBranch = node.getStart() >= ancestor.elseStatement.getStart() &&
+    node.getEnd() <= ancestor.elseStatement.getEnd();
+  return inElseBranch && isGuard(ancestor.expression, false);
+}
+
+/**
+ * 卫语句守卫：if 带 return/throw，API 调用在它之后。
+ * if (!deviceInfo.apiAvailable(18)) { 
+ *      return; 
+ * }
+ * a.b();
+ */
+function checkGuardClauseAt(ancestor: ts.Node, isGuard: GuardTruthPredicate): boolean {
+  //
+  const container: ts.Node = ancestor.parent;
+  if (!container || !ts.isBlock(container)) {
+    return false;
+  }
+
+  const statementIndex: number = container.statements.indexOf(ancestor as ts.Statement);
+  for (let index: number = statementIndex - 1; index >= 0; index--) {
+    const candidate: ts.Statement = container.statements[index];
+    // 不是 if、或带 else 的：跳过
+    if (!ts.isIfStatement(candidate) || candidate.elseStatement) {
+      continue;
+    }
+    // then 块末尾不是 return/throw（控制流未被终结）的：跳过
+    if (!isTerminatingStatement(candidate.thenStatement)) {
+      continue;
+    }
+    // 结构满足 + 条件为假时蕴含守卫为真：认定受保护
+    if (isGuard(candidate.expression, false)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/** 判断语句（或块末语句）是否 return/throw。 */
+function isTerminatingStatement(statement: ts.Statement): boolean {
+  const lastStatement: ts.Statement = ts.isBlock(statement) && statement.statements.length > 0
+    ? statement.statements[statement.statements.length - 1]
+    : statement;
+  return ts.isReturnStatement(lastStatement) || ts.isThrowStatement(lastStatement);
+}
+
+/**
+ * 三元守卫：API 调用在受保护分支。
+ * 1. when-true:  deviceInfo.apiAvailable(18) ? a.b() : 0
+ * 2. when-false: !deviceInfo.apiAvailable(18) ? 0 : a.b()
+ */
+function checkTernaryAt(node: ts.Node, ancestor: ts.Node, isGuard: GuardTruthPredicate): boolean {
+
+  if (!ts.isConditionalExpression(ancestor)) {
+    return false;
+  }
+
+  const inWhenTrue: boolean = node.getStart() >= ancestor.whenTrue.getStart() &&
+    node.getEnd() <= ancestor.whenTrue.getEnd();
+  if (inWhenTrue && isGuard(ancestor.condition, true)) {
+    return true;
+  }
+  const inWhenFalse: boolean = node.getStart() >= ancestor.whenFalse.getStart() &&
+    node.getEnd() <= ancestor.whenFalse.getEnd();
+  return inWhenFalse && isGuard(ancestor.condition, false);
+}
+
+/**
+ * then 块守卫：API 调用在 if 的 then 块内（含 && 链）。
+ */
+function checkThenBranchAt(node: ts.Node, ancestor: ts.Node, isGuard: GuardTruthPredicate): boolean {
+  // 祖先必须是 if，node 落在 then 块内，且条件为真时蕴含守卫为真
+  if (!ts.isIfStatement(ancestor)) {
+    return false;
+  }
+  return isNodeInIfThenBlock(node, ancestor) &&
+    isGuard(ancestor.expression, true);
+}
 /**
  * Shared helper for SDK version comparison logic.
  * Encapsulates all version comparison and validation logic.
@@ -134,6 +295,7 @@ export class SdkComparisonHelper {
       : false;
   }
 
+  /** apiAvailable 守卫检测：匹配→预检→解析常量→校验→比版本。 */
   public isApiAvailableHelper(expression: ts.Expression): boolean {
     const expressionText = expression.getText();
     const matchedEntry = Array.from(this.deviceInfoChecker.entries())
@@ -141,17 +303,16 @@ export class SdkComparisonHelper {
     if (!matchedEntry) {
       return false;
     }
-
     const [matchedApi] = matchedEntry;
     if (!this.validateApiAvailablePreCheck(expression, matchedApi)) {
       return false;
     }
-
-    if (!this.validateApiAvailableArgument(expression)) {
+    const call = expression as ts.CallExpression;
+    const arg = this.resolveInitializerExpression(call.arguments[0]) ?? call.arguments[0];
+    if (!this.validateApiAvailableArgument(arg)) {
       return false;
     }
-
-    return this.compareApiAvailableVersion(expression as ts.CallExpression, matchedApi);
+    return this.compareApiAvailableVersion(arg, matchedApi);
   }
 
   private validateApiAvailablePreCheck(expression: ts.Expression, matchedApi: string): boolean {
@@ -171,20 +332,18 @@ export class SdkComparisonHelper {
     return true;
   }
 
-  private validateApiAvailableArgument(expression: ts.Expression): boolean {
-    const validationResult = validateApiAvailableArgument({
-      node: expression as ts.CallExpression,
-      isOpenHarmonyRuntime,
-      isCheckDistributionOSVersion
-    });
-
-    return validationResult.valid;
+  /** 校验参数合法性（委托 checkApiAvailableLiteral）。 */
+  private validateApiAvailableArgument(arg: ts.Expression): boolean {
+    return checkApiAvailableLiteral(arg, { isOpenHarmonyRuntime, isCheckDistributionOSVersion }).valid;
   }
 
-  private compareApiAvailableVersion(expression: ts.CallExpression, matchedApi: string): boolean {
+  private compareApiAvailableVersion(arg: ts.Expression, matchedApi: string): boolean {
+    return this.compareApiAvailableVersionByValue(this.extractValueFromInitializer(arg).trim(), matchedApi);
+  }
+
+  private compareApiAvailableVersionByValue(sinceValue: string, matchedApi: string): boolean {
     const runtimeType = projectConfig.runtimeOS;
     const distributeResult: DistributionOSApiAvailableVersionResult = this.distributionVersionFormat();
-    const sinceValue: string = expression.arguments[0].getText().trim();
     const sinceFormat: string = sinceValue.replace(/[\'|\"|\`]/g, '');
     const sincePointVersion: string[] = sinceFormat.split('.');
 
@@ -346,6 +505,131 @@ export class SdkComparisonHelper {
     } catch (error) {
       return fallbackValue;
     }
+  }
+
+  /**
+   * 解析参数节点 → 声明初始化器：标识符走 resolveIdentifierInitializer，
+   * 属性访问按来源分流——命名空间导入走 resolveNamespaceImportMember，
+   * 其他（enum）走 resolveEnumMember。
+   */
+  private resolveInitializerExpression(expression: ts.Expression): ts.Expression | undefined {
+    if (!this.typeChecker) {
+      return undefined;
+    }
+
+    const typeChecker = this.typeChecker;
+    try {
+      if (ts.isIdentifier(expression)) {
+        return this.resolveIdentifierInitializer(expression, typeChecker);
+      }
+      if (ts.isPropertyAccessExpression(expression) && ts.isIdentifier(expression.name)) {
+        // 先判断是不是命名空间导入（import * as C），只有导入才解析常量
+        if (ts.isIdentifier(expression.expression) &&
+          this.isNamespaceImport(expression.expression, typeChecker)) {
+          return this.resolveNamespaceImportMember(expression, typeChecker);
+        }
+        // 非命名空间导入 → enum 成员（同文件或 import enum 均可，不判断 import）
+        return this.resolveEnumMember(expression, typeChecker);
+      }
+      return undefined;
+    } catch (error) {
+      return undefined;
+    }
+  }
+
+  /**
+   * 标识符参数 → 声明初始化器：同文件 const/let、解构默认值、命名/默认导入
+   */
+  private resolveIdentifierInitializer(
+    identifier: ts.Identifier,
+    typeChecker: ts.TypeChecker
+  ): ts.Expression | undefined {
+    const symbol = typeChecker.getSymbolAtLocation(identifier);
+    if (!symbol?.declarations?.length) {
+      return undefined;
+    }
+
+    const declaration = symbol.declarations[0];
+    // eg. const LEVEL = 20; let v = 20; apiAvailable(LEVEL)
+    if (ts.isVariableDeclaration(declaration) && declaration.initializer) {
+      return declaration.initializer;
+    }
+    if (ts.isImportSpecifier(declaration) || ts.isImportClause(declaration)) {
+      const aliased = this.getAliasedDeclaration(symbol, typeChecker);
+      if (!aliased) {
+        return undefined;
+      }
+      // eg. import DEF from './m'; apiAvailable(DEF)  (./m: export default 20)
+      if (ts.isImportClause(declaration) && ts.isExportAssignment(aliased)) {
+        return aliased.expression;
+      }
+      // eg. import { LEVEL } from './m'; apiAvailable(LEVEL)  (./m: export const LEVEL = 20)
+      // eg. import DEF from './m'; apiAvailable(DEF)  (./m: const v = 20; export default v)
+      if (ts.isVariableDeclaration(aliased) && aliased.initializer) {
+        return aliased.initializer;
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * 判断标识符是否为命名空间导入（import * as C from './m'）。
+   */
+  private isNamespaceImport(identifier: ts.Identifier, typeChecker: ts.TypeChecker): boolean {
+    const symbol = typeChecker.getSymbolAtLocation(identifier);
+    if (!symbol?.declarations?.length) {
+      return false;
+    }
+    const declaration = symbol.declarations[0];
+    // import * as C from './m' → C 的声明节点是 NamespaceImport
+    return ts.isNamespaceImport(declaration);
+  }
+
+  /**
+   * enum 成员 → 声明初始化器。enum 同文件或 import 均可，不判断 import。
+   * eg. enum L { A = 20 }; apiAvailable(L.A)
+   */
+  private resolveEnumMember(
+    propertyAccess: ts.PropertyAccessExpression,
+    typeChecker: ts.TypeChecker
+  ): ts.Expression | undefined {
+    const symbol = typeChecker.getSymbolAtLocation(propertyAccess.name);
+    if (!symbol?.declarations?.length) {
+      return undefined;
+    }
+
+    const member = symbol.declarations[0];
+    if (ts.isEnumMember(member) && member.initializer) {
+      return member.initializer;
+    }
+    return undefined;
+  }
+
+  /**
+   * 命名空间限定导入常量 → 声明初始化器。支持 import * as
+   * eg. import * as C from './m'; apiAvailable(C.LEVEL)  (./m: export const LEVEL = 20)
+   */
+  private resolveNamespaceImportMember(
+    propertyAccess: ts.PropertyAccessExpression,
+    typeChecker: ts.TypeChecker
+  ): ts.Expression | undefined {
+    // 进入时已确认 propertyAccess.expression 是 import * as 的标识符
+    const symbol = typeChecker.getSymbolAtLocation(propertyAccess.name);
+    if (!symbol?.declarations?.length) {
+      return undefined;
+    }
+
+    const member = symbol.declarations[0];
+    if (ts.isVariableDeclaration(member) && member.initializer) {
+      return member.initializer;
+    }
+    return undefined;
+  }
+
+  private getAliasedDeclaration(symbol: ts.Symbol, typeChecker: ts.TypeChecker): ts.Declaration | undefined {
+    const targetSymbol = typeChecker.getAliasedSymbol(symbol);
+    const actualSymbol = targetSymbol !== symbol ? targetSymbol : symbol;
+    return actualSymbol.declarations && actualSymbol.declarations[0];
   }
 
   /**

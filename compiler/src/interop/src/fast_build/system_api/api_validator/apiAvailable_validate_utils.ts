@@ -142,14 +142,23 @@ function checkStringDistributionOS(
 
 export type TypeOfNodeFunc = (node: ts.Node) => ts.Type | ts.Type[];
 
-export interface ValidateApiAvailableArgumentOptions {
-  node: ts.CallExpression;
+export interface ApiAvailableValueOptions {
   isOpenHarmonyRuntime: () => boolean;
   isCheckDistributionOSVersion: (tag: string, version: string) => DistributionOSApiAvailableVersionResult;
 }
 
-export function validateApiAvailableArgument(options: ValidateApiAvailableArgumentOptions): ApiAvailableResult {
-  const { node, isOpenHarmonyRuntime, isCheckDistributionOSVersion } = options;
+export interface ValidateApiAvailableArgumentOptions extends ApiAvailableValueOptions {
+  node: ts.CallExpression;
+}
+
+/**
+ * 校验 apiAvailable 参数节点是否合法版本号（null/undefined/数字域/字符串域）。
+ */
+export function checkApiAvailableLiteral(
+  node: ts.Expression,
+  options: ApiAvailableValueOptions
+): ApiAvailableResult {
+  const { isOpenHarmonyRuntime, isCheckDistributionOSVersion } = options;
 
   const result: ApiAvailableResult = {
     valid: true,
@@ -157,10 +166,9 @@ export function validateApiAvailableArgument(options: ValidateApiAvailableArgume
     type: ts.DiagnosticCategory.Error
   };
 
-  const arg: ts.Node = node.arguments[0];
-  const isNumber: boolean = isNumericLiteral(arg);
-  const isStringLiteralNode: boolean = ts.isStringLiteral(arg) || ts.isNoSubstitutionTemplateLiteral(arg);
-  const isNullish: boolean = isNullOrUndefinedScene(arg);
+  const isNumber: boolean = isNumericLiteral(node);
+  const isStringLiteralNode: boolean = ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node);
+  const isNullish: boolean = isNullOrUndefinedScene(node);
 
   if (!(isNumber || isStringLiteralNode || isNullish)) {
     return result;
@@ -173,7 +181,7 @@ export function validateApiAvailableArgument(options: ValidateApiAvailableArgume
   }
 
   if (isNumber) {
-    const numText: string = arg.getText().trim();
+    const numText: string = node.getText().trim();
     if (!isDecimalInteger(numText)) {
       result.valid = false;
       result.message = buildApiAvailableMessage(APIAVAILABLE_CHECK_ERROR, APIAVAILABLE_NUMBER_FORMAT_ERROR);
@@ -185,8 +193,12 @@ export function validateApiAvailableArgument(options: ValidateApiAvailableArgume
     return result;
   }
 
-  const content: string = (arg as ts.StringLiteral).text;
+  const content: string = (node as ts.StringLiteral).text;
   return isOpenHarmonyRuntime() ?
     checkStringOpenHarmony(content) :
     checkStringDistributionOS(content, isCheckDistributionOSVersion);
+}
+
+export function validateApiAvailableArgument(options: ValidateApiAvailableArgumentOptions): ApiAvailableResult {
+  return checkApiAvailableLiteral(options.node.arguments[0], options);
 }
