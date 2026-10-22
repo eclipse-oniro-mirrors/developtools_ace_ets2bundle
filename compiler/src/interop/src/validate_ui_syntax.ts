@@ -1528,6 +1528,7 @@ function checkSingleMonitorArgContent(singleArg: string, status: MonitorStatus,
     return false;
   }
   const currentPropertyType: ts.Type = status.currentPropertyType;
+  const currentPropertyTypeNode: ts.TypeNode | undefined = status.currentPropertyTypeNode;
   if (!status.visitedTypes) {
     status.visitedTypes = new Set<ts.Type>();
   }
@@ -1544,6 +1545,7 @@ function checkSingleMonitorArgContent(singleArg: string, status: MonitorStatus,
   const symbol = currentPropertyType?.getSymbol();
   const isTypeValid: boolean = checkTypeValid(symbol, currentPropertyType, status);
   if (!isTypeValid) {
+    hasAttributeType(singleArg) && processAttributeType(status, currentPropertyTypeNode, singleArg);
     return false;
   }
   const classNode = getClassNodeFromSymbol(symbol);
@@ -1746,6 +1748,63 @@ function validateMonitorArgExist(monitorArgument: ts.StringLiteral,
 function hasNumberPattern(singleArg: string): boolean {
   const regx: RegExp = /^\d+$/g;
   return regx.test(singleArg);
+}
+
+const attributesTypes: Set<string> = new Set(['size', 'length']);
+const containerTypes: Set<string> = new Set(['Set', 'Map']);
+ 
+function hasAttributeType(singleArg: string): boolean {
+  return attributesTypes.has(singleArg);
+}
+ 
+function isArrayContainer(
+  currentTypeNode: ts.TypeNode | undefined
+): boolean {
+  if (!currentTypeNode) {
+    return false;
+  }
+  if (ts.isArrayTypeNode(currentTypeNode)) {
+    return true;
+  }
+  if (ts.isTypeReferenceNode(currentTypeNode) && ts.isIdentifier(currentTypeNode.typeName) &&
+    currentTypeNode.typeName.escapedText.toString() === 'Array') {
+    return true;
+  }
+  return false;
+}
+ 
+function isSetOrMapContainer(
+  currentTypeNode: ts.TypeNode | undefined
+): boolean {
+  if (!currentTypeNode) {
+    return false;
+  }
+  if (ts.isTypeReferenceNode(currentTypeNode) && ts.isIdentifier(currentTypeNode.typeName) &&
+    containerTypes.has(currentTypeNode.typeName.escapedText.toString())) {
+    return true;
+  }
+  return false;
+}
+ 
+function processAttributeType(
+  status: MonitorStatus,
+  currentTypeNode: ts.TypeNode | undefined,
+  singleArg: string
+): void {
+  const isArray: boolean = isArrayContainer(currentTypeNode);
+  const isSetOrMap: boolean = isSetOrMapContainer(currentTypeNode);
+  if (!isArray && !isSetOrMap) {
+    return;
+  }
+  if (isArray && singleArg === 'length' &&
+    status.currentStatus === MonitorArgsStatus.WARN) {
+    status.currentStatus = MonitorArgsStatus.PASS;
+    return;
+  }
+  if (isSetOrMap && singleArg === 'size' &&
+    status.currentStatus === MonitorArgsStatus.WARN) {
+    status.currentStatus = MonitorArgsStatus.PASS;
+  }
 }
 
 function processNumberPattern(
