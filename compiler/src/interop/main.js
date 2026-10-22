@@ -124,6 +124,8 @@ function initProjectConfig(projectConfig) {
   projectConfig.cardEntryObj = {};
   projectConfig.compilerTypes = [];
   projectConfig.isCrossplatform = projectConfig.isCrossplatform || false;
+  projectConfig.harWidgetMerge = false;
+  projectConfig.harWidgetPaths = [];
   projectConfig.enableDebugLine = projectConfig.enableDebugLine || process.env.enableDebugLine || false;
   projectConfig.bundleType = projectConfig.bundleType || process.env.bundleType || '';
   projectConfig.optLazyForEach = false;
@@ -710,6 +712,8 @@ function loadBuildJson() {
     projectConfig.packageDir = 'oh_modules';
     projectConfig.packageJson = 'oh-package.json5';
   }
+  projectConfig.harWidgetMerge = !!aceBuildJson.harWidgetMerge;
+  projectConfig.harWidgetPaths = aceBuildJson.harWidgetPaths || [];
   // add the oh-exports visibility file
   projectConfig.ohExports = aceBuildJson['oh-exports'] || [];
   // add intent framework entry file

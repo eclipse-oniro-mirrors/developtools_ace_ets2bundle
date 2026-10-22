@@ -90,7 +90,10 @@ export function etsChecker() {
         projectConfig.integratedHsp = this.share.projectConfig.integratedHsp;
         projectConfig.resetBundleName = this.share.projectConfig.integratedHsp;
       }
-      Object.assign(projectConfig, this.share.projectConfig);
+      Object.assign(projectConfig, this.share.projectConfig, {
+        harWidgetMerge: projectConfig.harWidgetMerge,
+        harWidgetPaths: projectConfig.harWidgetPaths
+      });
       Object.assign(this.share.projectConfig, {
         compileHar: projectConfig.compileHar,
         compileShared: projectConfig.compileShared,
