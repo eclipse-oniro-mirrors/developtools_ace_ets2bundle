@@ -54,7 +54,8 @@ export function genAbc() {
       if (!this.share.projectConfig.singleFileEmit) {
         return false;
       }
-      ModuleSourceFile.processSingleModuleSourceFile(this, moduleInfo.id, undefined);
+      const hookEventFactory: CompileEvent | undefined = getHookEventFactory(this.share, 'genAbc', 'afterTransform');
+      ModuleSourceFile.processSingleModuleSourceFile(this, moduleInfo.id, hookEventFactory);
       return true;
     },
     beforeBuildEnd: {
