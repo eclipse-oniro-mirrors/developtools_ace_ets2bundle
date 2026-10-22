@@ -35,7 +35,8 @@ import {
 import {
   writeUseOSFiles,
   writeCollectionFile,
-  getAllComponentsOrModules
+  getAllComponentsOrModules,
+  writeFileSync
 } from '../../utils';
 import { appComponentCollection } from '../../ets_checker';
 import { hasTsNoCheckOrTsIgnoreFiles } from '../ark_compiler/utils';
@@ -111,17 +112,28 @@ export function apiTransform() {
     },
     beforeBuildEnd(): void {
       this.share.allFiles = allFiles;
-      if (process.env.watchMode !== 'true' && !projectConfig.xtsMode && needComponentCollection) {
+      const shouldMergeHarWidget: boolean = projectConfig.harWidgetMerge && projectConfig.harWidgetPaths.length > 0;
+      if (process.env.watchMode !== 'true' && !projectConfig.xtsMode && (needComponentCollection || shouldMergeHarWidget)) {
         let widgetPath: string;
-        if (projectConfig.widgetCompile) {
+        if (projectConfig.widgetCompile || shouldMergeHarWidget) {
           widgetPath = path.resolve(projectConfig.aceModuleBuild, 'widget');
         }
         this.share.allComponents = getAllComponentsOrModules(allFiles, 'component_collection.json');
         if (projectConfig.isCrossplatform) {
           mergeModuleOrComponentCollection(MergeCrossplatformModuleType.COMPONENT);
         }
-        writeCollectionFile(projectConfig.cachePath, appComponentCollection,
-          this.share.allComponents, 'component_collection.json', this.share.allFiles, widgetPath);
+        if (needComponentCollection) {
+          writeCollectionFile(projectConfig.cachePath, appComponentCollection,
+            this.share.allComponents, 'component_collection.json', this.share.allFiles, widgetPath);
+        }
+        if (shouldMergeHarWidget) {
+          mergeHarWidgetCollection(this.share.allComponents);
+          const content = JSON.stringify(Object.fromEntries(this.share.allComponents), null, 2);
+          writeFileSync(path.resolve(projectConfig.cachePath, 'component_collection.json'), content);
+          if (widgetPath) {
+            writeFileSync(path.resolve(widgetPath, 'component_collection.json'), content);
+          }
+        }
       }
     },
     buildEnd(): void {
@@ -414,5 +426,64 @@ function collectExternalModuleCollection(mapKey: string, mapData: CrossplatformM
     // Use the original format of crossPath as the key, or you can standardize the format
     const newSet = new Set<string>(mapData[type]);
     targetMap.set(mapKey, newSet);
+  }
+}
+
+function mergeHarWidgetCollection(allComponents: Map<string, Array<string>>): void {
+  const mergedHarPaths: Set<string> = new Set();
+  for (const harCollectionPath of projectConfig.harWidgetPaths) {
+    if (mergedHarPaths.has(harCollectionPath)) {
+      continue;
+    }
+    mergedHarPaths.add(harCollectionPath);
+    mergeSingleHarCollection(harCollectionPath, allComponents);
+  }
+}
+
+function mergeSingleHarCollection(harCollectionPath: string, allComponents: Map<string, Array<string>>): void {
+  try {
+    if (!fs.existsSync(harCollectionPath)) {
+      return;
+    }
+    const harCollectionContent = fs.readFileSync(harCollectionPath, 'utf8');
+    const harCollection = JSON.parse(harCollectionContent);
+    if (!harCollection || typeof harCollection !== 'object' || Array.isArray(harCollection)) {
+      return;
+    }
+    for (const harFilePath in harCollection) {
+      mergeHarEntry(harFilePath, harCollection[harFilePath], allComponents);
+    }
+  } catch (e) {
+    return;
+  }
+}
+
+function mergeHarEntry(harFilePath: string, rawComponents: string[] | undefined, allComponents: Map<string, Array<string>>): void {
+  if (!harFilePath) {
+    return;
+  }
+  const harComponents: string[] = Array.isArray(rawComponents)
+    ? rawComponents.filter((item: string) => typeof item === 'string')
+    : [];
+  if (harComponents.length === 0) {
+    return;
+  }
+  const harKey = harFilePath;
+  let existingKey: string | undefined;
+  for (const existing of allComponents.keys()) {
+    if (isSamePath(existing, harKey)) {
+      existingKey = existing;
+      break;
+    }
+  }
+  if (existingKey) {
+    const existing = allComponents.get(existingKey);
+    for (const comp of harComponents) {
+      if (!existing.includes(comp)) {
+        existing.push(comp);
+      }
+    }
+  } else {
+    allComponents.set(harKey, harComponents);
   }
 }
