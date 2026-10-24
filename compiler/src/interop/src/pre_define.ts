@@ -752,3 +752,12 @@ export const MAX_LINK_SOURCE_DATA_NESTING_LEVEL: number = 2;
 
 export const SDK_API_VERSION_FUNCTION_NAME: string = 'sdkApiVersion';
 export const DISTRIBUTE_API_VERSION_FUNCTION_NAME: string = 'distributionOSApiVersion';
+
+const WRAPPED_BUILDER_MESSAGE_TEMPLATE: string = 'The @Builder function is wrapped %s, ' +
+  'which may cause the builder transformation to fail. Use the @Builder function directly.';
+export const WRAPPED_BUILDER_PARENTHESIZED_MESSAGE: string =
+  WRAPPED_BUILDER_MESSAGE_TEMPLATE.replace('%s', 'in parentheses');
+export const WRAPPED_BUILDER_NON_NULL_MESSAGE: string =
+  WRAPPED_BUILDER_MESSAGE_TEMPLATE.replace('%s', 'by a non-null assertion');
+export const WRAPPED_BUILDER_TYPE_ASSERTION_MESSAGE: string =
+  WRAPPED_BUILDER_MESSAGE_TEMPLATE.replace('%s', 'by a type assertion');

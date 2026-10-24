@@ -1266,6 +1266,39 @@
             "code": "10905109"
         }
     ],
+    "WrappedBuilderParamWarning": [
+        {
+            "message": "The @Builder function is wrapped by a non-null assertion, which may cause the builder transformation to fail. Use the @Builder function directly.",
+            "type": "WARN"
+        },
+        {
+            "message": "The @Builder function is wrapped by a non-null assertion, which may cause the builder transformation to fail. Use the @Builder function directly.",
+            "type": "WARN"
+        },
+        {
+            "message": "The @Builder function is wrapped in parentheses, which may cause the builder transformation to fail. Use the @Builder function directly.",
+            "type": "WARN"
+        },
+        {
+            "message": "The @Builder function is wrapped by a type assertion, which may cause the builder transformation to fail. Use the @Builder function directly.",
+            "type": "WARN"
+        },
+        {
+            "message": "The @Builder function is wrapped in parentheses, which may cause the builder transformation to fail. Use the @Builder function directly.",
+            "type": "WARN"
+        },
+        {
+            "message": "The @Builder function is wrapped in parentheses, which may cause the builder transformation to fail. Use the @Builder function directly.",
+            "type": "WARN"
+        }
+    ],
+    "WrapBuilderModuleParam": [
+        {
+            "message": "The wrapBuilder's parameter should be '@Builder' function.",
+            "type": "ERROR",
+            "code": "10905109"
+        }
+    ],
     "UnknownSrc": {
         "message": "Unknown resource source 'hap'.",
         "type": "ERROR",

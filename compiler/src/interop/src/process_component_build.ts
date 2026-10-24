@@ -149,7 +149,10 @@ import {
   HDSNAVDESTINATION,
   _CONTAINER_READER,
   HOVERED,
-  HOVER
+  HOVER,
+  WRAPPED_BUILDER_PARENTHESIZED_MESSAGE,
+  WRAPPED_BUILDER_NON_NULL_MESSAGE,
+  WRAPPED_BUILDER_TYPE_ASSERTION_MESSAGE
 } from './pre_define';
 import {
   INNER_COMPONENT_NAMES,
@@ -773,6 +776,30 @@ function traverseBuilderParams(node: ts.ObjectLiteralExpression,
   const properties: ts.ObjectLiteralElementLike[] = [];
   if (node.properties && node.properties.length) {
     node.properties.forEach(property => {
+      // Object-literal method shorthand `onClick() { ... }` parses as a
+      // MethodDeclaration; convert it to a function expression and route it
+      // through addBuilderParamsProperties so it receives the zero-arg thunk
+      // wrapper the builder parameter proxy requires.
+      if (ts.isMethodDeclaration(property)) {
+        const methodExpression: ts.FunctionExpression = ts.factory.createFunctionExpression(
+          ts.canHaveModifiers(property) ? ts.getModifiers(property) : undefined,
+          property.asteriskToken,
+          undefined,
+          property.typeParameters,
+          property.parameters,
+          property.type,
+          property.body
+        );
+        addBuilderParamsProperties(properties,
+          ts.factory.createPropertyAssignment(property.name, methodExpression));
+        return;
+      }
+      // Get/set accessors have no initializer and cannot be represented as a
+      // function expression; pass them through unchanged.
+      if (ts.isGetAccessor(property) || ts.isSetAccessor(property)) {
+        properties.push(property);
+        return;
+      }
       if (ts.isPropertyAssignment(property) && property.initializer &&
         ts.isPropertyAccessExpression(property.initializer) && property.initializer.expression &&
         property.initializer.name && ts.isIdentifier(property.initializer.name)) {
@@ -797,6 +824,10 @@ function addBuilderParamsProperties(properties: ts.ObjectLiteralElementLike[],
   property: ts.ObjectLiteralElementLike): void {
   const initializer: ts.Expression = ts.isShorthandPropertyAssignment(property) ?
     property.name : property.initializer;
+  if (!initializer) {
+    properties.push(property);
+    return;
+  }
   properties.push(ts.factory.createPropertyAssignment(
     property.name,
     ts.factory.createArrowFunction(
@@ -924,7 +955,7 @@ type EtsComponentResult = {
 function parseEtsComponentExpression(node: ts.ExpressionStatement): EtsComponentResult {
   let etsComponentNode: ts.EtsComponentExpression;
   let hasAttr: boolean = false;
-  let temp: any = node.expression;
+  let temp = node.expression;
   while (temp) {
     if (ts.isCallExpression(temp) && temp.expression &&
       ts.isPropertyAccessExpression(temp.expression)) {
@@ -2257,7 +2288,7 @@ function createComponent(node: ts.ExpressionStatement, type: string,
     needPop: false
   };
   let identifierNode: ts.Identifier = ts.factory.createIdentifier(type);
-  let temp: any = node.expression;
+  let temp = node.expression;
   while (temp && !ts.isIdentifier(temp) && temp.expression) {
     temp = temp.expression;
   }
@@ -2521,6 +2552,7 @@ function processCustomBuilderProperty(node: ts.CallExpression, identifierNode: t
   propertyName: string): ts.CallExpression {
   const newArguments: ts.Expression[] = [];
   node.arguments.forEach((argument: ts.Expression | ts.Identifier, index: number) => {
+    warnIfWrappedBuilderArgument(argument, identifierNode, propertyName);
     if (ts.isConditionalExpression(argument)) {
       newArguments.push(processConditionalBuilder(argument, identifierNode, propertyName));
     } else if (isBuilderChangeNode(argument, identifierNode, propertyName)) {
@@ -2531,6 +2563,106 @@ function processCustomBuilderProperty(node: ts.CallExpression, identifierNode: t
   });
   node = ts.factory.updateCallExpression(node, node.expression, node.typeArguments, newArguments);
   return node;
+}
+
+/**
+ * Unwrap parenthesized/non-null/type-assertion wrappers around a builder
+ * argument and return the message describing the outermost wrapper, or an
+ * empty string when the argument is not wrapped. The argument node itself is
+ * the wrapper; parent pointers are not consulted.
+ */
+function unwrapWrappedBuilderArgument(argument: ts.Expression): [ts.Expression, string] {
+  let inner: ts.Expression = argument;
+  let message: string = '';
+  while (true) {
+    if (ts.isParenthesizedExpression(inner)) {
+      message = message || WRAPPED_BUILDER_PARENTHESIZED_MESSAGE;
+    } else if (ts.isNonNullExpression(inner)) {
+      message = message || WRAPPED_BUILDER_NON_NULL_MESSAGE;
+    } else if (ts.isAsExpression(inner) || ts.isTypeAssertionExpression(inner)) {
+      message = message || WRAPPED_BUILDER_TYPE_ASSERTION_MESSAGE;
+    } else {
+      break;
+    }
+    inner = inner.expression;
+  }
+  return [inner, message];
+}
+
+/**
+ * Warn when a builder expression used as an API parameter is wrapped by a
+ * parenthesized/non-null/type-assertion expression: the wrapper prevents the
+ * builder argument from being recognized, so it is emitted verbatim and the
+ * builder body runs outside the builder context.
+ */
+function warnIfWrappedBuilderArgument(argument: ts.Expression, identifierNode: ts.Identifier,
+  propertyName: string): void {
+  const [inner, message]: [ts.Expression, string] = unwrapWrappedBuilderArgument(argument);
+  if (message === '') {
+    return;
+  }
+  if (ts.isConditionalExpression(inner)) {
+    // A bare conditional is transformed by processConditionalBuilder and must
+    // not warn; only warn when the whole conditional is wrapped and at least
+    // one branch is a builder expression.
+    if (!isBuilderChangeNode(inner.whenTrue, identifierNode, propertyName) &&
+      !isBuilderChangeNode(inner.whenFalse, identifierNode, propertyName)) {
+      return;
+    }
+  } else if (!isBuilderChangeNode(inner, identifierNode, propertyName)) {
+    return;
+  }
+  transformLog.errors.push({
+    type: LogType.WARN,
+    message,
+    pos: argument.getStart()
+  });
+}
+
+/**
+ * Whether the unwrapped expression names a builder through the builder name
+ * collection: a builder property access, a method call on one, a bare builder
+ * identifier, or a direct builder call.
+ */
+function isNamedBuilderLikeExpression(inner: ts.Expression): boolean {
+  return ts.isPropertyAccessExpression(inner) && inner.name && ts.isIdentifier(inner.name) &&
+    storedFileInfo.builderLikeCollection.has(inner.name.getText()) ||
+    ts.isCallExpression(inner) && inner.expression && inner.expression.name &&
+    ts.isIdentifier(inner.expression.name) &&
+    storedFileInfo.builderLikeCollection.has(inner.expression.name.getText()) ||
+    ts.isIdentifier(inner) && inner.escapedText &&
+    storedFileInfo.builderLikeCollection.has(inner.escapedText.toString()) ||
+    ts.isCallExpression(inner) && inner.expression && ts.isIdentifier(inner.expression) &&
+    storedFileInfo.builderLikeCollection.has(inner.expression.escapedText.toString());
+}
+
+/**
+ * Whether the unwrapped expression is a wrapped/mutable builder value or a
+ * call to one.
+ */
+function isWrappedOrMutableBuilderExpression(inner: ts.Expression): boolean {
+  return isWrappedBuilder(inner as ts.PropertyAccessExpression) ||
+    isMutableBuilder(inner as ts.PropertyAccessExpression) ||
+    isWrappedBuilderCallExpression(inner as ts.CallExpression) ||
+    isMutableBuilderCallExpression(inner as ts.CallExpression);
+}
+
+/**
+ * Same check as warnIfWrappedBuilderArgument for the `{ builder: ... }`
+ * object-literal property form, where no attribute identifier/property-name
+ * context is available; builder recognition goes through the builder name
+ * collection only.
+ */
+function warnIfWrappedBuilderPropertyInitializer(initializer: ts.Expression): void {
+  const [inner, message]: [ts.Expression, string] = unwrapWrappedBuilderArgument(initializer);
+  if (message === '' || !(isNamedBuilderLikeExpression(inner) || isWrappedOrMutableBuilderExpression(inner))) {
+    return;
+  }
+  transformLog.errors.push({
+    type: LogType.WARN,
+    message,
+    pos: initializer.getStart()
+  });
 }
 
 function isBuilderChangeNode(argument: ts.Node, identifierNode: ts.Identifier, propertyName: string): boolean {
@@ -2617,6 +2749,7 @@ export function processObjectPropertyBuilder(node: ts.ObjectLiteralExpression): 
     if (property.name && ts.isIdentifier(property.name) &&
       [CUSTOM_DIALOG_CONTROLLER_BUILDER, HEADER, INDICATORBUILDER, FOOTER, START, END, PREVIEW, TITLE].includes(
         property.name.escapedText.toString()) && property.initializer) {
+      warnIfWrappedBuilderPropertyInitializer(property.initializer);
       if (isPropertyAccessExpressionNode(property.initializer) || ts.isIdentifier(property.initializer) &&
         storedFileInfo.builderLikeCollection.has(property.initializer.escapedText.toString())) {
         newProperties.push(ts.factory.updatePropertyAssignment(property, property.name,
@@ -2967,7 +3100,7 @@ function updateArgumentForDollar(argument): ts.Expression {
   return argument;
 }
 
-function verifyComponentId(temp: any, node: ts.Identifier, propName: string,
+function verifyComponentId(temp: ts.CallExpression, node: ts.Identifier, propName: string,
   log: LogInfo[]): void {
   if (!newsupplement.isAcceleratePreview && propName === ATTRIBUTE_ID &&
     ts.isStringLiteral(temp.arguments[0])) {
@@ -3246,18 +3379,21 @@ function isHaveDoubleExclamation(param: ts.PropertyAssignment, name: string): bo
     !ts.isNonNullExpression(param.initializer.expression.expression);
 }
 
-function loopEtscomponent(node: any, isStylesAttr: boolean): ts.Node {
-  node.arguments.forEach((item: ts.Node, index: number) => {
+function loopEtscomponent(node: ts.CallExpression, isStylesAttr: boolean): ts.Node {
+  const newArguments: ts.Expression[] = [];
+  node.arguments.forEach((item: ts.Expression, index: number) => {
     if (ts.isEtsComponentExpression(item)) {
-      node.arguments[index] = ts.factory.createCallExpression(
+      newArguments[index] = ts.factory.createCallExpression(
         item.expression, undefined, item.arguments);
     } else if ((ts.isCallExpression(item) || ts.isNewExpression(item)) &&
       !newsupplement.isAcceleratePreview) {
-      node.arguments[index] = ts.visitEachChild(item,
+      newArguments[index] = ts.visitEachChild(item,
         changeEtsComponentKind, contextGlobal);
+    } else {
+      newArguments[index] = item;
     }
   });
-  return node;
+  return ts.factory.updateCallExpression(node, node.expression, node.typeArguments, newArguments);
 }
 
 function changeEtsComponentKind(node: ts.Node): ts.Node {
@@ -3551,7 +3687,7 @@ function isCustomAttributes(temp: ts.PropertyAccessExpression): boolean {
 }
 
 export function isAttributeNode(node: ts.ExpressionStatement): boolean {
-  let temp: any = node.expression;
+  let temp = node.expression;
   let name: string;
   while (temp) {
     if (ts.isCallExpression(temp) && temp.expression && ts.isIdentifier(temp.expression)) {
@@ -3578,7 +3714,7 @@ enum ComponentType {
 
 function isEtsComponent(node: ts.ExpressionStatement): boolean {
   let isEtsComponent: boolean = false;
-  let temp: any = node.expression;
+  let temp = node.expression;
   while (temp) {
     if (ts.isEtsComponentExpression(temp)) {
       isEtsComponent = true;
@@ -3740,7 +3876,7 @@ function checkEtsAndIdInIf(node:ts.ExpressionStatement, parent: string): [ts.Ets
 }
 
 function checkIdInIf(node:ts.ExpressionStatement, parent: string): ts.Expression {
-  let current: any = node.expression;
+  let current = node.expression;
   let idName: ts.Expression;
   while (current) {
     if (parent === COMPONENT_IF && ts.isPropertyAccessExpression(current) && current.name &&

@@ -1,0 +1,146 @@
+/*
+ * Copyright (c) 2026 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+if (!("finalizeConstruction" in ViewPU.prototype)) {
+Reflect.set(ViewPU.prototype, "finalizeConstruction", () => { });
+}
+// 测试场景：wrapBuilder/mutableBuilder 参数来源扩展（issue-4720 第1部分）
+// 场景1：namespace 导入的 @Builder 函数（具名导出）—— 编译通过、无告警
+// 场景2：动态导入（await import）内联形式的 @Builder 函数 —— 编译通过、无告警
+// 场景3：动态导入（const m = await import(...)）标识符绑定形式 —— 编译通过、无告警
+// 场景4：mutableBuilder 的 namespace 来源 —— 编译通过、无告警
+import * as builderModule from './wrapBuilderModule';
+let namespaceWrapped = wrapBuilder(builderModule.namespaceBuilder);
+let mutableWrapped = mutableBuilder(builderModule.mutableSourceBuilder);
+async function loadDynamicWrapped() {
+return wrapBuilder((await import('./wrapBuilderModule')).dynamicBuilder);
+}
+async function loadIdentifierBoundWrapped() {
+const builderModule2 = await import('./wrapBuilderModule');
+return wrapBuilder(builderModule2.namespaceBuilder);
+}
+async function loadDynamicMutable() {
+return mutableBuilder((await import('./wrapBuilderModule')).mutableSourceBuilder);
+}
+async function loadIdentifierBoundMutable() {
+const builderModule3 = await import('./wrapBuilderModule');
+return mutableBuilder(builderModule3.mutableSourceBuilder);
+}
+class WrapBuilderParamTest extends ViewPU {
+constructor(parent, params, __localStorage, elmtId = -1, paramsLambda = undefined, extraInfo) {
+super(parent, __localStorage, elmtId, extraInfo);
+if (typeof paramsLambda === "function") {
+this.paramsGenerator_ = paramsLambda;
+}
+this.__message = new ObservedPropertySimplePU('Hello World', this, "message");
+this.__dynamicWrapped = new ObservedPropertyObjectPU(undefined, this, "dynamicWrapped");
+this.setInitiallyProvidedValue(params);
+this.finalizeConstruction();
+}
+setInitiallyProvidedValue(params) {
+if (params.message !== undefined) {
+this.message = params.message;
+}
+if (params.dynamicWrapped !== undefined) {
+this.dynamicWrapped = params.dynamicWrapped;
+}
+}
+updateStateVars(params) {
+}
+purgeVariableDependenciesOnElmtId(rmElmtId) {
+this.__message.purgeDependencyOnElmtId(rmElmtId);
+this.__dynamicWrapped.purgeDependencyOnElmtId(rmElmtId);
+}
+aboutToBeDeleted() {
+this.__message.aboutToBeDeleted();
+this.__dynamicWrapped.aboutToBeDeleted();
+SubscriberManager.Get().delete(this.id__());
+this.aboutToBeDeletedInternal();
+}
+get message() {
+return this.__message.get();
+}
+set message(newValue) {
+this.__message.set(newValue);
+}
+get dynamicWrapped() {
+return this.__dynamicWrapped.get();
+}
+set dynamicWrapped(newValue) {
+this.__dynamicWrapped.set(newValue);
+}
+aboutToAppear() {
+loadDynamicWrapped().then((wrapped) => {
+this.dynamicWrapped = wrapped;
+});
+loadIdentifierBoundWrapped();
+loadDynamicMutable();
+loadIdentifierBoundMutable();
+}
+initialRender() {
+this.observeComponentCreation2((elmtId, isInitialRender) => {
+Row.create();
+Row.height('100%');
+}, Row);
+this.observeComponentCreation2((elmtId, isInitialRender) => {
+Column.create();
+Column.width('100%');
+}, Column);
+this.observeComponentCreation2((elmtId, isInitialRender) => {
+Text.create('namespace builder:');
+Text.fontSize(20);
+}, Text);
+Text.pop();
+namespaceWrapped.builder.bind(this)(this.message);
+this.observeComponentCreation2((elmtId, isInitialRender) => {
+Divider.create();
+}, Divider);
+this.observeComponentCreation2((elmtId, isInitialRender) => {
+Text.create('mutable builder:');
+Text.fontSize(20);
+}, Text);
+Text.pop();
+mutableWrapped._dispatchBuilder.bind(this)(() => mutableWrapped, this.message);
+this.observeComponentCreation2((elmtId, isInitialRender) => {
+If.create();
+if (this.dynamicWrapped) {
+this.ifElseBranchUpdateFunction(0, () => {
+this.observeComponentCreation2((elmtId, isInitialRender) => {
+Text.create('dynamic builder:');
+Text.fontSize(20);
+}, Text);
+Text.pop();
+this.dynamicWrapped.builder.bind(this)(this.message);
+});
+}
+else {
+this.ifElseBranchUpdateFunction(1, () => {
+});
+}
+}, If);
+If.pop();
+Column.pop();
+Row.pop();
+}
+rerender() {
+this.updateDirtyElements();
+}
+__resetStateVarsOnReuse__Internal(params) {
+}
+static getEntryName() {
+return "WrapBuilderParamTest";
+}
+}
+registerNamedRoute(() => new WrapBuilderParamTest(undefined, {}), "", { bundleName: "com.example.application", moduleName: "application", pagePath: "pages/utForPartialUpdate/ui_state_management/application_state_management/wrapBuilderParam/wrapBuilderParam", pageFullPath: "application/entry/src/main/ets/pages/utForPartialUpdate/ui_state_management/application_state_management/wrapBuilderParam/wrapBuilderParam", integratedHsp: "false", moduleType: "followWithHap" });
+//# sourceMappingURL=wrapBuilderParam.js.map
