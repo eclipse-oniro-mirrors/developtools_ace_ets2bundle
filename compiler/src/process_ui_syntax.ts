@@ -143,7 +143,9 @@ import {
   INTERFACE_NODE_SET,
   ID_ATTRS,
   GLOBAL_CUSTOM_BUILDER_METHOD,
-  INNER_COMPONENT_NAMES
+  INNER_COMPONENT_NAMES,
+  GLOBAL_STYLE_VERSION,
+  INNER_STYLE_VERSION
 } from './component_map';
 import {
   resources,
@@ -188,6 +190,8 @@ import {
 } from './performance';
 import parseIntent from './userIntents_parser/parseUserIntents';
 import { createHelperFunctionDeclaration, isPointVersion, processAvailableStatement } from './process_available_statement';
+import { ISdkApiValues, fetchExtendDecoratorVersionCondition, updateExtendBodyWithVersions } from './ui_utils';
+import { mockIsVersionInRange } from './version_condition_helpers';
 
 export let transformLog: IFileLog = new createAstNodeUtils.FileLog();
 export let contextGlobal: ts.TransformationContext;
@@ -254,9 +258,13 @@ export function processUISyntax(program: ts.Program, ut = false,
           BUILDIN_STYLE_NAMES.delete(styleName);
         });
         GLOBAL_STYLE_FUNCTION.clear();
+        GLOBAL_STYLE_VERSION.clear();
         const statements: ts.Statement[] = Array.from(node.statements);
         if (needsAvailableHelper) {
           statements.push(createHelperFunctionDeclaration());
+        }
+        if (storedFileInfo.hasAttributeExtension) {
+          statements.push(mockIsVersionInRange());
         }
         if (!partialUpdateConfig.partialUpdateMode) {
           generateId(statements, node);
@@ -343,6 +351,7 @@ export function processUISyntax(program: ts.Program, ut = false,
           BUILDIN_STYLE_NAMES.delete(styleName);
         });
         INNER_STYLE_FUNCTION.clear();
+        INNER_STYLE_VERSION.clear();
       } else if (ts.isFunctionDeclaration(node)) {
         if (hasDecorator(node, COMPONENT_EXTEND_DECORATOR, null, transformLog.errors)) {
           node = processExtend(node, transformLog.errors, COMPONENT_EXTEND_DECORATOR);
@@ -1187,6 +1196,7 @@ function processExtend(node: ts.FunctionDeclaration, log: LogInfo[],
   const componentName: string = isExtendFunction(node, { decoratorName: '', componentName: '' }, true);
   checkExtendNode(node, componentName, log);
   if (componentName && node.body && !node.body.statements.length && decoratorName === COMPONENT_EXTEND_DECORATOR) {
+    const sdkApiValues: ISdkApiValues | undefined = fetchExtendDecoratorVersionCondition(node, log);
     const statementArray: ts.Statement[] = [];
     const bodynode: ts.Block = ts.visitEachChild(node.body, traverseExtendExpression, contextGlobal);
     let extendFunctionName: string;
@@ -1196,15 +1206,19 @@ function processExtend(node: ts.FunctionDeclaration, log: LogInfo[],
       extendFunctionName = '__' + componentName + '__' + node.name.getText();
       collectExtend(EXTEND_ATTRIBUTE, componentName, node.name.escapedText.toString());
     }
+    const currentBody: ts.Block = isOriginalExtend(node.body) ?
+      ts.factory.updateBlock(node.body, statementArray) : bodynode;
+    const newBody: ts.Block = sdkApiValues ? updateExtendBodyWithVersions(currentBody, sdkApiValues) : currentBody;
+    sdkApiValues && !!storedFileInfo && (storedFileInfo.hasAttributeExtension = true);
     return ts.factory.updateFunctionDeclaration(node, ts.getModifiers(node), node.asteriskToken,
       ts.factory.createIdentifier(extendFunctionName), node.typeParameters,
-      node.parameters, ts.factory.createToken(ts.SyntaxKind.VoidKeyword), isOriginalExtend(node.body) ?
-      ts.factory.updateBlock(node.body, statementArray) : bodynode);
+      node.parameters, ts.factory.createToken(ts.SyntaxKind.VoidKeyword), newBody);
   }
   if (componentName && node.body) {
     const statementArray: ts.Statement[] = [];
     let bodynode: ts.Block;
     if (decoratorName === COMPONENT_EXTEND_DECORATOR) {
+      const sdkApiValues: ISdkApiValues | undefined = fetchExtendDecoratorVersionCondition(node, log);
       if (isOriginalExtend(node.body) && node.body.statements.length) {
         const attrSet: ts.CallExpression = node.body.statements[0].expression;
         const changeCompName: ts.ExpressionStatement = ts.factory.createExpressionStatement(processExtendBody(attrSet));
@@ -1221,10 +1235,13 @@ function processExtend(node: ts.FunctionDeclaration, log: LogInfo[],
         extendFunctionName = '__' + componentName + '__' + node.name.getText();
         collectExtend(EXTEND_ATTRIBUTE, componentName, node.name.escapedText.toString());
       }
+      const currentBody: ts.Block = isOriginalExtend(node.body) ?
+        ts.factory.updateBlock(node.body, statementArray) : bodynode;
+      const newBody: ts.Block = sdkApiValues ? updateExtendBodyWithVersions(currentBody, sdkApiValues) : currentBody;
+      sdkApiValues && !!storedFileInfo && (storedFileInfo.hasAttributeExtension = true);
       return ts.factory.updateFunctionDeclaration(node, ts.getModifiers(node), node.asteriskToken,
         ts.factory.createIdentifier(extendFunctionName), node.typeParameters,
-        node.parameters, ts.factory.createToken(ts.SyntaxKind.VoidKeyword), isOriginalExtend(node.body) ?
-          ts.factory.updateBlock(node.body, statementArray) : bodynode);
+        node.parameters, ts.factory.createToken(ts.SyntaxKind.VoidKeyword), newBody);
     }
     if (decoratorName === COMPONENT_ANIMATABLE_EXTEND_DECORATOR) {
       return processAnimatableExtend(node, statementArray, componentName, log);
@@ -1434,10 +1451,10 @@ function parseExtendNode(node: ts.CallExpression, extendResult: ExtendResult, ch
   if (ts.isIdentifier(node.expression)) {
     extendResult.decoratorName = node.expression.escapedText.toString();
     if (checkArguments && CHECK_EXTEND_DECORATORS.includes(extendResult.decoratorName) &&
-      node.arguments && node.arguments.length !== 1) {
+      node.arguments && node.arguments.length !== 1 && node.arguments.length !== 2) {
       transformLog.errors.push({
         type: LogType.ERROR,
-        message: `'@${extendResult.decoratorName}' should have one and only one parameter.`,
+        message: `'@${extendResult.decoratorName}' should have one or two parameters.`,
         pos: node.getStart(),
         code: '10905108'
       });

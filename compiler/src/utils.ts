@@ -57,6 +57,7 @@ import {
   HvigorErrorInfo
 } from './hvigor_error_code/hvigor_error_info';
 import { EXT_WHITE_LIST } from './component_map';
+import { getDecoratorNameFromAst } from './process_struct_componentV2';
 
 export enum LogType {
   ERROR = 'ERROR',
@@ -237,16 +238,16 @@ export function hasDecorator(node: ts.MethodDeclaration | ts.FunctionDeclaration
       AnimatableExtend: false
     };
     for (let i = 0; i < decorators.length; i++) {
-      const originalDecortor: string = decorators[i].getText().replace(/\(.*\)$/, '').replace(/\s*/g, '').trim();
+      const originalDecorator: string = getDecoratorNameFromAst(decorators[i]);
       if (log && EXTEND_DECORATORS.includes(decortorName)) {
-        if (originalDecortor === COMPONENT_EXTEND_DECORATOR) {
+        if (originalDecorator === COMPONENT_EXTEND_DECORATOR) {
           extendResult.Extend = true;
         }
-        if (originalDecortor === COMPONENT_ANIMATABLE_EXTEND_DECORATOR) {
+        if (originalDecorator === COMPONENT_ANIMATABLE_EXTEND_DECORATOR) {
           extendResult.AnimatableExtend = true;
         }
       } else {
-        if (originalDecortor === decortorName) {
+        if (originalDecorator === decortorName) {
           if (customBuilder) {
             customBuilder.push(...decorators.slice(i + 1), ...decorators.slice(0, i));
           }
@@ -920,6 +921,7 @@ export class ProcessFileInfo {
     };
   routerInfo: Map<string, Array<RouterInfo>> = new Map();
   hasLocalBuilderInFile: boolean = false;
+  hasAttributeExtension: boolean = false;
 
   addGlobalCacheInfo(resourceListCacheInfo: string[],
     resourceToFileCacheInfo: { [resource: string]: Set<string> },

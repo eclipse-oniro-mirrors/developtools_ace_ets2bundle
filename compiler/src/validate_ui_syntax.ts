@@ -104,7 +104,9 @@ import {
   COMMON_ATTRS,
   GESTURE_ATTRS,
   TRANSITION_COMMON_ATTRS,
-  FOREACH_ATTRIBUTE
+  FOREACH_ATTRIBUTE,
+  GLOBAL_STYLE_VERSION,
+  INNER_STYLE_VERSION
 } from './component_map';
 import {
   LogType,
@@ -138,6 +140,7 @@ import { collectSharedModule } from './fast_build/ark_compiler/check_shared_modu
 import constantDefine from './constant_define';
 import processStructComponentV2, { StructInfo, getDecoratorName } from './process_struct_componentV2';
 import logMessageCollection from './log_message_collection';
+import { ISdkApiValues, fetchStylesDecoratorVersionCondition } from './ui_utils';
 
 export class ComponentCollection {
   localStorageName: string = null;
@@ -816,6 +819,12 @@ export function methodDecoratorCollect(node: ts.MethodDeclaration | ts.FunctionD
         extendResult.componentName, node.name.getText());
     }
   } else if (hasDecorator(node, COMPONENT_STYLES_DECORATOR)) {
+    const stylesSdkApis: ISdkApiValues | undefined = fetchStylesDecoratorVersionCondition(node, transformLog.errors);
+    if (stylesSdkApis && ts.isFunctionDeclaration(node)) {
+      GLOBAL_STYLE_VERSION.set(node.name.getText(), stylesSdkApis);
+    } else if (stylesSdkApis && ts.isMethodDeclaration(node)) {
+      INNER_STYLE_VERSION.set(node.name.getText(), stylesSdkApis);
+    }
     collectStyles(node);
   }
 }

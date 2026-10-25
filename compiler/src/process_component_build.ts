@@ -171,7 +171,9 @@ import {
   STYLES_ATTRIBUTE,
   INNER_CUSTOM_LOCALBUILDER_METHOD,
   COMMON_ATTRS,
-  EXT_WHITE_LIST
+  EXT_WHITE_LIST,
+  INNER_STYLE_VERSION,
+  GLOBAL_STYLE_VERSION
 } from './component_map';
 import {
   componentCollection,
@@ -216,6 +218,7 @@ import {
   concatenateEtsOptions,
   getExternalComponentPaths
 } from './external_component_map';
+import { ISdkApiValues, updateStylesStatementsWithSdkVersions } from './ui_utils';
 
 export function processComponentBuild(node: ts.MethodDeclaration,
   log: LogInfo[]): ts.MethodDeclaration {
@@ -3018,7 +3021,14 @@ function addComponentAttr(temp, node: ts.Identifier, lastStatement,
   } else if (GLOBAL_STYLE_FUNCTION.has(propName) || INNER_STYLE_FUNCTION.has(propName)) {
     const styleBlock: ts.Block =
         INNER_STYLE_FUNCTION.get(propName) || GLOBAL_STYLE_FUNCTION.get(propName);
-    if (styleBlock.statements.length > 0) {
+    const sdkApiVersions: ISdkApiValues | undefined = INNER_STYLE_VERSION.get(propName) || GLOBAL_STYLE_VERSION.get(propName);
+    if (styleBlock.statements.length > 0 && !!sdkApiVersions) {
+      const tempStatements: ts.Statement[] = [];
+      bindComponentAttr(styleBlock.statements[0] as ts.ExpressionStatement, identifierNode,
+        tempStatements, log, true, true);
+      const ifVersionStatement: ts.IfStatement | undefined = updateStylesStatementsWithSdkVersions(tempStatements, sdkApiVersions);
+      ifVersionStatement && (statements.push(ifVersionStatement)) && (storedFileInfo.hasAttributeExtension = true);
+    } else if (styleBlock.statements.length > 0) {
       bindComponentAttr(styleBlock.statements[0] as ts.ExpressionStatement, identifierNode,
         statements, log, false, true, newImmutableStatements);
       if (isRecycleComponent || (hasInitialRenderCondition() && permitInitialRender)) {
