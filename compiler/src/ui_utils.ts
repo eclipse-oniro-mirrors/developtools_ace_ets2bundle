@@ -338,7 +338,7 @@ function checkMinLessThanMaxApiVersion(
       type: LogType.ERROR,
       message: `The value of minApiVersion cannot be higher than or equal to that of maxApiVersion.`,
       pos: versionConditionObj.getStart(),
-      code: "10905385"
+      code: "10905388"
     });
     return false;
   }
