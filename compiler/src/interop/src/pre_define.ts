@@ -753,6 +753,14 @@ export const MAX_LINK_SOURCE_DATA_NESTING_LEVEL: number = 2;
 export const SDK_API_VERSION_FUNCTION_NAME: string = 'sdkApiVersion';
 export const DISTRIBUTE_API_VERSION_FUNCTION_NAME: string = 'distributionOSApiVersion';
 
+export const BUILDER_DECORATOR_OPTION_IS_PLACEHOLDER: string = 'isPlaceholder';
+export const ACE_BEGIN_SCROLL_PLACEHOLDER: string = '__aceBeginScrollPlaceholder__';
+export const ACE_END_SCROLL_PLACEHOLDER: string = '__aceEndScrollPlaceholder__';
+export const ERROR_CODE_BUILDER_DECORATOR_ONLY_GLOBAL: string = '10905131';
+export const ERROR_CODE_BUILDER_DECORATOR_LITERAL_ONLY: string = '10905132';
+export const ERROR_CODE_BUILDER_PLACEHOLDER_BOOL_ONLY: string = '10905133';
+export const ERROR_CODE_BUILDER_PLACEHOLDER_NO_PARAM: string = '10905134';
+
 const WRAPPED_BUILDER_MESSAGE_TEMPLATE: string = 'The @Builder function is wrapped %s, ' +
   'which may cause the builder transformation to fail. Use the @Builder function directly.';
 export const WRAPPED_BUILDER_PARENTHESIZED_MESSAGE: string =
