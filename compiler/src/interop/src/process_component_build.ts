@@ -177,7 +177,9 @@ import {
   EXT_WHITE_LIST,
   STATIC_WRAPPED_BUILDER,
   STATIC_BUILDER,
-  INTEROP_TRAILING_LAMBDA
+  INTEROP_TRAILING_LAMBDA,
+  INNER_STYLE_VERSION,
+  GLOBAL_STYLE_VERSION
 } from './component_map';
 import {
   componentCollection,
@@ -217,6 +219,7 @@ import { regularCollection, getSymbolIfAliased } from './validate_ui_syntax';
 import { contextStackPushOrPop } from './process_component_class';
 import processStructComponentV2, { StructInfo } from './process_struct_componentV2';
 import logMessageCollection from './log_message_collection';
+import { ISdkApiValues, updateStylesStatementsWithSdkVersions } from './ui_utils';
 import {
   concatenateEtsOptions,
   getExternalComponentPaths
@@ -3258,7 +3261,14 @@ function addComponentAttr(temp, node: ts.Identifier, lastStatement,
   } else if (GLOBAL_STYLE_FUNCTION.has(propName) || INNER_STYLE_FUNCTION.has(propName)) {
     const styleBlock: ts.Block =
         INNER_STYLE_FUNCTION.get(propName) || GLOBAL_STYLE_FUNCTION.get(propName);
-    if (styleBlock.statements.length > 0) {
+    const sdkApiVersions: ISdkApiValues | undefined = INNER_STYLE_VERSION.get(propName) || GLOBAL_STYLE_VERSION.get(propName);
+    if (styleBlock.statements.length > 0 && !!sdkApiVersions) {
+      const tempStatements: ts.Statement[] = [];
+      bindComponentAttr(styleBlock.statements[0] as ts.ExpressionStatement, identifierNode,
+        tempStatements, log, true, true);
+      const ifVersionStatement: ts.IfStatement | undefined = updateStylesStatementsWithSdkVersions(tempStatements, sdkApiVersions);
+      ifVersionStatement && (statements.push(ifVersionStatement)) && (storedFileInfo.hasAttributeExtension = true);
+    } else if (styleBlock.statements.length > 0) {
       bindComponentAttr(styleBlock.statements[0] as ts.ExpressionStatement, identifierNode,
         statements, log, false, true, newImmutableStatements);
       if (isRecycleComponent) {
