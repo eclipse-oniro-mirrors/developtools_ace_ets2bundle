@@ -18,12 +18,13 @@
 import path from "path";
 import ts from "typescript";
 import fs from "fs";
-import { IS_VERSION_IN_RANGE_FUNCTION_NAME } from "./ui_utils";
 import {
   DEVICE_INFO,
   DISTRIBUTE_API_VERSION_FUNCTION_NAME,
   REQUIRE_NAPI,
 } from "./pre_define";
+
+export const IS_VERSION_IN_RANGE_FUNCTION_NAME: string = '__IsVersionInRange__Internal__ToolChain';
 
 export const BUILTIN_KEY_TO_DISTRIBUTIONAPI: Record<string, number> = {
   "12": 50000,
