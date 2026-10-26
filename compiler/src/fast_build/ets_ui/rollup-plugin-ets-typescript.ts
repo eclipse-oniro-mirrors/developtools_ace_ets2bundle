@@ -791,6 +791,7 @@ function resetCollection() {
   storedFileInfo.getCurrentArkTsFile().reuseComponentsV2.clear();
   resetComponentCollection();
   storedFileInfo.hasLocalBuilderInFile = false;
+  storedFileInfo.hasAttributeExtension = false;
 }
 
 function resetEtsTransform(): void {
