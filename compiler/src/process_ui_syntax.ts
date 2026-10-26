@@ -99,6 +99,7 @@ import {
   IFileLog,
   getPossibleBuilderTypeParameter,
   storedFileInfo,
+  CurrentProcessFile,
   ExtendResult,
   getStoredFileInfo,
   ProcessFileInfo,
@@ -441,9 +442,7 @@ export function processUISyntax(program: ts.Program, ut = false,
         // This processing is for mock instead of ui transformation
         node = processDecorator(node);
       } else if (isWrapBuilderFunction(node) || isMutableBuilderFunction(node)) {
-        if (node.arguments && node.arguments[0] && (!ts.isIdentifier(node.arguments[0]) ||
-          ts.isIdentifier(node.arguments[0]) &&
-          !CUSTOM_BUILDER_METHOD.has(node.arguments[0].escapedText.toString()))) {
+        if (node.arguments && node.arguments[0] && !isValidBuilderArgument(node.arguments[0])) {
           transformLog.errors.push({
             type: LogType.ERROR,
             message: `The ${node.expression.escapedText.toString()}'s parameter should be '@Builder' function.`,
@@ -514,6 +513,52 @@ export function processUISyntax(program: ts.Program, ut = false,
       if (ts.isCallExpression(node) && node.expression && ts.isIdentifier(node.expression) &&
         node.expression.escapedText.toString() === MUTABLEBUILDER_FUNCTION) {
         return true;
+      }
+      return false;
+    }
+
+    /**
+     * Check whether the member symbol resolves to an `@Builder` decorated
+     * global function declaration. Covers namespace-import member access and
+     * dynamic-import member access (inline `(await import('...')).x` and the
+     * identifier-bound `const m = await import('...'); wrapBuilder(m.x)` form).
+     */
+    function isBuilderFunctionSymbol(symbol: ts.Symbol, checker: ts.TypeChecker): boolean {
+      let resolved: ts.Symbol | undefined = symbol;
+      // Import aliases (namespace imports, re-exports) must be resolved first.
+      if (resolved.flags & ts.SymbolFlags.Alias) {
+        resolved = checker.getAliasedSymbol(resolved);
+      }
+      return (resolved.declarations ?? []).some(decl =>
+        ts.isFunctionDeclaration(decl) && hasDecorator(decl, COMPONENT_BUILDER_DECORATOR));
+    }
+
+    /**
+     * Validate the wrapBuilder/mutableBuilder argument.
+     * Accepted: identifiers collected as @Builder (existing behavior) and
+     * property accesses whose member resolves to an @Builder function
+     * declaration. `this.xxx` member references stay invalid: member builders
+     * require `this` binding (error 10905109, pinned by golden tests).
+     */
+    function isValidBuilderArgument(argument: ts.Expression): boolean {
+      if (ts.isIdentifier(argument)) {
+        return CUSTOM_BUILDER_METHOD.has(argument.escapedText.toString());
+      }
+      if (ts.isPropertyAccessExpression(argument) && argument.name && ts.isIdentifier(argument.name)) {
+        if (argument.expression.kind === ts.SyntaxKind.ThisKeyword) {
+          return false;
+        }
+        const memberName: string = argument.name.escapedText.toString();
+        const checker: ts.TypeChecker | undefined = CurrentProcessFile.getChecker();
+        const symbol: ts.Symbol | undefined = checker?.getSymbolAtLocation(argument.name);
+        if (symbol) {
+          return isBuilderFunctionSymbol(symbol, checker);
+        }
+        // The member symbol is unresolvable for the current checker (e.g.
+        // jsbundle transpile nodes are foreign to the program checker): fall
+        // back to the name set registered for namespace/named imports of
+        // @Builder functions.
+        return GLOBAL_CUSTOM_BUILDER_METHOD.has(memberName);
       }
       return false;
     }
