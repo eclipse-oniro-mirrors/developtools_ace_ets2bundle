@@ -1791,6 +1791,7 @@ export class InsightIntentHandler {
         if (!validateRequiredFields(data, 'Entry', classNode) ||
             (data.executeMode && !validateExecuteMode(data.executeMode)) ||
             (data.keywords && !validateKeywords(data.keywords, classNode)) ||
+            (data.permissions && !validateKeywords(data.permissions, classNode)) ||
             (data.parameters && !validateParametersSchema(data.parameters, classNode, validateEntrySchemaConsistency))) {
             return null;
         }
@@ -1851,6 +1852,7 @@ export class InsightIntentHandler {
         if (!validateRequiredFields(data, 'Page', classNode) ||
             !validatePageStruct (data, classNode) ||
             (data.keywords && !validateKeywords(data.keywords, classNode)) ||
+            (data.permissions && !validateKeywords(data.permissions, classNode)) ||
             (data.parameters && !validateJsonSchema(data.parameters, 'parameters', classNode)) ||
             (data.result && !validateJsonSchema(data.result, 'result', classNode))) {
             return null;
@@ -2224,6 +2226,19 @@ export class InsightIntentHandler {
                     const keywords = this.extractArrayValue(propValue);
                     if (this.isValidOptionalValue(keywords, classNode, decoratorType)) {
                         data.keywords = keywords;
+                    }
+                    break;
+                }
+                case 'permissions': {
+                    // permissions 仅 Entry/Page/FunctionMethod 意图支持，Link/Form 不支持
+                    // 本函数仅被 Entry/Page/Form 调用，这里过滤掉 Form
+                    if (decoratorType !== '@InsightIntentEntry' && decoratorType !== '@InsightIntentPage') {
+                        break;
+                    }
+                    // 非必填字段，空数组不写入
+                    const permissions = this.extractArrayValue(propValue);
+                    if (this.isValidOptionalValue(permissions, classNode, decoratorType)) {
+                        data.permissions = permissions;
                     }
                     break;
                 }
@@ -3131,6 +3146,7 @@ export class InsightIntentHandler {
         intent.parameters = schemaObj.parameters ?? intent.parameters;
         intent.llmDescription = schemaObj.llmDescription ?? intent.llmDescription;
         intent.keywords = schemaObj.keywords ?? intent.keywords;
+        intent.permissions = schemaObj.permissions ?? intent.permissions;
         intent.intentName = schemaObj.intentName ?? intent.intentName;
         intent.result = schemaObj.result ?? intent.result;
         intent.domain = schemaObj.domain ?? intent.domain;
@@ -3264,6 +3280,14 @@ export class InsightIntentHandler {
                     }
                     break;
                 }
+                case 'permissions': {
+                    // 非必填字段，空数组不写入
+                    const permissions = this.extractArrayValue(propValue);
+                    if (this.isValidOptionalValue(permissions, classNode, '@InsightIntentFunctionMethod')) {
+                        data.permissions = permissions;
+                    }
+                    break;
+                }
                 case 'parameters':
                 case 'result': {
                     // 非必填字段，undefined 或空字符串不写入
@@ -3294,6 +3318,7 @@ export class InsightIntentHandler {
 
         if (!validateRequiredFields(data, 'FunctionMethod', classNode) ||
             (data.keywords && !validateKeywords(data.keywords, classNode)) ||
+            (data.permissions && !validateKeywords(data.permissions, classNode)) ||
             (data.parameters && !validateJsonSchema(data.parameters, 'parameters', classNode)) ||
             (data.result && !validateResultSchema(data.result, classNode))) {
             return null;

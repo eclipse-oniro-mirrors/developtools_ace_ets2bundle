@@ -62,6 +62,10 @@ const insightIntentJson = {
         "keywords",
         "testKeywords"
       ],
+      "permissions": [
+        "permission1",
+        "permission2"
+      ],
       "parameters": {
 				"schema": "http://json-schema.org/draft-07/schema#",
 				"type": "object",

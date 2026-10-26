@@ -58,6 +58,10 @@ const insightIntentJson = {
         "keywords",
         "testKeywords"
       ],
+      "permissions": [
+        "permission1",
+        "permission2"
+      ],
       "parameters": {
         "type": "object"
       },

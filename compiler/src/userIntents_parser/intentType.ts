@@ -30,6 +30,7 @@ export interface IntentInfo {
   icon: Function;
   llmDescription: string;
   keywords: string[];
+  permissions: string[];
   parameters: object;
   result: object;
   example: string;
@@ -213,13 +214,14 @@ IntentLinkInfoChecker.nestedCheckers = new Map([['paramMappings', IntentLinkPara
 
 export const intentEntryInfoChecker: ParamChecker<IntentEntryInfo> = new ParamChecker<IntentEntryInfo>();
 intentEntryInfoChecker.requiredFields = [...BASE_REQUIRED as Array<keyof IntentEntryInfo>, 'abilityName', 'executeMode'];
-intentEntryInfoChecker.allowFields = new Set<keyof IntentEntryInfo>([...BASE_ALLOW as Array<keyof IntentEntryInfo>, 'abilityName', 'executeMode']);
+intentEntryInfoChecker.allowFields = new Set<keyof IntentEntryInfo>([...BASE_ALLOW as Array<keyof IntentEntryInfo>, 'abilityName', 'executeMode', 'permissions']);
 intentEntryInfoChecker.paramValidators = {
   example: validateOptionalString,
   result: validateParameters,
   parameters: validateParameters,
   icon: validateIcon,
   keywords: validateKeywords,
+  permissions: validateKeywords,
   schema: validateOptionalString,
   abilityName: validateRequiredString,
   displayDescription: validateRequiredString,
@@ -246,7 +248,8 @@ intentEntryInfoChecker.paramValidators = {
 export const intentMethodInfoChecker: ParamChecker<IntentFunctionInfo> = new ParamChecker<IntentFunctionInfo>();
 intentMethodInfoChecker.requiredFields = [...BASE_REQUIRED as Array<keyof IntentFunctionInfo>];
 intentMethodInfoChecker.allowFields = new Set<keyof IntentFunctionInfo>([
-  ...BASE_ALLOW as Array<keyof IntentFunctionInfo>
+  ...BASE_ALLOW as Array<keyof IntentFunctionInfo>,
+  'permissions'
 ]);
 
 intentMethodInfoChecker.paramValidators = {
@@ -255,6 +258,7 @@ intentMethodInfoChecker.paramValidators = {
   parameters: validateParameters,
   icon: validateIcon,
   keywords: validateKeywords,
+  permissions: validateKeywords,
   schema: validateOptionalString,
   intentName: validateRequiredString,
   domain: validateRequiredString,
@@ -271,7 +275,8 @@ IntentPageInfoChecker.allowFields = new Set<keyof IntentPageInfo>([
   'uiAbility',
   'pagePath',
   'navigationId',
-  'navDestinationName'
+  'navDestinationName',
+  'permissions'
 ]);
 
 IntentPageInfoChecker.paramValidators = {
@@ -280,6 +285,7 @@ IntentPageInfoChecker.paramValidators = {
   parameters: validateParameters,
   icon: validateIcon,
   keywords: validateKeywords,
+  permissions: validateKeywords,
   schema: validateOptionalString,
   intentName: validateRequiredString,
   domain: validateRequiredString,
