@@ -20,6 +20,7 @@ import {
   WHITELISTNEW,
   readExternalComponents
 } from './external_component_map';
+import { ISdkApiValues } from './ui_utils';
 const COMPONENTS = 'components';
 const FORM_COMPONENTS = 'form_components';
 export const COMPONENT_MAP: any = {};
@@ -121,6 +122,9 @@ export const CUSTOM_BUILDER_METHOD: Set<string> = new Set();
 export const INNER_CUSTOM_LOCALBUILDER_METHOD: Set<string> = new Set();
 export const INNER_STYLE_FUNCTION: Map<string, ts.Block> = new Map();
 export const GLOBAL_STYLE_FUNCTION: Map<string, ts.Block> = new Map();
+
+export const GLOBAL_STYLE_VERSION: Map<string, ISdkApiValues> = new Map();
+export const INNER_STYLE_VERSION: Map<string, ISdkApiValues> = new Map();
 
 export interface ExtendParamterInterfance {
   attribute: string,
