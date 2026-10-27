@@ -39,91 +39,49 @@ const parsedTransform: Plugins = {
 
 const expectedScript: string = `
 
-import { IMutableStateMeta } from "arkui.stateManagement.decorator";
 
-import { STATE_MGMT_FACTORY } from "arkui.stateManagement.decorator";
 
-import { UIUtils } from "arkui.stateManagement.utils";
 
-import { ISubscribedWatches } from "arkui.stateManagement.decorator";
 
-import { WatchIdType } from "arkui.stateManagement.decorator";
 
-import { RenderIdType } from "arkui.stateManagement.decorator";
 
-import { IObservedObject } from "arkui.stateManagement.decorator";
 
-import { IParamDecoratedVariable } from "arkui.stateManagement.decorator";
 
-import { ILocalDecoratedVariable } from "arkui.stateManagement.decorator";
 
-import { SymbolGlyphImpl } from "arkui.component.symbolglyph";
 
-import { SymbolGlyphAttribute } from "arkui.component.symbolglyph";
 
-import { Memo } from "arkui.incremental.annotation";
 
-import { ImageImpl } from "arkui.component.image";
 
-import { ImageAttribute } from "arkui.component.image";
 
-import { TextImpl } from "arkui.component.text";
 
-import { TextAttribute } from "arkui.component.text";
 
-import { ButtonImpl } from "arkui.component.button";
 
-import { ButtonAttribute } from "arkui.component.button";
 
-import { FlexImpl } from "arkui.component.flex";
 
-import { FlexAttribute } from "arkui.component.flex";
 
-import { RowImpl } from "arkui.component.row";
 
-import { RowAttribute } from "arkui.component.row";
 
-import { MemoIntrinsic } from "arkui.incremental.annotation";
 
-import { Memo } from "arkui.incremental.annotation";
 
-import { ComponentBuilder } from "arkui.component.builder";
 
-import { LocalStorage } from "arkui.stateManagement.storage.localStorage";
 
-import { Builder } from "arkui.component.builder";
 
-import { CustomComponentV2 } from "arkui.component.customComponent";
 
-import { ReusePoolOwnership } from "arkui.component.customComponent";
 
-import { $r, Builder, Button, ButtonOptions, ButtonType, Callback, ClickEvent, Color, ComponentV2, ConstraintSizeOptions, Curve, Dimension, Direction, Flex, FlexAlign, FontWeight, HoverEffect, Image, ImageFit, ItemAlign, KeyEvent, KeyType, Length, LocalizedMargin, LocalizedPadding, Margin, Padding, Resource, ResourceColor, ResourceStr, Row, ScaleOptions, ShadowStyle, SizeOptions, SymbolEffect, SymbolEffectStrategy, SymbolGlyph, Text, TextAlign, TextOverflow, VoidCallback, Rectangle } from "@ohos.arkui.component";
 
-import { ImageModifier, SymbolGlyphModifier, TextModifier } from "@ohos.arkui.modifier";
 
-import { Require, Param, ObservedV2, Trace, Event, Local } from "@ohos.arkui.stateManagement";
 
-import { ColorMetrics, LengthMetrics, LengthUnit, SizeT } from "@ohos.arkui.node";
 
-import { KeyCode } from "@ohos.multimodalInput.keyCode";
 
-import hilog from "@ohos.hilog";
 
-import resourceManager from "@ohos.resourceManager";
 
-import common from "@ohos.app.ability.common";
 
-import mediaquery from "@ohos.mediaquery";
 
-import { EnvironmentCallback } from "@kit.AbilityKit";
 
-import deviceInfo from "@ohos.deviceInfo";
 
-import { Configuration } from "@ohos.app.ability.Configuration";
 
-import AbilityConstant from "@ohos.app.ability.AbilityConstant";
 
-import uiMaterial from "@ohos.arkui.uiMaterial";
+
 
 const RESOURCE_TYPE_STRING = 10003;
 const RESOURCE_TYPE_FLOAT = 10002;
@@ -503,7 +461,7 @@ interface ChipV2SuffixImageIconConfig extends ChipV2ImageIconConfig, ChipV2Acces
   
 }
 
-@ObservedV2() class ChipV2SuffixImageIcon extends ChipV2ImageIcon implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class ChipV2SuffixImageIcon extends ChipV2ImageIcon implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
   public addWatchSubscriber(watchId: WatchIdType): void {
     if (((this.subscribedWatches) !== (undefined))) {
@@ -598,6 +556,13 @@ interface ChipV2SuffixImageIconConfig extends ChipV2ImageIconConfig, ChipV2Acces
     this.action = config.action;
   }
   
+  public addRefAnyProp(): void {
+    this.__meta_accessibilityLevel.addRef();
+    this.__meta_accessibilityText.addRef();
+    this.__meta_accessibilityDescription.addRef();
+    this.__meta_action.addRef();
+  }
+  
   static {
     
   }
@@ -607,7 +572,7 @@ interface ChipV2PrefixImageIconConfig extends ChipV2ImageIconConfig {
   
 }
 
-@ObservedV2() class ChipV2PrefixImageIcon extends ChipV2ImageIcon implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class ChipV2PrefixImageIcon extends ChipV2ImageIcon implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
   public addWatchSubscriber(watchId: WatchIdType): void {
     if (((this.subscribedWatches) !== (undefined))) {
@@ -637,6 +602,8 @@ interface ChipV2PrefixImageIconConfig extends ChipV2ImageIconConfig {
   public constructor(config: ChipV2PrefixImageIconConfig) {
     super(config);
   }
+  
+  public addRefAnyProp(): void {}
   
   static {
     
@@ -687,7 +654,7 @@ interface ChipV2CloseConfig extends ChipV2AccessibilityConfig {
   
 }
 
-@ObservedV2() class ChipV2CloseIcon extends ChipV2Accessibility implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class ChipV2CloseIcon extends ChipV2Accessibility implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
   public addWatchSubscriber(watchId: WatchIdType): void {
     if (((this.subscribedWatches) !== (undefined))) {
@@ -734,6 +701,10 @@ interface ChipV2CloseConfig extends ChipV2AccessibilityConfig {
     this.fontSize = config.fontSize;
   }
   
+  public addRefAnyProp(): void {
+    this.__meta_fontSize.addRef();
+  }
+  
   static {
     
   }
@@ -770,7 +741,7 @@ interface ChipV2PrefixSymbolIconConfig extends ChipV2SymbolIconConfig {
   
 }
 
-@ObservedV2() class ChipV2PrefixSymbolIcon extends ChipV2SymbolIcon implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class ChipV2PrefixSymbolIcon extends ChipV2SymbolIcon implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
   public addWatchSubscriber(watchId: WatchIdType): void {
     if (((this.subscribedWatches) !== (undefined))) {
@@ -801,6 +772,8 @@ interface ChipV2PrefixSymbolIconConfig extends ChipV2SymbolIconConfig {
     super(config);
   }
   
+  public addRefAnyProp(): void {}
+  
   static {
     
   }
@@ -828,7 +801,7 @@ interface ChipV2SuffixSymbolIconConfig extends ChipV2SymbolIconConfig {
   
 }
 
-@ObservedV2() class ChipV2SuffixSymbolIcon extends ChipV2SymbolIcon implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class ChipV2SuffixSymbolIcon extends ChipV2SymbolIcon implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
   public addWatchSubscriber(watchId: WatchIdType): void {
     if (((this.subscribedWatches) !== (undefined))) {
@@ -905,6 +878,12 @@ interface ChipV2SuffixSymbolIconConfig extends ChipV2SymbolIconConfig {
     this.normalAccessibility = (config.normalAccessibility ? new ChipV2Accessibility(config.normalAccessibility!) : undefined);
     this.activatedAccessibility = (config.activatedAccessibility ? new ChipV2Accessibility(config.activatedAccessibility!) : undefined);
     this.action = config.action;
+  }
+  
+  public addRefAnyProp(): void {
+    this.__meta_normalAccessibility.addRef();
+    this.__meta_activatedAccessibility.addRef();
+    this.__meta_action.addRef();
   }
   
   static {
@@ -992,7 +971,7 @@ interface ChipV2LabelConfig {
   
 }
 
-@ObservedV2() class ChipV2Label implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class ChipV2Label implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
   public addWatchSubscriber(watchId: WatchIdType): void {
     if (((this.subscribedWatches) !== (undefined))) {
@@ -1148,6 +1127,17 @@ interface ChipV2LabelConfig {
     this.labelMargin = config.labelMargin;
     this.localizedLabelMargin = config.localizedLabelMargin;
     this.modifier = config.modifier;
+  }
+  
+  public addRefAnyProp(): void {
+    this.__meta_text.addRef();
+    this.__meta_fontSize.addRef();
+    this.__meta_fontColor.addRef();
+    this.__meta_activatedFontColor.addRef();
+    this.__meta_fontFamily.addRef();
+    this.__meta_labelMargin.addRef();
+    this.__meta_localizedLabelMargin.addRef();
+    this.__meta_modifier.addRef();
   }
   
   static {
@@ -1530,7 +1520,7 @@ interface IChipV2OptionsConfig {
   
 }
 
-@ObservedV2() class ChipV2Options implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class ChipV2Options implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
   public addWatchSubscriber(watchId: WatchIdType): void {
     if (((this.subscribedWatches) !== (undefined))) {
@@ -1898,6 +1888,30 @@ interface IChipV2OptionsConfig {
     this.activatedBackgroundSystemMaterial = config.activatedBackgroundSystemMaterial;
     this.onClose = config.onClose;
     this.onClicked = config.onClicked;
+  }
+  
+  public addRefAnyProp(): void {
+    this.__meta_label.addRef();
+    this.__meta_prefixIcon.addRef();
+    this.__meta_suffixIcon.addRef();
+    this.__meta_allowClose.addRef();
+    this.__meta_closeIcon.addRef();
+    this.__meta_enabled.addRef();
+    this.__meta_activated.addRef();
+    this.__meta_backgroundColor.addRef();
+    this.__meta_activatedBackgroundColor.addRef();
+    this.__meta_borderRadius.addRef();
+    this.__meta_size.addRef();
+    this.__meta_direction.addRef();
+    this.__meta_accessibilityDescription.addRef();
+    this.__meta_accessibilityLevel.addRef();
+    this.__meta_accessibilitySelectedType.addRef();
+    this.__meta_maxFontScale.addRef();
+    this.__meta_minFontScale.addRef();
+    this.__meta_padding.addRef();
+    this.__meta_fontSize.addRef();
+    this.__meta_backgroundSystemMaterial.addRef();
+    this.__meta_activatedBackgroundSystemMaterial.addRef();
   }
   
   static {
@@ -3451,6 +3465,7 @@ class ChipV2EnvironmentCallbackEntry implements EnvironmentCallback {
   public constructor() {}
   
 }
+
 `;
 
 function testChipV2UITransformer(this: PluginTestContext): void {

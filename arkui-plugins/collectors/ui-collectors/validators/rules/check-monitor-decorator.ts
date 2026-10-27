@@ -31,7 +31,7 @@ import {
     StructPropertyInfo, 
     StructPropertyRecord 
 } from '../../records';
-import { APIVersions, DecoratorNames, LogType, StructDecoratorNames } from '../../../../common/predefines';
+import { DecoratorNames, LogType, StructDecoratorNames } from '../../../../common/predefines';
 import {
     createSuggestion,
     getPositionRangeFromAnnotation,
@@ -50,9 +50,8 @@ import {
     PropertyPathResult, 
     PropertyPathSegmentResult, 
     PropertyPathTreeBuilder, 
-    resolvePropertyPath 
+    resolvePropertyPath
 } from '../../../../common/path-resolvers';
-import { MetaDataCollector } from '../../../../common/metadata-collector';
 
 export const checkMonitorDecorator = performanceLog(
     _checkMonitorDecorator,
@@ -91,14 +90,13 @@ function checkMonitorValidPathStrings<T extends arkts.AstNode = arkts.ClassDecla
         return;
     }
     const allPathStringArrPairs = MonitorPathStringCache.getInstance().getAllPathStringPairs();
-    const compatibleSdkVersion: APIVersions = MetaDataCollector.getInstance().projectConfig?.compatibleSdkVersion ?? APIVersions.API_20;
     for (const pair of allPathStringArrPairs) {
         const pathStringPairs: [arkts.AstNode, string][] = pair[1];
 
         pathStringPairs.forEach((pathStringPair) => {
             const propertyValue: arkts.AstNode = pathStringPair[0];
             const pathString: string = pathStringPair[1];
-            const result = resolvePropertyPath(definition, pathString, { enableWildcard: compatibleSdkVersion >= APIVersions.API_26 });
+            const result = resolvePropertyPath(definition, pathString, { enableWildcard: true });
             if (!result.fullyResolved && MonitorPathValidationCache.getInstance().getLogType(propertyValue) !== LogType.ERROR) {
                 MonitorPathValidationCache.getInstance().collect(propertyValue, LogType.ERROR);
                 this.report({

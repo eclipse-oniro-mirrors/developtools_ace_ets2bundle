@@ -127,7 +127,7 @@ class GGG {
 
 }
 
-@ObservedV2() class Info implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class Info implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
 
   public addWatchSubscriber(watchId: WatchIdType): void {
@@ -231,7 +231,10 @@ class GGG {
       }),
     } as IMonitorPathInfo)], ((_m: IMonitor) => {
       this.onNameChange(_m);
-    }));
+    }), ({
+      owner: undefined,
+      functionName: "onNameChange",
+    } as MakeMonitorOptions));
     this.__monitor_onAgeChange = STATE_MGMT_FACTORY.makeMonitor([({
       path: "strArr.0",
       valueCallback: ((): Any => {
@@ -245,7 +248,10 @@ class GGG {
       }),
     } as IMonitorPathInfo)], ((_m: IMonitor) => {
       this.onAgeChange(_m);
-    }));
+    }), ({
+      owner: undefined,
+      functionName: "onAgeChange",
+    } as MakeMonitorOptions));
     this.__monitor_onJobChange = STATE_MGMT_FACTORY.makeMonitor([({
       path: "job.aaa.bbb.ccc.1.dd.0",
       valueCallback: ((): Any => {
@@ -259,7 +265,15 @@ class GGG {
       }),
     } as IMonitorPathInfo)], ((_m: IMonitor) => {
       this.onJobChange(_m);
-    }));
+    }), ({
+      owner: undefined,
+      functionName: "onJobChange",
+    } as MakeMonitorOptions));
+  }
+  public addRefAnyProp(): void {
+    this.__meta_name.addRef();
+    this.__meta_strArr.addRef();
+    this.__meta_job.addRef();
   }
 
   static {
@@ -291,7 +305,10 @@ class GGG {
       }),
     } as IMonitorPathInfo)], ((_m: IMonitor) => {
       this.onPerChange(_m);
-    }), this);
+    }), ({
+      owner: this,
+      functionName: "onPerChange",
+    } as MakeMonitorOptions));
   }
 
   public __updateStruct(initializers: (__Options_Index | undefined)): void {}

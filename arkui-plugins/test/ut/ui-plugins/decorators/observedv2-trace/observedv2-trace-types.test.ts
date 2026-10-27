@@ -123,7 +123,7 @@ final class Status extends BaseEnum<int> {
 
 }
 
-@ObservedV2() class mixed1 implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class mixed1 implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
 
   public addWatchSubscriber(watchId: WatchIdType): void {
@@ -361,6 +361,20 @@ final class Status extends BaseEnum<int> {
   public enumB: Status = Status.NotFound;
 
   public constructor() {}
+
+  public addRefAnyProp(): void {
+    this.__meta_numA.addRef();
+    this.__meta_stringA.addRef();
+    this.__meta_booleanA.addRef();
+    this.__meta_arrayA.addRef();
+    this.__meta_objectA.addRef();
+    this.__meta_dateA.addRef();
+    this.__meta_setA.addRef();
+    this.__meta_mapA.addRef();
+    this.__meta_unionA.addRef();
+    this.__meta_classA.addRef();
+    this.__meta_enumA.addRef();
+  }
 
   static {
   }

@@ -32,9 +32,8 @@ buildConfig.compileFiles = [
 ];
 
 const projectConfig: ProjectConfig = mockProjectConfig();
-projectConfig.compatibleSdkVersion = 24;
 
-const pluginTester = new PluginTester('test @Monitor decorator with compatibleSdkVersion >= 24 and no parameters', buildConfig, projectConfig);
+const pluginTester = new PluginTester('test @Monitor decorator with no parameters', buildConfig, projectConfig);
 
 const parsedTransform: Plugins = {
     name: 'parsedTrans',

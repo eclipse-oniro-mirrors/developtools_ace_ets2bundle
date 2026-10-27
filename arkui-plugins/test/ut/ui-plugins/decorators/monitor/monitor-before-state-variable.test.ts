@@ -80,7 +80,10 @@ function main() {}
       }),
     } as IMonitorPathInfo)], ((_m: IMonitor) => {
       this.onStrChange2(_m);
-    }), this);
+    }), ({
+      owner: this,
+      functionName: "onStrChange2",
+    } as MakeMonitorOptions));
     this.__monitor_onStrChange3 = STATE_MGMT_FACTORY.makeMonitor([({
       path: "name",
       valueCallback: ((): Any => {
@@ -88,7 +91,10 @@ function main() {}
       }),
     } as IMonitorPathInfo)], ((_m: IMonitor) => {
       this.onStrChange3(_m);
-    }), this);
+    }), ({
+      owner: this,
+      functionName: "onStrChange3",
+    } as MakeMonitorOptions));
   }
 
   public __updateStruct(initializers: (__Options_Index | undefined)): void {}

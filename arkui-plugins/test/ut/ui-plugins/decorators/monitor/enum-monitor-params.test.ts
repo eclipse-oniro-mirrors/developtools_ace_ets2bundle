@@ -150,7 +150,7 @@ final class MonitorNames extends BaseEnum<String> {
 
 }
 
-@ObservedV2() class Info implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class Info implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
 
   public addWatchSubscriber(watchId: WatchIdType): void {
@@ -237,7 +237,14 @@ final class MonitorNames extends BaseEnum<String> {
       }),
     } as IMonitorPathInfo)], ((_m: IMonitor) => {
       this.changeCCC(_m);
-    }));
+    }), ({
+      owner: undefined,
+      functionName: "changeCCC",
+    } as MakeMonitorOptions));
+  }
+  public addRefAnyProp(): void {
+    this.__meta_name.addRef();
+    this.__meta_strArr.addRef();
   }
 
   static {
@@ -255,7 +262,10 @@ final class MonitorNames extends BaseEnum<String> {
       }),
     } as IMonitorPathInfo)], ((_m: IMonitor) => {
       this.changeEEE(_m);
-    }), this);
+    }), ({
+      owner: this,
+      functionName: "changeEEE",
+    } as MakeMonitorOptions));
   }
 
   public __updateStruct(initializers: (__Options_Index | undefined)): void {}

@@ -38,115 +38,63 @@ const parsedTransform: Plugins = {
 };
 
 const expectedScript: string = `
-import { IMutableStateMeta } from "arkui.stateManagement.decorator";
 
-import { STATE_MGMT_FACTORY } from "arkui.stateManagement.decorator";
 
-import { UIUtils } from "arkui.stateManagement.utils";
 
-import { ISubscribedWatches } from "arkui.stateManagement.decorator";
 
-import { WatchIdType } from "arkui.stateManagement.decorator";
 
-import { RenderIdType } from "arkui.stateManagement.decorator";
 
-import { IObservedObject } from "arkui.stateManagement.decorator";
 
-import { IParamDecoratedVariable } from "arkui.stateManagement.decorator";
 
-import { IConsumerDecoratedVariable } from "arkui.stateManagement.decorator";
 
-import { ILocalDecoratedVariable } from "arkui.stateManagement.decorator";
 
-import { SymbolGlyphImpl } from "arkui.component.symbolglyph";
 
-import { SymbolGlyphAttribute } from "arkui.component.symbolglyph";
 
-import { Memo } from "arkui.incremental.annotation";
 
-import { MemoSkip } from "arkui.incremental.annotation";
 
-import { ImageImpl } from "arkui.component.image";
 
-import { ImageAttribute } from "arkui.component.image";
 
-import { ButtonImpl } from "arkui.component.button";
 
-import { ButtonAttribute } from "arkui.component.button";
 
-import { ForEachImpl } from "arkui.component.forEach";
 
-import { ForEachAttribute } from "arkui.component.forEach";
 
-import { RowImpl } from "arkui.component.row";
 
-import { RowAttribute } from "arkui.component.row";
 
-import { EffectComponentImpl } from "arkui.component.effectComponent";
 
-import { EffectComponentAttribute } from "arkui.component.effectComponent";
 
-import { MemoIntrinsic } from "arkui.incremental.annotation";
 
-import { IProviderDecoratedVariable } from "arkui.stateManagement.decorator";
 
-import { IMonitorDecoratedVariable } from "arkui.stateManagement.decorator";
 
-import { makeBuilderParameterProxy } from "arkui.component.builder";
 
-import { ScrollImpl } from "arkui.component.scroll";
 
-import { ScrollAttribute } from "arkui.component.scroll";
 
-import { StackImpl } from "arkui.component.stack";
 
-import { StackAttribute } from "arkui.component.stack";
 
-import { IMonitor } from "arkui.stateManagement.decorator";
 
-import { IMonitorPathInfo } from "arkui.stateManagement.decorator";
 
-import { Memo } from "arkui.incremental.annotation";
 
-import { ComponentBuilder } from "arkui.component.builder";
 
-import { LocalStorage } from "arkui.stateManagement.storage.localStorage";
 
-import { Builder } from "arkui.component.builder";
 
-import { CustomComponentV2 } from "arkui.component.customComponent";
 
-import { ReusePoolOwnership } from "arkui.component.customComponent";
 
-import { $r, Builder, Button, ButtonOptions, ButtonType, Callback, ClickEvent, Color, ComponentV2, ConstraintSizeOptions, Curve, Dimension, Direction, Flex, FlexAlign, FontWeight, HoverEffect, Image, ImageFit, ItemAlign, KeyEvent, KeyType, Length, LocalizedMargin, LocalizedPadding, Margin, Padding, Resource, ResourceColor, ResourceStr, Row, ForEach, ScaleOptions, ShadowStyle, SizeOptions, SymbolEffect, SymbolEffectStrategy, SymbolGlyph, Text, TextAlign, TextOverflow, VoidCallback, Rectangle, UIContext, RowOptions, EffectComponent, BuilderParam, Scroller, Alignment, Stack, Scroll, ScrollDirection, BlendMode, BlendApplyType, BarState, HitTestMode } from "@ohos.arkui.component";
 
-import { ImageModifier, SymbolGlyphModifier, TextModifier } from "@ohos.arkui.modifier";
 
-import { Require, Param, ObservedV2, Trace, Event, Local, Consumer, Provider, Monitor } from "@ohos.arkui.stateManagement";
 
-import { ColorMetrics, LengthMetrics, LengthUnit, SizeT } from "@ohos.arkui.node";
 
-import { KeyCode } from "@ohos.multimodalInput.keyCode";
 
-import hilog from "@ohos.hilog";
 
-import resourceManager from "@ohos.resourceManager";
 
-import common from "@ohos.app.ability.common";
 
-import mediaquery from "@ohos.mediaquery";
 
-import { EnvironmentCallback } from "@kit.AbilityKit";
 
-import deviceInfo from "@ohos.deviceInfo";
 
-import { Configuration } from "@ohos.app.ability.Configuration";
 
-import AbilityConstant from "@ohos.app.ability.AbilityConstant";
 
-import uiMaterial from "@ohos.arkui.uiMaterial";
 
-import { ChipV2Size, ChipV2ImageIconConfig, ChipV2SuffixImageIconConfig, ChipV2PrefixImageIconConfig, ChipV2LabelConfig, ChipV2CloseConfig, ChipV2SymbolIconConfig, ChipV2PrefixSymbolIconConfig, ChipV2SuffixSymbolIconConfig, ChipV2AccessibilityConfig, ChipV2ImageIcon, ChipV2SuffixImageIcon, ChipV2PrefixImageIcon, ChipV2Label, ChipV2CloseIcon, ChipV2SymbolIcon, ChipV2PrefixSymbolIcon, ChipV2SuffixSymbolIcon, ChipV2, IChipV2OptionsConfig, ChipV2Options, ChipV2AccessibilitySelectedType, ChipV2Icon } from "@ohos.arkui.advanced.ChipV2";
+
+
+
 
 const noop = ((selectedIndexes: Array<int>) => {});
 const colorStops: Array<[ResourceColor, number]> = [["rgba(0, 0, 0, 1)", 0], ["rgba(0, 0, 0, 0)", 1]];
@@ -458,7 +406,7 @@ interface ChipGroupV2ItemConfig {
   
 }
 
-@ObservedV2() class ChipGroupV2Item implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class ChipGroupV2Item implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
   public addWatchSubscriber(watchId: WatchIdType): void {
     if (((this.subscribedWatches) !== (undefined))) {
@@ -632,12 +580,24 @@ interface ChipGroupV2ItemConfig {
     this.accessibilityLevel = config.accessibilityLevel;
   }
   
+  public addRefAnyProp(): void {
+    this.__meta_prefixIcon.addRef();
+    this.__meta_prefixSymbolIcon.addRef();
+    this.__meta_label.addRef();
+    this.__meta_suffixIcon.addRef();
+    this.__meta_suffixSymbolIcon.addRef();
+    this.__meta_allowClose.addRef();
+    this.__meta_closeIcon.addRef();
+    this.__meta_accessibilityDescription.addRef();
+    this.__meta_accessibilityLevel.addRef();
+  }
+  
   static {
     
   }
 }
 
-@ObservedV2() class ChipGroupV2Items extends Array<ChipGroupV2Item> implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class ChipGroupV2Items extends Array<ChipGroupV2Item> implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
   public addWatchSubscriber(watchId: WatchIdType): void {
     if (((this.subscribedWatches) !== (undefined))) {
@@ -670,6 +630,8 @@ interface ChipGroupV2ItemConfig {
       this.push(new ChipGroupV2Item(item));
     }));
   }
+  
+  public addRefAnyProp(): void {}
   
   static {
     
@@ -722,7 +684,7 @@ interface ChipGroupV2ItemStyleConfig {
   
 }
 
-@ObservedV2() class ChipGroupV2ItemStyle implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class ChipGroupV2ItemStyle implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
   public addWatchSubscriber(watchId: WatchIdType): void {
     if (((this.subscribedWatches) !== (undefined))) {
@@ -864,6 +826,16 @@ interface ChipGroupV2ItemStyleConfig {
     this.selectedBackgroundSystemMaterial = config.selectedBackgroundSystemMaterial;
   }
   
+  public addRefAnyProp(): void {
+    this.__meta_size.addRef();
+    this.__meta_backgroundColor.addRef();
+    this.__meta_fontColor.addRef();
+    this.__meta_selectedFontColor.addRef();
+    this.__meta_selectedBackgroundColor.addRef();
+    this.__meta_backgroundSystemMaterial.addRef();
+    this.__meta_selectedBackgroundSystemMaterial.addRef();
+  }
+  
   static {
     
   }
@@ -891,7 +863,7 @@ interface ChipGroupV2SpaceConfig {
   
 }
 
-@ObservedV2() class ChipGroupV2Space implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class ChipGroupV2Space implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
   public addWatchSubscriber(watchId: WatchIdType): void {
     if (((this.subscribedWatches) !== (undefined))) {
@@ -969,6 +941,12 @@ interface ChipGroupV2SpaceConfig {
     this.endSpace = config.endSpace;
   }
   
+  public addRefAnyProp(): void {
+    this.__meta_itemSpace.addRef();
+    this.__meta_startSpace.addRef();
+    this.__meta_endSpace.addRef();
+  }
+  
   static {
     
   }
@@ -1034,7 +1012,7 @@ interface ChipGroupV2PaddingConfig {
   
 }
 
-@ObservedV2() class ChipGroupV2Padding implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class ChipGroupV2Padding implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
   public addWatchSubscriber(watchId: WatchIdType): void {
     if (((this.subscribedWatches) !== (undefined))) {
@@ -1094,6 +1072,11 @@ interface ChipGroupV2PaddingConfig {
   public constructor(config: ChipGroupV2PaddingConfig) {
     this.top = config.top;
     this.bottom = config.bottom;
+  }
+  
+  public addRefAnyProp(): void {
+    this.__meta_top.addRef();
+    this.__meta_bottom.addRef();
   }
   
   static {
@@ -1366,7 +1349,10 @@ interface ChipV2ItemsBuilderOptions {
       }),
     } as IMonitorPathInfo)], ((_m: IMonitor) => {
       this.onItemsChange();
-    }), this);
+    }), ({
+      owner: this,
+      functionName: "onItemsChange",
+    } as MakeMonitorOptions));
     this.__monitor_onMultipleChange = STATE_MGMT_FACTORY.makeMonitor([({
       path: "multiple",
       valueCallback: ((): Any => {
@@ -1375,7 +1361,10 @@ interface ChipV2ItemsBuilderOptions {
       }),
     } as IMonitorPathInfo)], ((_m: IMonitor) => {
       this.onMultipleChange();
-    }), this);
+    }), ({
+      owner: this,
+      functionName: "onMultipleChange",
+    } as MakeMonitorOptions));
     this.__monitor_itemStyleOnChange = STATE_MGMT_FACTORY.makeMonitor([({
       path: "itemStyle",
       valueCallback: ((): Any => {
@@ -1384,7 +1373,10 @@ interface ChipV2ItemsBuilderOptions {
       }),
     } as IMonitorPathInfo)], ((_m: IMonitor) => {
       this.itemStyleOnChange();
-    }), this);
+    }), ({
+      owner: this,
+      functionName: "itemStyleOnChange",
+    } as MakeMonitorOptions));
     this.__monitor_selectedIndexesOnChange = STATE_MGMT_FACTORY.makeMonitor([({
       path: "selectedIndexes",
       valueCallback: ((): Any => {
@@ -1393,7 +1385,10 @@ interface ChipV2ItemsBuilderOptions {
       }),
     } as IMonitorPathInfo)], ((_m: IMonitor) => {
       this.selectedIndexesOnChange();
-    }), this);
+    }), ({
+      owner: this,
+      functionName: "selectedIndexesOnChange",
+    } as MakeMonitorOptions));
   }
   
   public __updateStruct(initializers: (__Options_ChipGroupV2 | undefined)): void {
