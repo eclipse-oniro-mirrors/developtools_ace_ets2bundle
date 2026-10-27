@@ -262,18 +262,24 @@ export function fetchStylesDecoratorVersionCondition(
 ): ISdkApiValues | undefined {
   const decorators: readonly ts.Decorator[] = ts.getAllDecorators(node);
 
-  const extendDecorator: ts.Decorator | undefined = decorators.find((item) => {
+  const stylesDecorator: ts.Decorator | undefined = decorators.find((item) => {
     const decoratorName: string = getDecoratorNameFromAst(item);
     return decoratorName === COMPONENT_STYLES_DECORATOR;
   });
 
-  if (!extendDecorator || !extendDecorator.expression || !ts.isCallExpression(extendDecorator.expression)) {
+  if (!stylesDecorator || !stylesDecorator.expression || !ts.isCallExpression(stylesDecorator.expression)) {
     return undefined;
   }
 
-  const callExpressionArguments: ts.NodeArray<ts.Expression> | undefined = extendDecorator.expression.arguments;
+  const callExpressionArguments: ts.NodeArray<ts.Expression> | undefined = stylesDecorator.expression.arguments;
 
-  if (!callExpressionArguments || !callExpressionArguments.length || callExpressionArguments.length !== 1) {
+  if (!callExpressionArguments || callExpressionArguments.length !== 1) {
+    log.push({
+      type: LogType.ERROR,
+      message: `'@Styles' decorator call must have exactly one parameter of type VersionCondition.`,
+      pos: stylesDecorator.expression.getStart(),
+      code: "10905390"
+    });
     return undefined;
   }
 
