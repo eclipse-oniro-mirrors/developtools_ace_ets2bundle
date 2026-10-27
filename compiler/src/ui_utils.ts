@@ -30,13 +30,12 @@ import {
   REQUIRE_NAPI,
   SDK_API_VERSION_FUNCTION_NAME,
 } from "./pre_define";
-import { BUILTIN_KEY_TO_DISTRIBUTIONAPI, BUILTIN_VALUE_TO_DISTRIBUTIONAPI } from "./version_condition_helpers";
+import { BUILTIN_KEY_TO_DISTRIBUTIONAPI, BUILTIN_VALUE_TO_DISTRIBUTIONAPI, IS_VERSION_IN_RANGE_FUNCTION_NAME } from "./version_condition_helpers";
 
 const SdkApiVersionMapPath = './build-tools/ts-checker-hooks/sdkApiVersionMap.json';
 
 const MIN_API_VERSION: string = 'minApiVersion';
 const MAX_API_VERSION: string = 'maxApiVersion';
-export const IS_VERSION_IN_RANGE_FUNCTION_NAME: string = '__IsVersionInRange__Internal__ToolChain';
 
 export interface ISdkApiValues {
     minApiVersionValue: string | number
@@ -50,30 +49,36 @@ export class VersionComparator {
   private valueToDistributionVersionApiMap = new Map<string, number>();
 
   constructor() {
-    const raw = this.readWithFallback();
-    for (const [key, values] of Object.entries(raw)) {
-      if (!Array.isArray(values) || values.length === 0) {
-        continue;
-      }
-      const osVersion = this.toDistributionOSVersion(values[0]);
-      if (osVersion === undefined) {
-        continue;
-      }
-      this.keyToDistributionVersionApiMap.set(key, osVersion);
-      for (const v of values) {
-        const vv = this.toDistributionOSVersion(v);
-        if (vv !== undefined) {
-          this.valueToDistributionVersionApiMap.set(v, vv);
+    try {
+      const raw = this.readWithFallback();
+      for (const [key, values] of Object.entries(raw)) {
+        if (!Array.isArray(values) || values.length === 0) {
+          continue;
+        }
+        const osVersion = this.toDistributionOSVersion(values[0]);
+        if (osVersion === undefined) {
+          continue;
+        }
+        this.keyToDistributionVersionApiMap.set(key, osVersion);
+        for (const v of values) {
+          const vv = this.toDistributionOSVersion(v);
+          if (vv !== undefined) {
+            this.valueToDistributionVersionApiMap.set(v, vv);
+          }
         }
       }
-    }
-    const parseFailed =
-      this.keyToDistributionVersionApiMap.size === 0 &&
-      this.valueToDistributionVersionApiMap.size === 0;
-    const missingCriticalVersion =
-      !this.valueToDistributionVersionApiMap.has("26.1.0");
+      const parseFailed =
+        this.keyToDistributionVersionApiMap.size === 0 &&
+        this.valueToDistributionVersionApiMap.size === 0;
+      const missingCriticalVersion =
+        !this.valueToDistributionVersionApiMap.has("26.1.0");
 
-    if (parseFailed || missingCriticalVersion) {
+      if (parseFailed || missingCriticalVersion) {
+        this.applyBuiltinMap();
+      }
+    } catch (e) {
+      this.keyToDistributionVersionApiMap.clear();
+      this.valueToDistributionVersionApiMap.clear();
       this.applyBuiltinMap();
     }
   }
