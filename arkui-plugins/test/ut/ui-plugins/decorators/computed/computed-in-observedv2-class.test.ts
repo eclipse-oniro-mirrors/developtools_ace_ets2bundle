@@ -56,7 +56,7 @@ import { Computed as Computed, ObservedV2 as ObservedV2, Trace as Trace } from "
 
 function main() {}
 
-@ObservedV2() class Name implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class Name implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
 
   public addWatchSubscriber(watchId: WatchIdType): void {
@@ -129,6 +129,11 @@ function main() {}
   }
 
   public constructor() {}
+
+  public addRefAnyProp(): void {
+    this.__meta_firstName.addRef();
+    this.__meta_lastName.addRef();
+  }
 
   static {
   }

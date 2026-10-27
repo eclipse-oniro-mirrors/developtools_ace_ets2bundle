@@ -51,6 +51,8 @@ const observedTrackTransform: Plugins = {
 }
 
 const projectConfig: ProjectConfig = mockProjectConfig();
+// 该用例走 page 编译管线，@ObservedV2 类经 struct-translators 的 deprecated 门控路径（factory.ts:1412/1480），
+// 产物仍依赖 compatibleSdkVersion >= 26，故保留 26；参见 .specs/features/monitor-sdk-version-gate-removal/review.md
 projectConfig.compatibleSdkVersion = 26;
 
 const pluginTester = new PluginTester('test @ObservedV2 class support wildCard', buildConfig, projectConfig);

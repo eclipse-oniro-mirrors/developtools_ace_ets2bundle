@@ -67,7 +67,7 @@ interface trackInterface {
   
 }
 
-@ObservedV2() class F implements PropInterface, trackInterface, IObservedObject, ISubscribedWatches {
+@ObservedV2() class F implements PropInterface, trackInterface, IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
 
   public addWatchSubscriber(watchId: WatchIdType): void {
@@ -142,6 +142,10 @@ interface trackInterface {
   public set trackF(trackF: number) {
     this.trackF = trackF;
     return;
+  }
+  public addRefAnyProp(): void {
+    this.__meta_propF.addRef();
+    this.__meta_bb.addRef();
   }
   static {
   }

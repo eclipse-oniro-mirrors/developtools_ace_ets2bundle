@@ -40,36 +40,24 @@ const parsedTransform: Plugins = {
 
 const expectedUIScript: string = `
 
-import { IObservedObject as IObservedObject } from "arkui.stateManagement.decorator";
 
-import { IMonitorPathInfo as IMonitorPathInfo } from "arkui.stateManagement.decorator";
 
-import { IMonitor as IMonitor } from "arkui.stateManagement.decorator";
 
-import { RenderIdType as RenderIdType } from "arkui.stateManagement.decorator";
 
-import { WatchIdType as WatchIdType } from "arkui.stateManagement.decorator";
 
-import { ISubscribedWatches as ISubscribedWatches } from "arkui.stateManagement.decorator";
 
-import { IMonitorDecoratedVariable as IMonitorDecoratedVariable } from "arkui.stateManagement.decorator";
 
-import { UIUtils as UIUtils } from "arkui.stateManagement.utils";
 
-import { STATE_MGMT_FACTORY as STATE_MGMT_FACTORY } from "arkui.stateManagement.decorator";
 
-import { IMutableStateMeta as IMutableStateMeta } from "arkui.stateManagement.decorator";
 
-import { Text as Text, Column as Column, Component as Component, ComponentV2 as ComponentV2, Entry as Entry, Builder as Builder, BuilderParam as BuilderParam } from "@ohos.arkui.component";
 
-import { Observed as Observed, ObservedV2 as ObservedV2, Track as Track, Trace as Trace, Monitor as Monitor, Computed as Computed, Local as Local } from "@ohos.arkui.stateManagement";
 
-import { IO as IO, ExportObservedV2 as ExportObservedV2, ExportObservedV2Inherit as ExportObservedV2Inherit, ExportObservedV2WithBody as ExportObservedV2WithBody, ExportObservedV2InheritWithBody as ExportObservedV2InheritWithBody } from "./utils/class-observedV2-inherit";
+
 
 function main() {}
 
 
-@ObservedV2() class SomeObV2Inherit extends ExportObservedV2 implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class SomeObV2Inherit extends ExportObservedV2 implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
   public addWatchSubscriber(watchId: WatchIdType): void {
     if (((this.subscribedWatches) !== (undefined))) {
@@ -128,7 +116,15 @@ function main() {}
       }),
     } as IMonitorPathInfo)], ((_m: IMonitor) => {
       this.onT1Changed();
-    }));
+    }), ({
+      owner: undefined,
+      functionName: "onT1Changed",
+    } as MakeMonitorOptions));
+  }
+  
+  public addRefAnyProp(): void {
+    super.addRefAnyProp();
+    this.__meta_t3.addRef();
   }
   
   static {
@@ -136,7 +132,7 @@ function main() {}
   }
 }
 
-@ObservedV2() class SomeObV2TrInherit extends ExportObservedV2InheritWithBody implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class SomeObV2TrInherit extends ExportObservedV2InheritWithBody implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
   public addWatchSubscriber(watchId: WatchIdType): void {
     if (((this.subscribedWatches) !== (undefined))) {
@@ -183,11 +179,15 @@ function main() {}
     super(t2);
   }
   
+  public addRefAnyProp(): void {
+    super.addRefAnyProp();
+    this.__meta_t3.addRef();
+  }
+  
   static {
     
   }
 }
-
 
 `;
 
@@ -197,36 +197,24 @@ function testUITransformer(this: PluginTestContext): void {
 
 const expectedMemoScript: string = `
 
-import { IObservedObject as IObservedObject } from "arkui.stateManagement.decorator";
 
-import { IMonitorPathInfo as IMonitorPathInfo } from "arkui.stateManagement.decorator";
 
-import { IMonitor as IMonitor } from "arkui.stateManagement.decorator";
 
-import { RenderIdType as RenderIdType } from "arkui.stateManagement.decorator";
 
-import { WatchIdType as WatchIdType } from "arkui.stateManagement.decorator";
 
-import { ISubscribedWatches as ISubscribedWatches } from "arkui.stateManagement.decorator";
 
-import { IMonitorDecoratedVariable as IMonitorDecoratedVariable } from "arkui.stateManagement.decorator";
 
-import { UIUtils as UIUtils } from "arkui.stateManagement.utils";
 
-import { STATE_MGMT_FACTORY as STATE_MGMT_FACTORY } from "arkui.stateManagement.decorator";
 
-import { IMutableStateMeta as IMutableStateMeta } from "arkui.stateManagement.decorator";
 
-import { Text as Text, Column as Column, Component as Component, ComponentV2 as ComponentV2, Entry as Entry, Builder as Builder, BuilderParam as BuilderParam } from "@ohos.arkui.component";
 
-import { Observed as Observed, ObservedV2 as ObservedV2, Track as Track, Trace as Trace, Monitor as Monitor, Computed as Computed, Local as Local } from "@ohos.arkui.stateManagement";
 
-import { IO as IO, ExportObservedV2 as ExportObservedV2, ExportObservedV2Inherit as ExportObservedV2Inherit, ExportObservedV2WithBody as ExportObservedV2WithBody, ExportObservedV2InheritWithBody as ExportObservedV2InheritWithBody } from "./utils/class-observedV2-inherit";
+
 
 function main() {}
 
 
-@ObservedV2() class SomeObV2Inherit extends ExportObservedV2 implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class SomeObV2Inherit extends ExportObservedV2 implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
   public addWatchSubscriber(watchId: WatchIdType): void {
     if (((this.subscribedWatches) !== (undefined))) {
@@ -285,7 +273,15 @@ function main() {}
       }),
     } as IMonitorPathInfo)], ((_m: IMonitor) => {
       this.onT1Changed();
-    }));
+    }), ({
+      owner: undefined,
+      functionName: "onT1Changed",
+    } as MakeMonitorOptions));
+  }
+  
+  public addRefAnyProp(): void {
+    super.addRefAnyProp();
+    this.__meta_t3.addRef();
   }
   
   static {
@@ -293,7 +289,7 @@ function main() {}
   }
 }
 
-@ObservedV2() class SomeObV2TrInherit extends ExportObservedV2InheritWithBody implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class SomeObV2TrInherit extends ExportObservedV2InheritWithBody implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
   public addWatchSubscriber(watchId: WatchIdType): void {
     if (((this.subscribedWatches) !== (undefined))) {
@@ -340,11 +336,15 @@ function main() {}
     super(t2);
   }
   
+  public addRefAnyProp(): void {
+    super.addRefAnyProp();
+    this.__meta_t3.addRef();
+  }
+  
   static {
     
   }
 }
-
 
 `;
 

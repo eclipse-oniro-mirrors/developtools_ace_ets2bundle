@@ -58,7 +58,7 @@ function main() {}
 
 
 
-@ObservedV2() class CC implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class CC implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
 
   public addWatchSubscriber(watchId: WatchIdType): void {
@@ -108,6 +108,10 @@ function main() {}
 
   public constructor() {}
   static {
+  }
+
+  public addRefAnyProp(): void {
+    this.__meta_traceB.addRef();
   }
 
 }

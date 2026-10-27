@@ -76,7 +76,7 @@ import { Computed as Computed, Local as Local } from "@ohos.arkui.stateManagemen
 function main() {}
 
 
-@ObservedV2() class Name implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class Name implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
 
   public addWatchSubscriber(watchId: WatchIdType): void {
@@ -153,6 +153,11 @@ function main() {}
   }
 
   public constructor() {}
+
+  public addRefAnyProp(): void {
+    this.__meta_firstName.addRef();
+    this.__meta_lastName.addRef();
+  }
   static {
   }
 }

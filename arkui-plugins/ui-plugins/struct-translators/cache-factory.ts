@@ -90,8 +90,6 @@ import {
 } from '../memo-collect-cache';
 import { NodeCacheFactory } from '../../common/node-cache';
 
-const OBSERVED_ANY_PROP_MIN_VERSION = 26;
-
 interface RewritedStructMethodInfo {
     hasInitializeStruct?: boolean;
     hasUpdateStruct?: boolean;
@@ -852,7 +850,7 @@ export class CacheFactory {
                 UIFactory.createTypeReferenceFromString(StateManagementTypes.SUBSCRIBED_WATCHES)
             ),
         ];
-        if (isObservedV2 && isSdkVersionAtLeast(OBSERVED_ANY_PROP_MIN_VERSION)) {
+        if (isObservedV2) {
             implementsArr.push(arkts.TSClassImplements.createTSClassImplements(
                 UIFactory.createTypeReferenceFromString(StateManagementTypes.OBSERVED_ANY_PROP)
             ));
@@ -911,7 +909,7 @@ export class CacheFactory {
         const newStaticBlock = !isDecl && !hasStaticBlock 
             ? [UIFactory.createClassStaticBlock()] 
             : [];
-        const addRefAnyPropMethod = isObservedV2 && isSdkVersionAtLeast(OBSERVED_ANY_PROP_MIN_VERSION)
+        const addRefAnyPropMethod = isObservedV2
             ? [this.createAddRefAnyPropMethod(definition, isDecl)]
             : [];
         const returnNodes: arkts.AstNode[] = collect(
