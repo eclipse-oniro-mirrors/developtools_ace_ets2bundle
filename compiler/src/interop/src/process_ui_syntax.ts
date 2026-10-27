@@ -87,7 +87,9 @@ import {
   ATTRIBUTE_ID,
   __GETRESOURCEID__,
   __RESOURCEIDHAR__,
-  APIVERSION
+  APIVERSION,
+  ACE_BEGIN_SCROLL_PLACEHOLDER,
+  ACE_END_SCROLL_PLACEHOLDER
 } from './pre_define';
 import {
   componentInfo,
@@ -105,7 +107,9 @@ import {
   EntryOptionValue,
   judgeUseSharedStorageForExpresion,
   createGetSharedForVariable,
-  createGetShared
+  createGetShared,
+  parseBuilderDecoratorOptions,
+  BuilderDecoratorOptions
 } from './utils';
 import { writeFileSyncByNode } from './process_module_files';
 import {
@@ -148,7 +152,8 @@ import {
   resources,
   projectConfig,
   partialUpdateConfig,
-  rawfileResources
+  rawfileResources,
+  globalProgram
 } from '../main';
 import {
   createCustomComponentNewExpression,
@@ -377,8 +382,20 @@ export function processUISyntax(program: ts.Program, ut = false,
           storedFileInfo.builderLikeCollection = CUSTOM_BUILDER_METHOD;
           const builderParamsResult: BuilderParamsResult = { firstParam: null };
           parseGlobalBuilderParams(node.parameters, builderParamsResult);
-          const componentBlock: ts.Block = processComponentBlock(node.body, false, transformLog.errors, false, true,
+          let componentBlock: ts.Block = processComponentBlock(
+            node.body, false, transformLog.errors, false, true,
             node.name.getText(), undefined, true, builderParamsResult, true);
+          const builderOptions: BuilderDecoratorOptions | undefined =
+            parseBuilderDecoratorOptions(ts.getAllDecorators(node));
+          const isPlaceholderBuilder: boolean = node.parameters.length === 0 &&
+            builderOptions !== undefined && builderOptions.present && builderOptions.isPlaceholder;
+          if (isPlaceholderBuilder) {
+            componentBlock = ts.factory.updateBlock(componentBlock, [
+              createScrollPlaceholderCall(ACE_BEGIN_SCROLL_PLACEHOLDER),
+              ...componentBlock.statements,
+              createScrollPlaceholderCall(ACE_END_SCROLL_PLACEHOLDER)
+            ]);
+          }
           node = ts.factory.updateFunctionDeclaration(node, ts.getModifiers(node),
             node.asteriskToken, node.name, node.typeParameters, parameters, node.type,
             componentBlock);
@@ -565,6 +582,11 @@ export function processUISyntax(program: ts.Program, ut = false,
       return ts.visitEachChild(node, visitor, context);
     }
   };
+}
+
+function createScrollPlaceholderCall(helperName: string): ts.ExpressionStatement {
+  return ts.factory.createExpressionStatement(ts.factory.createCallExpression(
+    ts.factory.createIdentifier(helperName), undefined, undefined));
 }
 
 export function globalBuilderParamAssignment(): ts.VariableStatement {

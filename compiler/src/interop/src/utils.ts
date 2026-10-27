@@ -39,6 +39,8 @@ import {
   EXTEND_DECORATORS,
   COMPONENT_EXTEND_DECORATOR,
   COMPONENT_ANIMATABLE_EXTEND_DECORATOR,
+  COMPONENT_BUILDER_DECORATOR,
+  BUILDER_DECORATOR_OPTION_IS_PLACEHOLDER,
   COMPONENT_CONSTRUCTOR_LOCALSTORAGE_TYPE_PU,
   GET_SHARED,
   COMPONENT_CONSTRUCTOR_UNDEFINED,
@@ -264,6 +266,97 @@ export function hasDecorator(node: ts.MethodDeclaration | ts.FunctionDeclaration
       (decortorName === COMPONENT_ANIMATABLE_EXTEND_DECORATOR && extendResult.AnimatableExtend);
   }
   return false;
+}
+
+export interface BuilderDecoratorOptions {
+  isPlaceholder: boolean;
+  present: boolean;
+  valueInvalid: boolean;
+}
+
+function getDecoratorExpressionName(expression: ts.Expression): string {
+  if (ts.isIdentifier(expression)) {
+    return expression.escapedText.toString();
+  }
+  if (ts.isCallExpression(expression) && ts.isIdentifier(expression.expression)) {
+    return expression.expression.escapedText.toString();
+  }
+  return '';
+}
+
+export function isBuilderDecorator(decorator: ts.Decorator): boolean {
+  return `@${getDecoratorExpressionName(decorator.expression)}` === COMPONENT_BUILDER_DECORATOR;
+}
+
+function isDecoratorOptionKey(name: ts.PropertyName, key: string): boolean {
+  if (ts.isIdentifier(name)) {
+    return name.escapedText.toString() === key;
+  }
+  if (ts.isStringLiteral(name)) {
+    return name.text === key;
+  }
+  return false;
+}
+
+/**
+ * Locates the @Builder decorator in `decorators`, or undefined when there is none.
+ */
+export function findBuilderDecorator(decorators: readonly ts.Decorator[]): ts.Decorator | undefined {
+  if (!decorators || !decorators.length) {
+    return undefined;
+  }
+  return Array.from(decorators).find((item: ts.Decorator) => isBuilderDecorator(item));
+}
+
+/**
+ * Parses the options of an @Builder decorator (shared by validate and transform).
+ */
+export function parseBuilderDecoratorOptions(decorators: readonly ts.Decorator[]):
+  BuilderDecoratorOptions | undefined {
+  const builderDecorator: ts.Decorator | undefined = findBuilderDecorator(decorators);
+  if (!builderDecorator || !ts.isCallExpression(builderDecorator.expression)) {
+    return { present: false, isPlaceholder: false, valueInvalid: false };
+  }
+  const args: readonly ts.Expression[] = builderDecorator.expression.arguments;
+  if (args.length === 0) {
+    // empty call '@Builder()': original usage, no diagnostic
+    return { present: false, isPlaceholder: false, valueInvalid: false };
+  }
+  if (args.length !== 1 || !ts.isObjectLiteralExpression(args[0])) {
+    return undefined;
+  }
+  const properties: ts.NodeArray<ts.ObjectLiteralElementLike> = args[0].properties;
+  let placeholderValue: boolean | undefined = undefined;
+  let hasInvalidPlaceholder: boolean = false;
+  for (let i = 0; i < properties.length; i++) {
+    const property: ts.ObjectLiteralElementLike = properties[i];
+    if (!ts.isPropertyAssignment(property) ||
+      !isDecoratorOptionKey(property.name, BUILDER_DECORATOR_OPTION_IS_PLACEHOLDER)) {
+      continue;
+    }
+    if (property.initializer.kind === ts.SyntaxKind.TrueKeyword ||
+      property.initializer.kind === ts.SyntaxKind.FalseKeyword) {
+      if (placeholderValue === undefined) {
+        placeholderValue = property.initializer.kind === ts.SyntaxKind.TrueKeyword;
+      }
+    } else {
+      hasInvalidPlaceholder = true;
+    }
+  }
+  if (hasInvalidPlaceholder) {
+    // non-empty literal with an isPlaceholder whose value is not a boolean literal:
+    // variables, enums, numbers, strings etc. are rejected (D-3)
+    return { present: false, isPlaceholder: false, valueInvalid: true };
+  }
+  if (placeholderValue !== undefined) {
+    return { present: true, isPlaceholder: placeholderValue, valueInvalid: false };
+  }
+  if (properties.length > 0) {
+    // non-empty literal without any isPlaceholder property: key missing or misspelled (D-3)
+    return { present: false, isPlaceholder: false, valueInvalid: true };
+  }
+  // empty object literal '@Builder({})': regarded as isPlaceholder false, no diagnostic
+  return { present: false, isPlaceholder: false, valueInvalid: false };
 }
 
 const STATEMENT_EXPECT: number = 1128;
@@ -585,7 +678,7 @@ export function validateFilePathLength(filePath: string, logger: Object): boolea
   }
 }
 
-export function validateFilePathLengths(filePaths: Array<string>, logger: any): boolean {
+export function validateFilePathLengths(filePaths: Array<string>, logger: Object): boolean {
   filePaths.forEach((filePath) => {
     if (!validateFilePathLength(filePath, logger)) {
       return false;
