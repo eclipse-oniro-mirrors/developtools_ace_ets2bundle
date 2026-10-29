@@ -98,6 +98,7 @@ import {
   isApiAvailableVersionSpecifications
 } from './fast_build/system_api/api_check_utils';
 import { sourceFileDependencies } from './fast_build/ark_compiler/common/ob_config_resolver';
+import { DEBUG } from './fast_build/ark_compiler/common/ark_define';
 import { MemoryMonitor } from './fast_build/meomry_monitor/rollup-plugin-memory-monitor';
 import { MemoryDefine } from './fast_build/meomry_monitor/memory_define';
 import {
@@ -152,6 +153,7 @@ export interface LanguageServiceCache {
   strictCheckerOnly?: boolean;
   enableAccurateNullChecks?: boolean;
   tsImportSoCheck?: boolean;
+  preSkipArkTSLinter?: boolean;
   obfuscationRuleHash?: string;
 }
 
@@ -268,6 +270,7 @@ function setCompilerOptions(resolveModulePaths: string[]): void {
     'strictCheckerOnly': projectConfig.strictCheckerOnly,
     'enableAccurateNullChecks': isAccurateNullChecksEnabled(),
     'tsImportSoCheck': projectConfig.tsImportSoCheck,
+    'skipArkTSLinter': skipArkTSLinter && projectConfig.buildMode.toLowerCase() === DEBUG,
   });
   if (projectConfig.compileMode === ESMODULE) {
     Object.assign(compilerOptions, {
@@ -619,10 +622,13 @@ function getOrCreateLanguageService(servicesHost: ts.LanguageServiceHost, rootFi
   const strictCheckerOnlyDiff: boolean = checkValueDiff(lastStrictCheckerOnly, currentStrictCheckerOnly);
   const enableAccurateNullChecksDiff: boolean = checkValueDiff(lastEnableAccurateNullChecks, currentEnableAccurateNullChecks);
   const tsImportSoCheckDiff: boolean = checkValueDiff(lastTsImportSoCheck, currentTsImportSoCheck);
+  const currentSkipArkTSLinter: boolean = skipArkTSLinter && projectConfig.buildMode.toLowerCase() === DEBUG;
+  const skipArkTSLinterDiff: boolean = checkValueDiff(cache?.preSkipArkTSLinter, currentSkipArkTSLinter);
   const onlyDeleteBuildInfoCache: boolean | undefined = tsImportSendableDiff || maxFlowDepthDiffers || skipOhModulesLintDiff ||
     enableStrictCheckOHModuleDiff || disableStrictCheckPathsDiff || disableSendableCheckRulesDiff ||
     mixCompileDiff || typesDiff || autoLazyImportDiff || autoLazyFilterDiff ||
-    useDeclarationFileSignatureDiff || strictCheckerOnlyDiff || enableAccurateNullChecksDiff || tsImportSoCheckDiff;
+    useDeclarationFileSignatureDiff || strictCheckerOnlyDiff || enableAccurateNullChecksDiff || tsImportSoCheckDiff ||
+    skipArkTSLinterDiff;
   const shouldInvalidCache: boolean | undefined = targetESVersionDiffers || useTsHarDiff;
   const shouldRebuild: boolean | undefined = shouldRebuildForDepDiffers || shouldInvalidCache || onlyDeleteBuildInfoCache ||
     obfuscationRuleHashDiffers;
@@ -648,7 +654,8 @@ function getOrCreateLanguageService(servicesHost: ts.LanguageServiceHost, rootFi
       ['useDeclarationFileSignatureDiff', useDeclarationFileSignatureDiff],
       ['strictCheckerOnlyDiff', strictCheckerOnlyDiff],
       ['enableAccurateNullChecksDiff', enableAccurateNullChecksDiff],
-      ['tsImportSoCheckDiff', tsImportSoCheckDiff]
+      ['tsImportSoCheckDiff', tsImportSoCheckDiff],
+      ['skipArkTSLinterDiff', skipArkTSLinterDiff]
     ];
     const diffsSummary: string = diffFlags.filter(([, diff]) => !!diff).map(([name]) => name).join(', ');
     const eventShouldRebuild = createAndStartEvent(parentEvent,
@@ -687,6 +694,7 @@ function getOrCreateLanguageService(servicesHost: ts.LanguageServiceHost, rootFi
     strictCheckerOnly: currentStrictCheckerOnly,
     enableAccurateNullChecks: currentEnableAccurateNullChecks,
     tsImportSoCheck: currentTsImportSoCheck,
+    preSkipArkTSLinter: currentSkipArkTSLinter,
     obfuscationRuleHash: currentObfuscationRuleHash,
     autoLazyImport: currentAutoLazyImport,
     autoLazyFilterInclude: currentAutoLazyFilterInclude ? [...currentAutoLazyFilterInclude] : undefined,
@@ -865,6 +873,7 @@ let enableStrictCheckOHModule: boolean = false;
 let disableStrictCheckPaths: string[] | undefined;
 let disableSendableCheckRules: string[] = [];
 let mixCompile: boolean = false;
+let skipArkTSLinter: boolean = false;
 export let maxMemoryInServiceChecker: number = 0;
 export function serviceChecker(rootFileNames: string[], newLogger: Object = null, resolveModulePaths: string[] = null,
   parentEvent?: CompileEvent, rollupShareObject?: Object): void {
@@ -876,6 +885,7 @@ export function serviceChecker(rootFileNames: string[], newLogger: Object = null
   disableStrictCheckPaths = normalizeDisableStrictCheckPaths(rollupShareObject?.projectConfig?.strictMode?.disableStrictCheckPaths);
   disableSendableCheckRules = rollupShareObject?.projectConfig.disableSendableCheckRules || [];
   mixCompile = rollupShareObject?.projectConfig.mixCompile;
+  skipArkTSLinter = rollupShareObject?.projectConfig.skipArkTSLinter;
   if (projectConfig.xtsMode || process.env.watchMode === 'true') {
     if (projectConfig.hotReload) {
       rootFileNames.forEach(fileName => {

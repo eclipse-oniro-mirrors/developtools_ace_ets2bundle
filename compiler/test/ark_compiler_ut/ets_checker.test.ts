@@ -1044,3 +1044,186 @@ mocha.describe('function resolveModuleNames externalApiPaths filtering', () => {
     expect(result).to.deep.equal([null]);
   });
 });
+
+mocha.describe('skipArkTSLinter option', function () {
+    this.timeout(30000);
+
+    mocha.before(function () {
+        this.rollup = new RollUpPluginMock();
+    });
+
+    mocha.after(function () {
+        const cacheFile: string = path.resolve(projectConfig.cachePath, '../.ts_checker_cache');
+        if (fs.existsSync(cacheFile)) {
+            fs.unlinkSync(cacheFile);
+        }
+        const tsBuildInfoFilePath: string = path.resolve(projectConfig.cachePath, '..', TS_BUILD_INFO_SUFFIX);
+        const tsBuildInfoLinterFilePath: string = tsBuildInfoFilePath + '.linter';
+        if (fs.existsSync(tsBuildInfoFilePath)) {
+            fs.unlinkSync(tsBuildInfoFilePath);
+        }
+        if (fs.existsSync(tsBuildInfoLinterFilePath)) {
+            fs.unlinkSync(tsBuildInfoLinterFilePath);
+        }
+        delete this.rollup;
+    });
+
+    mocha.afterEach(() => {
+        resetEtsCheck();
+    });
+
+    function applyConfig(rollup: any, skipArkTSLinter: boolean, buildMode: string): void {
+        rollup.share.projectConfig.skipArkTSLinter = skipArkTSLinter;
+        rollup.share.projectConfig.buildMode = buildMode;
+        Object.assign(projectConfig, rollup.share.projectConfig);
+    }
+
+    function getCachedService(share: any): any | undefined {
+        const cache = share.cache?.get('service');
+        return cache?.service;
+    }
+
+    mocha.it('1: debug + skip=true → compilerOptions.skipArkTSLinter=true', function () {
+        this.rollup.build();
+        this.rollup.share.initWithCache();
+        applyConfig(this.rollup, true, 'Debug');
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, this.rollup.share);
+        expect(compilerOptions.skipArkTSLinter).to.be.true;
+    });
+
+    mocha.it('2: debug + skip=false → compilerOptions.skipArkTSLinter=false', function () {
+        this.rollup.build();
+        this.rollup.share.initWithCache();
+        applyConfig(this.rollup, false, 'Debug');
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, this.rollup.share);
+        expect(compilerOptions.skipArkTSLinter).to.be.false;
+    });
+
+    mocha.it('3: release + skip=true → compilerOptions.skipArkTSLinter=false', function () {
+        this.rollup.build();
+        this.rollup.share.initWithCache();
+        applyConfig(this.rollup, true, 'Release');
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, this.rollup.share);
+        expect(compilerOptions.skipArkTSLinter).to.be.false;
+    });
+
+    mocha.it('4: release + skip=false → compilerOptions.skipArkTSLinter=false', function () {
+        this.rollup.build();
+        this.rollup.share.initWithCache();
+        applyConfig(this.rollup, false, 'Release');
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, this.rollup.share);
+        expect(compilerOptions.skipArkTSLinter).to.be.false;
+    });
+
+    mocha.it('5: debug, skip true→false → cache rebuilt (effective: true→false)', function () {
+        this.rollup.build();
+        this.rollup.share.initWithCache();
+        applyConfig(this.rollup, true, 'Debug');
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, this.rollup.share);
+        resetEtsCheck();
+        const beforeService = getCachedService(this.rollup.share);
+
+        applyConfig(this.rollup, false, 'Debug');
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, this.rollup.share);
+
+        expect(beforeService).to.not.equal(getCachedService(this.rollup.share));
+    });
+
+    mocha.it('6: debug, skip false→true → cache rebuilt (effective: false→true)', function () {
+        this.rollup.build();
+        this.rollup.share.initWithCache();
+        applyConfig(this.rollup, false, 'Debug');
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, this.rollup.share);
+        resetEtsCheck();
+        const beforeService = getCachedService(this.rollup.share);
+
+        applyConfig(this.rollup, true, 'Debug');
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, this.rollup.share);
+
+        expect(beforeService).to.not.equal(getCachedService(this.rollup.share));
+    });
+
+    mocha.it('7: release, skip true→false → cache reused (effective: false→false)', function () {
+        this.rollup.build();
+        this.rollup.share.initWithCache();
+        applyConfig(this.rollup, true, 'Release');
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, this.rollup.share);
+        resetEtsCheck();
+        const beforeService = getCachedService(this.rollup.share);
+
+        applyConfig(this.rollup, false, 'Release');
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, this.rollup.share);
+
+        expect(beforeService).to.equal(getCachedService(this.rollup.share));
+    });
+
+    mocha.it('8: release, skip false→true → cache reused (effective: false→false)', function () {
+        this.rollup.build();
+        this.rollup.share.initWithCache();
+        applyConfig(this.rollup, false, 'Release');
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, this.rollup.share);
+        resetEtsCheck();
+        const beforeService = getCachedService(this.rollup.share);
+
+        applyConfig(this.rollup, true, 'Release');
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, this.rollup.share);
+
+        expect(beforeService).to.equal(getCachedService(this.rollup.share));
+    });
+
+    mocha.it('9: debug→release, skip false→true → cache reused (effective: false→false)', function () {
+        this.rollup.build();
+        this.rollup.share.initWithCache();
+        applyConfig(this.rollup, false, 'Debug');
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, this.rollup.share);
+        resetEtsCheck();
+        const beforeService = getCachedService(this.rollup.share);
+
+        applyConfig(this.rollup, true, 'Release');
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, this.rollup.share);
+
+        expect(beforeService).to.equal(getCachedService(this.rollup.share));
+    });
+
+    mocha.it('10: debug→release, skip true→false → cache rebuilt (effective: true→false)', function () {
+        this.rollup.build();
+        this.rollup.share.initWithCache();
+        applyConfig(this.rollup, true, 'Debug');
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, this.rollup.share);
+        resetEtsCheck();
+        const beforeService = getCachedService(this.rollup.share);
+
+        applyConfig(this.rollup, false, 'Release');
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, this.rollup.share);
+
+        expect(beforeService).to.not.equal(getCachedService(this.rollup.share));
+    });
+
+    mocha.it('11: release→debug, skip false→true → cache rebuilt (effective: false→true)', function () {
+        this.rollup.build();
+        this.rollup.share.initWithCache();
+        applyConfig(this.rollup, false, 'Release');
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, this.rollup.share);
+        resetEtsCheck();
+        const beforeService = getCachedService(this.rollup.share);
+
+        applyConfig(this.rollup, true, 'Debug');
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, this.rollup.share);
+
+        expect(beforeService).to.not.equal(getCachedService(this.rollup.share));
+    });
+
+    mocha.it('12: release→debug, skip true→false → cache reused (effective: false→false)', function () {
+        this.rollup.build();
+        this.rollup.share.initWithCache();
+        applyConfig(this.rollup, true, 'Release');
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, this.rollup.share);
+        resetEtsCheck();
+        const beforeService = getCachedService(this.rollup.share);
+
+        applyConfig(this.rollup, false, 'Debug');
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, this.rollup.share);
+
+        expect(beforeService).to.equal(getCachedService(this.rollup.share));
+    });
+});
