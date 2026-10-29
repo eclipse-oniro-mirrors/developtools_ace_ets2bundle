@@ -55,6 +55,8 @@ import { MemoryMonitor } from '../../meomry_monitor/rollup-plugin-memory-monitor
 import { MemoryDefine } from '../../meomry_monitor/memory_define';
 import { initObfLogger, printObfLogger } from './ob_config_resolver';
 import { BytecodeObfuscator } from '../bytecode_obfuscator';
+import { ArkTSErrorDescription, ErrorCode } from '../error_code';
+import { CommonLogger, LogData, LogDataFactory } from '../logger';
 
 type ArkConfig = {
   arkRootPath: string;
@@ -69,6 +71,26 @@ type ArkConfig = {
   isBranchElimination: boolean;
   optTryCatchFunc: boolean;
 };
+
+export function validateHarWidgetCompile(rollupObject: Object): void {
+  const projectConfig: Object = rollupObject.share.projectConfig;
+  if (!projectConfig.widgetCompile) {
+    return;
+  }
+  const isBundleHar: boolean = !!projectConfig.byteCodeHar &&
+    !!projectConfig.projectArkOption?.bundle?.bundledAllDependencies;
+  const isCustomizedHar: boolean = !!projectConfig.customizedHar;
+  if (!isBundleHar && !isCustomizedHar) {
+    return;
+  }
+  const harType: string = isBundleHar ? 'bundle HAR' : 'customized HAR';
+  const errInfo: LogData = LogDataFactory.newInstance(
+    ErrorCode.ETS2BUNDLE_EXTERNAL_WIDGET_COMPILATION_NOT_SUPPORTED,
+    ArkTSErrorDescription,
+    `Widget compilation is not supported when building a ${harType}.`
+  );
+  CommonLogger.getInstance(rollupObject).printErrorAndExit(errInfo);
+}
 
 export function initArkConfig(projectConfig: Object): ArkConfig {
   let arkRootPath: string = path.join(__dirname, '..', '..', '..', '..', 'bin', 'ark');
