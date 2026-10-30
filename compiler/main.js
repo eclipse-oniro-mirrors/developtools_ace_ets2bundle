@@ -685,7 +685,15 @@ function loadBuildJson() {
     projectConfig.packageJson = 'oh-package.json5';
   }
   projectConfig.harWidgetMerge = !!aceBuildJson.harWidgetMerge;
-  projectConfig.harWidgetPaths = aceBuildJson.harWidgetPaths || [];
+  projectConfig.harWidgetPaths = [];
+  if (aceBuildJson.byteCodeHarInfo) {
+    for (const harName in aceBuildJson.byteCodeHarInfo) {
+      const componentCollectionPath = aceBuildJson.byteCodeHarInfo[harName].componentCollectionPath;
+      if (componentCollectionPath) {
+        projectConfig.harWidgetPaths.push(componentCollectionPath);
+      }
+    }
+  }
   // add the oh-exports visibility file
   projectConfig.ohExports = aceBuildJson['oh-exports'] || [];
   // add intent framework entry file
