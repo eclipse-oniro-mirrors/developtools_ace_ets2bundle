@@ -5350,5 +5350,17 @@
             "type": "ERROR",
             "code": "10905307"
         }
+    ],
+    "validateRequireParamUndefinedType": [
+        {
+            "message": "'@Require' decorated 'require_value' expects type 'number' but got 'undefined' through the component constructor.",
+            "type": "WARN"
+        }
+    ],
+    "validateRequireParamUndefinedTypeV2": [
+        {
+            "message": "'@Require' decorated 'require_param_value' expects type 'string' but got 'undefined' through the component constructor.",
+            "type": "WARN"
+        }
     ]
 }

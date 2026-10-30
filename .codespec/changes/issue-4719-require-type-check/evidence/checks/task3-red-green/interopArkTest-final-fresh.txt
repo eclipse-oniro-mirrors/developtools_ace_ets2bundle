@@ -1,0 +1,1858 @@
+
+> compilier@0.0.1 interopArkTest
+> npm run run:cleanArkTest && npm run interopBuild && npm run generateKitConfigs && ./node_modules/.bin/babel ./test/ark_compiler_ut --out-dir arkTest_build/ark_compiler_ut --extensions .ts && npm run run:interopArkTest && npm run run:cleanArkTest
+
+
+> compilier@0.0.1 run:cleanArkTest
+> rm -rf arkTest_build
+
+
+> compilier@0.0.1 interopBuild
+> npm run generateDeclarations && ./node_modules/.bin/babel ./src/interop/src --out-dir lib --extensions .ts && node uglify-source.js lib && npm run interopCopyJsonFiles
+
+
+> compilier@0.0.1 generateDeclarations
+> node ./build_declarations_file.js ../../../interface/sdk-js/api/@internal/component/ets ./declarations ./lib false
+
+Successfully compiled 127 files with Babel (3523ms).
+
+> compilier@0.0.1 interopCopyJsonFiles
+> node copy_json_files.js ./src/interop/src lib
+
+
+> compilier@0.0.1 generateKitConfigs
+> node ./build_kitConfigs_file.js ../../../interface/sdk-js/kits ./kit_configs ../../../interface/sdk-js/api ../../../interface/sdk-js/arkts
+
+(node:101453) [DEP0147] DeprecationWarning: In future versions of Node.js, fs.rmdir(path, { recursive: true }) will be removed. Use fs.rm(path, { recursive: true }) instead
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Successfully compiled 113 files with Babel (1768ms).
+
+> compilier@0.0.1 run:interopArkTest
+> mocha "arkTest_build/ark_compiler_ut/**/*.test.js"
+
+
+
+  test ark_utils file api
+    ✔ 1-1: test getBuildModeInLowerCase under build debug
+    ✔ 1-2: test getBuildModeInLowerCase under build release
+    ✔ 1-3: test getBuildModeInLowerCase under preview debug
+    ✔ 1-4: test getBuildModeInLowerCase under hot reload debug
+    ✔ 2-1: test getPackageInfo under build debug
+    ✔ 2-2: test getPackageInfo under build release
+    ✔ 2-3: test getPackageInfo under preview debug
+    ✔ 2-4: test getPackageInfo under hot reload debug
+    ✔ 3-1: test genSourceMapFileName under build debug
+    ✔ 3-2: test genSourceMapFileName under build release
+    ✔ 3-3: test genSourceMapFileName under preview debug
+    ✔ 3-4: test genSourceMapFileName under hot reload debug
+    ✔ 4-1: test isOhModules under build debug
+    ✔ 4-2: test isOhModules under build release
+    ✔ 4-3: test isOhModules under preview debug
+    ✔ 4-4: test isOhModules under hot reload debug
+    ✔ 4-5: test isOhModules under hot fix debug
+    ✔ 4-6: test isOhModules under hot fix release
+    ✔ 5-1: test isEs2Abc under build debug
+    ✔ 5-2: test isEs2Abc under build release
+    ✔ 5-3: test isEs2Abc under preview debug
+    ✔ 5-4: test isEs2Abc under hot reload debug
+    ✔ 5-5: test isEs2Abc under hot fix debug
+    ✔ 5-6: test isEs2Abc under hot fix release
+    ✔ 6-1: test the error message of writeArkguardObfuscatedSourceCode
+    ✔ 6-2: test the error message of writeArkguardObfuscatedSourceCodewith getHvigorConsoleLogger
+    ✔ 7-1: test the error message of writeMinimizedSourceCode
+    ✔ 7-2: test the error message of writeMinimizedSourceCode without getHvigorConsoleLogger
+    ✔ 8-1: test tryMangleFileName when obfuscation is disabled
+    ✔ 8-2: test tryMangleFileName when obfuscation is enabled
+    ✔ 8-3: test tryMangleFileName when bytecode obfuscation is enabled
+    ✔ 9-1: test writeArkguardObfuscatedSourceCode when obfuscation is enabled (46ms)
+    10: test getPreviousStageSourceMap
+      ✔ 10-1: should return undefined if relativeSourceFilePath is empty
+      ✔ 10-2: should return undefined if the file is a declaration file
+      ✔ 10-3: should call getSpecifySourceMap with rollupModuleId if isNewSourceMaps is true
+      ✔ 10-4: should call getSpecifySourceMap with relativeSourceFilePath if isNewSourceMaps is false
+    11: test collectObfuscationFileContent
+      ✔ 11-1: should not call updateFileContent if filePathManager is not defined
+      ✔ 11-2: should not call updateFileContent if the file is a declaration file and not an original declaration file
+      ✔ 11-3: should call updateFileContent if the file is not a declaration file
+      ✔ 11-4: should call updateFileContent if the file is an original declaration file
+
+  test bundle_mode file api
+    ✔ 1-1: test error message of executeArkCompiler
+    ✔ 1-2: test error message of executeArkCompiler without getHvigorConsoleLogger
+    ✔ 2-1: test the error message of executeEs2AbcCmd handler error
+    ✔ 2-2: test the error message of executeEs2AbcCmd throw error on failed code (1006ms)
+    ✔ 2-3: test the error message of executeEs2AbcCmd throw error(Failed to startup es2abc) (104ms)
+    ✔ 2-4: test the error message of executeEs2AbcCmd handler error without getHvigorConsoleLogger
+    ✔ 2-5: test the error message of executeEs2AbcCmd throw error on failed code without getHvigorConsoleLogger (1005ms)
+    ✔ 2-6: test the error message of executeEs2AbcCmd throw error(Failed to startup es2abc) without getHvigorConsoleLogger (105ms)
+    ✔ 3-1: test the error message of collectBundleFileList(file.type is invalid value)
+    ✔ 3-1-1: test the error message of collectBundleFileList(file.type is invalid value) without getHvigorConsoleLogger
+    ✔ 3-2: test the error message of collectBundleFileList
+    ✔ 3-2-1: test the error message of collectBundleFileList without getHvigorConsoleLogger
+    ✔ 4-1: test the error message of filterBundleFileListWithHashJson
+    ✔ 4-1-1: test the error message of filterBundleFileListWithHashJson without getHvigorConsoleLogger
+    ✔ 5-1: test the error message of invokeTs2AbcWorkersToGenAbc(worker error)
+    ✔ 6-1: test the error message of writeHashJson
+    ✔ 6-2: test the error message of writeHashJson without getHvigorConsoleLogger
+    ✔ 7-1: test the error message of copyFileFromCachePathToOutputPath
+    ✔ 7-2: test the error message of copyFileFromCachePathToOutputPath without getHvigorConsoleLogger
+    ✔ 8-1: test sourceFile field of bundle mode in release
+    ✔ 9-1: test sourceFile field of bundle mode in debug
+
+  test bytecodeObfuscator file api
+    ✔ 1-1: test initBytecodeObfuscator when obfuscation disabled
+    ✔ 1-2: test init when obfuscation is arkguard
+    ✔ 1-3: test init when obfuscation is bytecode obfuscation
+    ✔ 2-1: test collectSkipModuleName add skip module pkgName correctly with keep bytecode har
+    ✔ 2-2: test collectSkipModuleName add skip module pkgName correctly with bytecode har
+    ✔ 3-1: test generateObfCmd add config path correctly
+    ✔ 3-2: test generateObfCmd add debug correctly
+    ✔ 4-1: test convertAbstractPathToRecordName successfully and remove originPath
+
+  test cache file api
+    ✔ 1-1: test checkArkCompilerCacheInfo under build debug
+    ✔ 1-2: test checkArkCompilerCacheInfo under build release
+    ✔ 1-3: test checkArkCompilerCacheInfo under preview debug
+    ✔ 1-4: test checkArkCompilerCacheInfo under hot reload debug
+    ✔ 2-1: test getMetaInfo under build debug
+    ✔ 2-2: test getMetaInfo under build release
+    ✔ 2-3: test getMetaInfo under preview debug
+    ✔ 2-4: test getMetaInfo under hot reload debug
+
+  test check_import_module file api
+    ✔ 1-1: test checkIfJsImportingArkts under build debug
+    ✔ 1-1-1: test single file checkIfJsImportingArkts under build debug
+    ✔ 1-2: test checkIfJsImportingArkts under build release
+    ✔ 1-3: test checkIfJsImportingArkts under preview debug
+    ✔ 1-3-1: test single file checkIfJsImportingArkts under preview debug
+    ✔ 1-4: test checkIfJsImportingArkts under hot reload debug
+    ✔ 1-4-1: test single file checkIfJsImportingArkts under hot reload debug
+    ✔ 1-5: test checkIfJsImportingArkts under build debug without getHvigorConsoleLogger
+    ✔ 1-5-1: test single file checkIfJsImportingArkts under build debug without getHvigorConsoleLogger
+    ✔ 1-6: test checkIfJsImportingArkts under build release without getHvigorConsoleLogger
+    ✔ 1-7: test checkIfJsImportingArkts under preview debug without getHvigorConsoleLogger
+    ✔ 1-7-1: test single file checkIfJsImportingArkts under preview debug without getHvigorConsoleLogger
+    ✔ 1-8: test checkIfJsImportingArkts under hot reload debug without getHvigorConsoleLogger
+    ✔ 1-8-1: test single file checkIfJsImportingArkts under hot reload debug without getHvigorConsoleLogger
+
+  test check_shared_module file api
+    ✔ 1-1: test collect shared module from empty file
+
+  test common_mode file api
+    ✔ 1-1-1: test initCmdEnv under build debug: projectConfig.pandaMode is Ts2Abc
+    ✔ 1-1-2: test initCmdEnv under build debug: projectConfig.pandaMode is Es2Abc
+    ✔ 1-1-3: test initCmdEnv under build debug: projectConfig.pandaMode is invalid value
+    ✔ 1-1-4: test initCmdEnv under build debug: projectConfig.pandaMode is invalid value without getHvigorConsoleLogger
+    ✔ 1-2: test initCmdEnv under build release
+    ✔ 1-3: test initCmdEnv under preview debug
+    ✔ 1-4: test initCmdEnv under hot reload debug
+
+  test FileInfoCache
+    ✔ 1-1: test constructor initializes with null share
+    ✔ 1-2: test setShare method
+    ✔ 2-1: test getFileInfo with existing file
+    ✔ 2-2: test getFileInfo with existing directory
+    ✔ 2-3: test getFileInfo with non-existent file
+    ✔ 3-1: test getFileInfo with hvigor cache
+    ✔ 3-2: test getFileInfo with hvigor cache returning null
+    ✔ 4-1: test isFile with existing file
+    ✔ 4-2: test isFile with directory
+    ✔ 4-3: test isFile with non-existent file
+    ✔ 5-1: test isDirectory with existing directory
+    ✔ 5-2: test isDirectory with file
+    ✔ 5-3: test isDirectory with non-existent path
+    ✔ 6-1: test getMtimeMs with existing file
+    ✔ 6-2: test getMtimeMs with non-existent file
+    ✔ 6-3: test getMtimeMs with file without mtimeMs
+    ✔ 7-1: test fileExists with existing file
+    ✔ 7-2: test fileExists with non-existent file
+    ✔ 8-1: test fileInfoCache export instance
+    ✔ 8-2: test fileInfoCache export instance methods work
+
+  test gen_aot file api
+    ✔ 1-1: test the error message of generateAot (full)
+    ✔ 1-2: test the error message of generateAot (partial)
+
+  test generate_sourcemap api
+    ✔ 1-1: test getPkgInfoByModuleId under build debug
+    ✔ 1-2: test getPkgInfoByModuleId under build release
+    ✔ 1-3: test getPkgInfoByModuleId under preview
+    ✔ 1-4: test getPkgInfoByModuleId under hotReload
+    ✔ 1-5: test getPkgInfoByModuleId with file name obfuscate
+    ✔ 1-6: test GetModuleInfoFaild error of getPkgInfoByModuleId
+    ✔ 1-6-1: test GetModuleInfoFaild error of getPkgInfoByModuleId without getHvigorConsoleLogger
+    ✔ 1-7: test UnableToGetModuleInfoMeta error of getPkgInfoByModuleId
+    ✔ 1-8: test UnableToGetModuleInfoMetaPkgPath error of getPkgInfoByModuleId
+    ✔ 1-9: test UnableToGetModuleInfoMetaPkgPath error of getPkgInfoByModuleId without getHvigorConsoleLogger
+    ✔ 2-1: test genKey under build debug
+    ✔ 2-2: test genKey under build release
+    ✔ 2-3: test genKey under preview
+    ✔ 2-4: test genKey under hotReload
+    ✔ 2-5: test genKey with file name obfuscate
+    ✔ 3-1: test updateSourceMap under build debug
+    ✔ 3-2: test updateSourceMap under build release
+    ✔ 3-3: test updateSourceMap under preview
+    ✔ 3-4: test updateSourceMap under hotReload
+    ✔ 4-1: test fillSourceMapPackageInfo under build debug
+    ✔ 4-2: test fillSourceMapPackageInfo under build release
+    ✔ 4-3: test fillSourceMapPackageInfo under preview
+    ✔ 4-4: test fillSourceMapPackageInfo under hotReload
+    ✔ 5-1: test genKey under build debug: arkProjectConfig.processTs is true
+    ✔ 5-2: test genKey under build release: arkProjectConfig.processTs is true
+    ✔ 5-3: test genKey under preview: arkProjectConfig.processTs is true
+    ✔ 5-4: test genKey under hotReload: arkProjectConfig.processTs is true
+    ✔ 6-1: test updateCachedSourceMaps under build debug: arkProjectConfig.processTs is true
+    ✔ 6-2: test updateCachedSourceMaps under build release: arkProjectConfig.processTs is true
+    ✔ 6-3: test updateCachedSourceMaps under preview: arkProjectConfig.processTs is true
+    ✔ 6-4: test updateCachedSourceMaps under hotReload: arkProjectConfig.processTs is true
+
+  test import_path_expand file api
+    ✔ 1-1: split default + named + type imports
+    ✔ 1-2: resolve multi-symbol to different files
+    ✔ 1-3: resolve re-export chain to final file
+    ✔ 1-4: exclude import path from transform
+    ✔ 1-5: fallback default import to named
+    ✔ 1-6: transform type-only named import
+    ✔ 2-1: should not transform when config is disabled
+    ✔ 2-2: transform the variable name is default
+    ✔ 3-1: should preserve namespace import
+    ✔ 3-2: should preserve side-effect import
+    ✔ 3-3: should preserve "pkgName/filePath" import
+    ✔ 3-4: should preserve import when symbol is from js | .d.ts | .d.ets file
+    ✔ 3-5: should preserve import when the symbol is exported across modules
+    ✔ 4-1: should preserve relative path import (starts with .)
+    ✔ 4-2: should preserve system module import (@ohos.system)
+    ✔ 4-3: should preserve lib*.so module import
+    ✔ 4-4: should preserve import when module not in depName2DepInfo
+    ✔ 4-5: should preserve import when module in hspNameOhmMap
+    ✔ 4-6: should preserve import when module in harNameOhmMap
+    ✔ 4-7: should preserve import when module in exclude list
+    ✔ 4-8: should preserve import when module starts with @system
+    ✔ 4-9: should preserve import when module starts with @kit
+    ✔ 4-10: should preserve import when module starts with @arkts
+
+  test obfuscate config resolver api
+    ✔ 1-1: test resolveDts
+    ✔ 1-2: test resolveObfuscationConfigs: -enable-property-obfuscation
+    ✔ 1-3: test resolveObfuscationConfigs: -enable-property-obfuscation -enable-export-obfuscation
+    ✔ 1-3: test resolveObfuscationConfigs: -enable-property-obfuscation -enable-string-property-obfuscation
+    ✔ 1-4: test resolveObfuscationConfigs: -enable-property-obfuscation -enable-toplevel-obfuscation
+    ✔ 1-5: test resolveObfuscationConfigs: enable all
+    ✔ 4-1: test getRelativeSourcePath: filePath starts with projectRootPath
+    ✔ 4-2: test getRelativeSourcePath: filePath starts with belongProjectPath
+    ✔ 4-3: test getRelativeSourcePath: undefined projectRootPath
+    ✔ 4-4: test getRelativeSourcePath: undefined belongProjectPath 
+    ✔ 5-1: test getFileNamesForScanningWhitelist: -keep is empty 
+    ✔ 5-2: test getFileNamesForScanningWhitelist: unable export obfuscation 
+    ✔ 6-1: test getHistoryNameCache: isDeclaration false
+    ✔ 6-2: test getHistoryNameCache: isDeclaration true
+    ✔ 7-1: test setNewNameCache: isOhModule is false
+    ✔ 7-2: test setNewNameCache: isOhModule is true
+    ✔ 8-1: test setUnobfuscationNames
+    ✔ 9-1: test writeFile
+    2: test collectResevedFileNameInIDEConfig
+      ✔ 2-1: test collectResevedFileNameInIDEConfig in hsp module
+      ✔ 2-2: test collectResevedFileNameInIDEConfig in hap module
+      ✔ 2-3: test collectResevedFileNameInIDEConfig in source har module
+      ✔ 2-4: test collectResevedFileNameInIDEConfig in byte code har module
+    10: test Obfuscation Functions
+      10-1: updateIncrementalCaches
+        ✔ 10-1-1: should update caches and set shouldReObfuscate flag if needed
+        ✔ 10-1-2: should not set shouldReObfuscate flag if not needed
+      10-2: readProjectCaches
+        ✔ 10-2-1: should update source file paths and read file names map if incremental
+        ✔ 10-2-2: should not read file names map if not incremental
+      10-3: getUpdatedFiles
+        ✔ 10-3-1: should return updated files if incremental
+        ✔ 10-3-2: should return all source files if not incremental
+      10-4: obfuscationPreprocess
+        ✔ 10-4-1: should call readProjectCaches and updateIncrementalCaches if arkObfuscator exists
+        ✔ 10-4-2: should not call readProjectCaches if arkObfuscator does not exist
+      10-5: reObfuscate
+        ✔ 10-5-1: should update harFilesRecord if is declaration file
+        ✔ 10-5-2: should writeArkguardObfuscatedSourceCode if is not declaraiont file
+      10-6: writeObfuscationCaches
+        ✔ 10-6-1: should call enableTimeAndMemoryPrint when perf is ADVANCED (101ms)
+(node:101501) [DEP0147] DeprecationWarning: In future versions of Node.js, fs.rmdir(path, { recursive: true }) will be removed. Use fs.rm(path, { recursive: true }) instead
+(Use `node --trace-deprecation ...` to show where the warning was created)
+        ✔ 10-6-2: should not call enableTimeAndMemoryPrint when perf is not ADVANCED (100ms)
+      10-7: removeRedundantFiles
+        ✔ 10-7-1: should not be remove when file is not obfuscated (101ms)
+        ✔ 10-7-2: should be remove when file is obfuscated (101ms)
+
+  test process_ark_config file api
+    ✔ 1-1: test initArkConfig under build debug
+    ✔ 1-2: test initArkConfig under build release
+    ✔ 1-3: test initArkConfig under preview debug
+    ✔ 1-4: test initArkConfig under hot reload debug
+    ✔ 2-1-1: test initArkProjectConfig under build debug: moduleJsonInfo exists
+    ✔ 2-1-2: test initArkProjectConfig under build debug: buildJsonInfo.patchConfig is true
+    ✔ 2-2: test initArkProjectConfig under build release
+    ✔ 2-3: test initArkProjectConfig under preview debug
+    ✔ 2-4: test initArkProjectConfig under hot reload debug
+    ✔ 2-5: test initArkProjectConfig under build debug: perf is not ADVANCED
+    ✔ 2-6: test initArkProjectConfig under build debug: perf is ADVANCED
+    ✔ 3-1: test initTerserConfig under build debug
+    ✔ 3-2: test initTerserConfig under build release
+    ✔ 3-3: test initTerserConfig under preview debug
+    ✔ 3-4: test initTerserConfig under hot reload debug
+    ✔ 4-1: test processCompatibleVersion under build debug
+    ✔ 4-2: test processCompatibleVersion under build release
+    ✔ 4-3: test processCompatibleVersion under preview debug
+    ✔ 4-4: test processCompatibleVersion under hot reload debug
+    ✔ 6-1: test processPlatformInfo on windows
+    ✔ 6-2: test processPlatformInfo on linux
+    ✔ 6-3: test processPlatformInfo on mac
+    ✔ 6-4: test processPlatformInfo on harmonyos
+    5: test readProjectAndLibsSource api
+      ✔ 5-1: test readProjectAndLibsSource with export obfuscation
+      ✔ 5-2: test readProjectAndLibsSource with export & toplevel obfuscation
+      ✔ 5-3: test readProjectAndLibsSource with property obfuscation
+      ✔ 5-4: test readProjectAndLibsSource with export & property & toplevel obfuscation
+      ✔ 5-5: test readProjectAndLibsSource with enableAtKeep
+
+  process Kit Imports tests
+    ✔ 1-1: process specifier imports
+    ✔ 1-2: process specifier exports
+    ✔ 1-3: process star export
+    ✔ 1-4: process unused type import
+    ✔ 1-5 process used type import
+    ✔ 1-6 process unused value import
+    ✔ 1-7 process used value import
+    ✔ 1-8 process used lazy import
+    ✔ 2-1 the error message of processKitImport
+    ✔ 2-2 the error message of test specifiers in newSpecificerInfo
+    ✔ 2-3 the error message of EmptyImportKitInfo
+    ✔ 2-4 the error message of default specifiers in newSpecificerInfo
+    ✔ 2-5 the error message of NameSpaceKitInfo
+    ✔ 2-6 the error message of validateImportingETSDeclarationSymbol
+    ✔ 3-1 process single default-bindings import
+    ✔ 3-2 process default-bindings import after normal kit
+    ✔ 3-3 process default-bindings import before normal kit
+    ✔ 3-4 process default-bindings import with specifiers
+    ✔ 3-5 process single default-bindings import, but no use
+    ✔ 3-6 process single default-bindings import, but kit no default export
+
+  process Lazy Imports tests
+    1) 1-1: test transformLazyImport (ts.sourceFile): perform lazy conversion
+    2) 1-2: test transformLazyImport (ts.sourceFile): no lazy conversion
+    ✔ 1-3: test transformLazyImport (js code): perform lazy conversion
+    ✔ 1-4: test transformLazyImport (js code): no lazy conversion
+    3) 2-1: the error message of lazy-import re-export (ts.sourceFile)
+    4) 2-2: the error message of lazy-import re-export with the name lazy (ts.sourceFile)
+    5) 2-3: the warn message of lazy-import re-export (ts.sourceFile)
+    6) 2-4: the error message of lazy-import re-export when the autoLazyImport is true (ts.sourceFile)
+    ✔ 2-5 test the error message of lazy-import re-export (js code)
+    ✔ 2-6: test the error message of lazy-import re-export with the name lazy (js code)
+    ✔ 2-7: test the warn message of lazy-import re-export (js code)
+    ✔ 2-8: test the error message of lazy-import re-export when the autoLazyImport is true (js code)
+    ✔ 2-9: test processJsCodeLazyImport(autoLazyImport is false and reExportCheckMode is strict): no re-export
+    ✔ 2-10: test processJsCodeLazyImport(autoLazyImport is true and reExportCheckMode is strict): no re-export
+    ✔ 3-1: test transformLazyImport: the symbol exist after conversion
+    ✔ 3-2: test type-only bindings do not generate empty lazy import
+    ✔ 3-3: test type and value bindings are split into separate imports
+    ✔ 3-4: test default import with type-only named bindings
+    ✔ 3-5: test type-only alias is preserved
+    7) 4-1: test autoLazyImport supports exclude list and include list: include list
+    8) 4-2: test autoLazyImport supports exclude list and include list: exclude list
+
+  process sendable decorator
+    ✔ 1-1: process sendable class without constrcutor tests
+    ✔ 1-2: process sendable class with constrcutor tests
+    ✔ 1-3: process sendable subclass with super class tests
+    ✔ 1-4: process sendable subclass with super class and constructor tests
+    ✔ 1-5: process sendable subclass with super class and constructor tests
+    ✔ 1-6: process sendable subclass with no explicit constructor in super class tests
+    ✔ 2-1: process sendable function with body tests
+    ✔ 2-2: process sendable function without body tests
+    ✔ 3-1: process sendable type tests
+
+  singleFileEmit afterTransform
+    ✔ calls the single-file handler synchronously from afterTransform
+    ✔ leaves batch emission for buildEnd when singleFileEmit is disabled
+    ✔ writes a TS SourceFile and collects its source map before returning
+    ✔ rewrites TS AST imports using the resolved dependency map
+    ✔ writes JavaScript with resolved module requests before returning
+    ✔ writes JSON exactly before returning
+    ✔ merges the source map for a transformed dynamic import synchronously
+    ✔ maps a rewritten static import and following same-line code to original positions
+    ✔ maps a rewritten export-from and following same-line code to original positions
+    ✔ maps a rewritten export-all and following same-line code to original positions
+    ✔ keeps the source map when a static module request cannot be rewritten
+    ✔ keeps the source map when the single-quoted static request already equals its OHM URL
+    ✔ retains the batch source-map behavior for a rewritten static import
+    ✔ retains the batch source-map behavior for a rewritten export-from
+    ✔ retains the batch source-map behavior for a rewritten export-all
+    ✔ writes a release HAR TS SourceFile and records its cache path synchronously
+    ✔ writes release HAR JavaScript and records its cache path synchronously
+    ✔ propagates a write failure synchronously to Rollup
+    ✔ cleans pending modules and initializes the next build with its new cache directory
+    ✔ returns a Promise for batch JSON, JavaScript and TS AST module requests
+    ✔ commits batch dynamic-import source and map after asynchronous merging finishes
+    ✔ waits for batch module-request processing before writing the source file
+    ✔ rejects batch module-request Promises when downstream processing throws
+    ✔ rejects batch dynamic-import merging without committing partial source or map
+
+  synchronous source map composition
+    ✔ returns the existing map directly when either input is absent
+    ✔ uses the greatest lower bound for columns between origin mappings
+    ✔ does not use a mapping from a preceding line or after the requested column
+    ✔ omits unmapped segments from both maps
+    ✔ preserves current names, sources, contents and the origin file name
+    ✔ handles multiple sources and preserves unused current sources
+    ✔ normalizes paths and URLs using the existing source-map rules
+    ✔ handles equal columns ordered by source, original position and name indices
+    ✔ selects the last mapping at an equal origin column
+    ✔ lets an unmapped segment override a mapped segment at the same origin column
+    ✔ deduplicates identical mappings and source/name entries as before
+    ✔ handles maps without mapped segments
+    ✔ retains nonempty current source roots when no composed mappings survive
+    ✔ retains the existing error for surviving mappings with a nonempty current source root
+
+  test utils file api
+    ✔ 1-1: test needAotCompiler under build debug
+    ✔ 1-2: test needAotCompiler under build debug and anBuildMode is AOT_PARTIAL
+    ✔ 1-3: test needAotCompiler under build release
+    ✔ 1-4: test needAotCompiler under build release and compileMode is JSBUNDLE
+    ✔ 1-5: test needAotCompiler under preview debug
+    ✔ 1-6: test needAotCompiler under preview debug and anBuildMode is AOT_TYPE
+    ✔ 1-7: test needAotCompiler under hot reload debug
+    ✔ 2-1-1: test shouldETSOrTSFileTransformToJS under build debug: arkProjectConfig.processTs is false
+    ✔ 2-1-2: test shouldETSOrTSFileTransformToJS under build debug: arkProjectConfig.processTs is true
+    ✔ 2-2: test shouldETSOrTSFileTransformToJS under build release
+    ✔ 2-3: test shouldETSOrTSFileTransformToJS under preview debug
+    ✔ 2-4: test shouldETSOrTSFileTransformToJS under hot reload debug
+    ✔ 2-5: test shouldETSOrTSFileTransformToJS under build release and enable obuscate file name
+    ✔ 3-1: test writeFileContent under build debug
+    ✔ 3-2: test writeFileContent under build release
+    ✔ 3-3: test writeFileContent under preview debug
+    ✔ 3-4: test writeFileContent under hot reload debug
+    ✔ 4-1-1: test updateSourceMap under build debug: originMap is null
+    ✔ 4-1-2: test updateSourceMap under build debug: newMap is null
+    ✔ 4-1-3: test updateSourceMap under build debug: originMap and newMap is not null
+    ✔ 4-2: test updateSourceMap under build release
+    ✔ 4-3: test updateSourceMap under preview debug
+    ✔ 4-4: test updateSourceMap under hot reload debug
+    ✔ 5-1: test isAotMode under build debug
+    ✔ 5-2: test isAotMode under build release
+    ✔ 5-3: test isAotMode under preview debug
+    ✔ 5-4: test isAotMode under hot reload debug
+    ✔ 5-5: test isAotMode under hot fix debug
+    ✔ 5-6: test isAotMode under hot fix release
+    ✔ 6-1: test isDebug under build debug
+    ✔ 6-2: test isDebug under build release
+    ✔ 6-3: test isDebug under preview debug
+    ✔ 6-4: test isDebug under hot reload debug
+    ✔ 6-5: test isDebug under hot fix debug
+    ✔ 6-6: test isDebug under hot fix release
+    ✔ 7-1: test changeFileExtension under build debug
+    ✔ 7-2: test changeFileExtension under build release
+    ✔ 7-3: test changeFileExtension under preview debug
+    ✔ 7-4: test changeFileExtension under hot reload debug
+    ✔ 7-5: test changeFileExtension under hot fix debug
+    ✔ 7-6: test changeFileExtension under hot fix release
+    ✔ 8-1: test isCommonJsPluginVirtualFile under build debug
+    ✔ 8-2: test isCommonJsPluginVirtualFile under build release
+    ✔ 8-3: test isCommonJsPluginVirtualFile under preview debug
+    ✔ 8-4: test isCommonJsPluginVirtualFile under hot reload debug
+    ✔ 8-5: test isCommonJsPluginVirtualFile under hot fix debug
+    ✔ 8-6: test isCommonJsPluginVirtualFile under hot fix release
+    ✔ 9-1: test isCurrentProjectFiles under build debug
+    ✔ 9-2: test isCurrentProjectFiles under build release
+    ✔ 9-3: test isCurrentProjectFiles under preview debug
+    ✔ 9-4: test isCurrentProjectFiles under hot reload debug
+    ✔ 9-5: test isCurrentProjectFiles under hot fix debug
+    ✔ 9-6: test isCurrentProjectFiles under hot fix release
+    ✔ 10-1: test isSpecifiedExt under build debug
+    ✔ 10-2: test isSpecifiedExt under build release
+    ✔ 10-3: test isSpecifiedExt under preview debug
+    ✔ 10-4: test isSpecifiedExt under hot reload debug
+    ✔ 10-5: test isSpecifiedExt under hot fix debug
+    ✔ 10-6: test isSpecifiedExt under hot fix release
+    ✔ 11-1: test isTsOrEtsSourceFile under build debug
+    ✔ 11-2: test isTsOrEtsSourceFile under build release
+    ✔ 11-3: test isTsOrEtsSourceFile under preview debug
+    ✔ 11-4: test isTsOrEtsSourceFile under hot reload debug
+    ✔ 11-5: test isTsOrEtsSourceFile under hot fix debug
+    ✔ 11-6: test isTsOrEtsSourceFile under hot fix release
+    ✔ 12-1: test isJsSourceFile under build debug
+    ✔ 12-2: test isJsSourceFile under build release
+    ✔ 12-3: test isJsSourceFile under preview debug
+    ✔ 12-4: test isJsSourceFile under hot reload debug
+    ✔ 12-5: test isJsSourceFile under hot fix debug
+    ✔ 12-6: test isJsSourceFile under hot fix release
+    ✔ 13-1: test isJsonSourceFile under build debug
+    ✔ 13-2: test isJsonSourceFile under build release
+    ✔ 13-3: test isJsonSourceFile under preview debug
+    ✔ 13-4: test isJsonSourceFile under hot reload debug
+    ✔ 13-5: test isJsonSourceFile under hot fix debug
+    ✔ 13-6: test isJsonSourceFile under hot fix release
+    ✔ 14-1: test moduleResolutionHost
+    ✔ 15-1: test get/setRollupCache with hvigor provided cache interface
+    ✔ 15-2: test get/setRollupCache with hvigor provided cacheStoreManager interface
+    ✔ 15-3: test get/setRollupCache without hvigor cache interface provided
+    ✔ 16-1: test genTemporaryPath adapt external modules
+    ✔ 16-2: test genTemporaryPath to concatenate the paths under the PackageHar directory
+    ✔ 17-1: test getProjectRootPath adapt external modules
+    ✔ 17-2: test getProjectRootPath adapt external modules(multiple project names contain a relationship)
+    ✔ 17-3: test getProjectRootPath under build
+    ✔ 18-1: test getBelongModuleInfo under build file is local dependency
+    ✔ 18-2: test getBelongModuleInfo under build file is not local dependency
+
+  test declaration file merging
+    basic merging (libraryA + libraryB)
+      ✔ merges @Component struct, variables, and cross-library re-export (208ms)
+      ✔ preserves @Component and @State decorators (174ms)
+      ✔ preserves build method (135ms)
+      ✔ removes auto-generated constructors (116ms)
+      ✔ produces proper export declarations (106ms)
+      ✔ has no excessive blank lines (103ms)
+      ✔ is self-contained (no export { ... } from) (102ms)
+    multiple components (libraryC)
+      ✔ merges multiple @Component structs and variables (112ms)
+      ✔ preserves @State and @Prop decorators (108ms)
+    chained + parallel re-exports (libraryD)
+      ✔ resolves chained and parallel re-export chains (109ms)
+      ✔ is self-contained (105ms)
+    nested directory (libraryE)
+      ✔ resolves re-exports from nested subdirectory (101ms)
+    import type + export * wildcard (imports)
+      ✔ inlines imported type and wildcard exports (126ms)
+      ✔ imported type has no export modifier (not re-exported) (120ms)
+      ✔ is self-contained (104ms)
+    export rename + import rename (rename)
+      ✔ applies export rename (srcVar → renamed) (100ms)
+      ✔ applies import rename (classA → MyType) (100ms)
+      ✔ is self-contained (101ms)
+    oh_modules dependency (libraryJ)
+      ✔ resolves oh_modules binary HAR dependency (104ms)
+      ✔ is self-contained (103ms)
+      ✔ handles missing oh_modules gracefully (103ms)
+    @Builder + @Component with constructor (builder)
+      ✔ preserves @Builder and @Component decorators (104ms)
+      ✔ removes auto-generated constructors (106ms)
+    system API direct + nested (systemApi)
+      ✔ preserves direct system API export (106ms)
+      ✔ does not preserve unused system API import (123ms)
+      ✔ resolves nested system API through intermediate (112ms)
+      ✔ inlines local @Component dependency (101ms)
+      ✔ has no intermediate path references (98ms)
+    pure .d.ts (libraryTS)
+      ✔ merges .d.ts files with deep re-export chain (100ms)
+      ✔ excludes non-re-exported symbols (105ms)
+      ✔ is self-contained (104ms)
+      ✔ has no excessive blank lines (100ms)
+    .d.ets entry with .d.ts dependency (libraryMixed)
+      ✔ merges mixed .d.ets and .d.ts files (99ms)
+      ✔ preserves @Component and @State decorators (108ms)
+      ✔ is self-contained (108ms)
+    .d.ts entry with .d.ets dependency (libraryMixedTS)
+      ✔ merges .d.ts barrel referencing .d.ets sub-file (114ms)
+      ✔ is self-contained (142ms)
+    cross-module multi-level (mainModule)
+      ✔ resolves multi-hop cross-module re-exports (118ms)
+      ✔ is self-contained (108ms)
+    complex cross-module (complexModule)
+      ✔ resolves complex multi-module dependencies (108ms)
+      ✔ removes auto-generated constructors and is self-contained (106ms)
+    sibling type: import reference (example 1)
+      ✔ inlines imported type A used by exported B (100ms)
+      ✔ is self-contained (103ms)
+    sibling type: co-exported reference (example 2)
+      ✔ inlines co-exported type A used by exported B (104ms)
+      ✔ is self-contained (100ms)
+    sibling type: local reference (example 3)
+      ✔ inlines non-exported type A used by exported B (102ms)
+      ✔ is self-contained (103ms)
+    alias rename with reference update
+      ✔ renames conflicting A via namespace isolation and updates references in B (106ms)
+      ✔ is self-contained (106ms)
+    export after dependency inline
+      ✔ preserves export for symbol first inlined as dependency (142ms)
+      ✔ is self-contained (105ms)
+    export * as namespace re-export (namespaceReexport)
+      ✔ handles export * as without crashing (105ms)
+      ✔ places namespace members inside declare namespace block (99ms)
+      ✔ generates declare namespace with export references (100ms)
+      ✔ exports namespace names (101ms)
+      ✔ is self-contained (no from clauses for local modules) (105ms)
+    import * as NS + export { NS } (nsImportExport)
+      ✔ creates namespace block from import * as NS + export { NS } (104ms)
+      ✔ exports NS name (101ms)
+      ✔ is self-contained (111ms)
+      ✔ does not emit top-level export declare for namespace members (124ms)
+    import * as NS + export { NS as Alias } (nsImportExportRename)
+      ✔ creates namespace block with alias name (101ms)
+      ✔ exports alias name (97ms)
+      ✔ is self-contained (100ms)
+    import * as NS type reference (nsImportTypeRef)
+      ✔ rewrites NS.A type annotation to _test1.A (102ms)
+      ✔ rewrites NS.A in heritage clause (extends) (100ms)
+      ✔ inlines type dependency in namespace block (101ms)
+      ✔ no NS prefix leaks into output (101ms)
+      ✔ is self-contained (125ms)
+    import * as NS with target also exported (nsImportQualRefExported)
+      ✔ rewrites NS.A to bare A when target is an exported entity (139ms)
+      ✔ no NS prefix leaks into output (105ms)
+      ✔ declares class A and exports it as B (99ms)
+      ✔ is self-contained (102ms)
+    system API import routed to companion (sysApiCrossExtRef)
+      ✔ routes system API import to companion, not primary (146ms)
+      ✔ primary only re-exports a from companion (106ms)
+    SDK global type not inlined when transitively loaded (sdkGlobalTypeRef)
+      ✔ keeps NavPathStack as bare reference, not inlined (100ms)
+      ✔ preserves system API import and type reference (106ms)
+      ✔ does not create companion file (112ms)
+    enum value reference in const initializer
+      ✔ inlines enum used by exported const initializer (109ms)
+      ✔ is self-contained (110ms)
+    any and unknown types in companion .d.ts file
+      ✔ places .d.ts dependency in companion with any/unknown preserved (103ms)
+      ✔ primary re-exports symbols from companion (100ms)
+      ✔ is self-contained (100ms)
+    explicit re-export shadows export star conflicts
+      ✔ keeps named-export namespace implementation and drops export-star body (143ms)
+      ✔ keeps named-export class implementation and drops export-star body (106ms)
+      ✔ keeps named-export function implementation and drops export-star signature (102ms)
+    aliased re-export keeps export star namespace with same local name
+      ✔ keeps both aliased namespace and export-star namespace (99ms)
+    error handling
+Declaration entry file not found in program: /srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/test/ark_compiler_ut/testdata/declaration_merge/nonexistent/Index.d.ets
+      ✔ handles non-existent entry file gracefully (98ms)
+    cross-module fallback via harFilesRecord mapping (crossLibFallback)
+      ✔ resolves 3-hop re-export via declToSource fallback (101ms)
+      ✔ is self-contained (104ms)
+    keyof type reference dependency (keyofType)
+      ✔ inlines dependency type used with keyof (102ms)
+      ✔ is self-contained (101ms)
+    conditional type reference dependency (conditionalType)
+      ✔ inlines conditional type dependency (101ms)
+      ✔ is self-contained (143ms)
+    namespace-qualified type reference (namespaceQualified)
+      ✔ inlines namespace-qualified type dependency (107ms)
+      ✔ is self-contained (100ms)
+    multiple decorators on single declaration (multiDecorator)
+      ✔ preserves all decorators (100ms)
+      ✔ preserves struct members (102ms)
+    component struct no duplicate members (componentStruct)
+      ✔ does not duplicate @State members (102ms)
+      ✔ does not duplicate property declarations (104ms)
+      ✔ is self-contained (102ms)
+    system API as type dependency (systemApiTypeDep)
+      ✔ uses import (not export) for system API used only as type (101ms)
+      ✔ preserves the variable that references the system API type (100ms)
+      ✔ preserves system API import (144ms)
+    interface as type dependency (interfaceTypeDep)
+      ✔ inlines interface dependency inside namespace (107ms)
+      ✔ is self-contained (100ms)
+    name collision scenarios
+      ✔ collisionClass: both renamed class exports are present (98ms)
+      ✔ collisionTypeDepPreferredName: Bar and Baz are present with valid output (98ms)
+      ✔ collisionNamespaceInterface: both N declarations are present (105ms)
+      ✔ collisionMultiDecl: all 3 N declarations are present (119ms)
+      ✔ collisionPreferredNameOnly: both Helper declarations are present (115ms)
+    exported name priority over type dep (exportedNamePriority)
+      ✔ exported A keeps its name, type-dep A gets namespace isolation (102ms)
+    export default handling (defaultExport)
+      ✔ no duplicate export default in merged output (100ms)
+    entry default export preserved (defaultExportEntry)
+      ✔ entry default export is preserved, other default stripped (143ms)
+    namespace member keeps name when same as namespace (namespaceMemberSameName)
+      ✔ member class A is not renamed when namespace is also A (106ms)
+    getter and accessor formatting (getterTest)
+      ✔ preserves getter syntax correctly (100ms)
+      ✔ preserves constructor parameter formatting (97ms)
+      ✔ is self-contained (97ms)
+    generic extends preserved (genericExtends)
+      ✔ preserves extends keyword in generic constraints (101ms)
+      ✔ preserves method signatures with generics (102ms)
+      ✔ is self-contained (101ms)
+    namespace qualified type reference (nsQualifiedType)
+      ✔ preserves tz.AAA as qualified type reference (101ms)
+      ✔ does not produce double declare (100ms)
+      ✔ does not duplicate enum (144ms)
+    namespace qualified via import (nsQualifiedIndirect)
+      ✔ preserves config.test as qualified type reference (105ms)
+      ✔ inlines interface test (100ms)
+    enum member merging (enumMergeMembers)
+      ✔ preserves enum members from all files (98ms)
+      ✔ preserves all exported symbols (98ms)
+      ✔ is self-contained (103ms)
+    duplicate declarations across files (duplicateAcrossFiles)
+      ✔ includes type declarations from all files (104ms)
+      ✔ deduplicates identical namespace blocks (104ms)
+      ✔ is self-contained (102ms)
+    export * does not re-export default (starExportDefault)
+      ✔ does not export default via export * (104ms)
+      ✔ does not include the default-exported variable at all (142ms)
+      ✔ is self-contained (105ms)
+    enum members not emitted as separate entities (enumExtraMembers)
+      ✔ does not emit individual enum members (111ms)
+    namespace/class member dedup (nsClassMemberDup)
+      ✔ does not emit namespace type members as standalone entities (99ms)
+      ✔ does not emit class static properties as standalone entities (100ms)
+    namespace-only export (nsOnlyExport)
+      ✔ does not export namespace members at top level (102ms)
+    namespace + direct export (nsAndDirectExport)
+      ✔ exports member at both namespace and top level (101ms)
+    import type reference resolution (importTypeRef)
+      ✔ replaces import type with resolved type text (101ms)
+    import type expanded with type references (importTypeExpanded)
+      ✔ inlines TypeAlias body with renamed references (101ms)
+    import type non-TypeAlias resolution (importTypeEnum)
+      ✔ resolves enum via import() to namespaced reference (102ms)
+    cross-extension type dep via namespace import (importTsTypeRef)
+      ✔ imports namespace from companion and references type correctly (124ms)
+    cross-extension namespace block routing (crossExtNamespaceBlock)
+      ✔ routes .d.ts namespace block to companion file (110ms)
+      ✔ primary re-exports namespace from companion (114ms)
+    mixed-extension namespace members (nsMixedExtMembers)
+      ✔ keeps .d.ets member in primary namespace block (112ms)
+      ✔ moves .d.ts member to companion as top-level export (103ms)
+      ✔ aliases companion member into namespace via export { } (101ms)
+      ✔ exports only NS at top level (107ms)
+      ✔ is self-contained (106ms)
+      ✔ is order-independent (reverse export order yields same structure) (214ms)
+    mixed-extension namespace with type-only members (nsMixedExtTypeOnly)
+      ✔ keeps .d.ets value member in primary namespace block (126ms)
+      ✔ moves interface and type alias to companion as top-level exports (114ms)
+      ✔ imports and aliases type-only members into namespace (107ms)
+      ✔ exports only NS at top level (103ms)
+      ✔ is self-contained (97ms)
+    namespace member alias deduplication (enumAlias)
+      ✔ deduplicates enum and alias within namespace block (97ms)
+      ✔ preserves type reference to A in function parameter (not renamed to B) (98ms)
+      ✔ type reference via alias B is valid inside namespace (101ms)
+      ✔ has no from clauses for local modules (104ms)
+    namespace member not re-collected as standalone type dep (nsMemberTypeDep)
+      ✔ does not duplicate namespace member in isolation namespace (102ms)
+      ✔ preserves process function with correct type reference (100ms)
+    system API qualified type reference (sysApiQualType)
+      ✔ does not generate redundant import for system API member accessed via qualified name (100ms)
+    system API namespace import preserved (sysApiNsImport)
+      ✔ preserves import * as and qualified type reference (143ms)
+    system API dual default import (sysApiDualImport)
+      ✔ preserves both default imports with different local names (105ms)
+      ✔ both type references have corresponding imports (100ms)
+      ✔ same import referenced multiple times emits only once (98ms)
+    system API dual value import (sysApiDualValueImport)
+      ✔ preserves both value imports with different local names (98ms)
+      ✔ both type references preserved with their respective local names (101ms)
+    system API same-name import dedup (sysApiSameNameDedup)
+      ✔ deduplicates import type and import with same name to one (101ms)
+      ✔ preserves type reference AbilityContext (99ms)
+    system API import + export two-statement pattern (sysApiImportExport)
+      ✔ preserves import statement from entry file (100ms)
+      ✔ preserves export statement for re-exported symbol (99ms)
+      ✔ does not inline ErrorCallback declaration (119ms)
+      ✔ does not produce companion file (102ms)
+      ✔ does not add redundant export {} (100ms)
+    namespace export with @Component struct (nsExportStruct)
+      ✔ creates namespace block with struct member (99ms)
+      ✔ preserves @Component decorator without redundant export (98ms)
+      ✔ preserves @State decorator on members (102ms)
+      ✔ struct has exactly one export keyword (101ms)
+      ✔ strips auto-generated extends from struct (100ms)
+      ✔ exports namespace name A (98ms)
+    aliased re-export of same symbol (aliasedReexport)
+      ✔ inlines namespace declaration without export keyword (99ms)
+      ✔ exports only aliased names B1 and B2 (104ms)
+      ✔ does not export B directly (111ms)
+    namespace isolation syntax correctness (nsIsolationSyntax)
+      ✔ nested namespace uses export not declare (133ms)
+      ✔ no export default inside isolation namespace (106ms)
+      ✔ default class becomes regular export inside namespace (105ms)
+      ✔ no bare export declare b without let keyword (100ms)
+      ✔ type references use correct namespace path (100ms)
+    computed property key with unique symbol (computedPropKey)
+      ✔ collects unique symbol as type dependency (101ms)
+      ✔ rewrites computed property key to namespace-qualified path (104ms)
+      ✔ preserves class with computed property (103ms)
+    cross-library duplicate namespace dedup in companion (dupNamespaceInCompanion)
+      ✔ companion generates distinct namespaces for each library (105ms)
+      ✔ companion contains class A declarations (102ms)
+      ✔ primary references type correctly for both exports (104ms)
+      ✔ is self-contained (105ms)
+    default export extends exported class — no self-referential extends (defaultExportExtends)
+      ✔ does not produce class A extends A (104ms)
+      ✔ type dep uses declaration local name, not preferredName (141ms)
+      ✔ preserves correct extends reference to exported class A (104ms)
+      ✔ variable a references the type dep correctly (103ms)
+    cross-ext exported symbol referenced as type in primary (crossExtTypeRef)
+      ✔ primary imports A from companion when referenced as type (98ms)
+      ✔ primary re-exports A from companion (98ms)
+      ✔ companion contains class A declaration (102ms)
+      ✔ is self-contained (101ms)
+    import alias preserves original declaration name (importAliasEnum)
+      ✔ keeps enum declaration name as A, not alias (100ms)
+      ✔ emits alias export inside namespace (98ms)
+      ✔ function parameter references alias via namespace (100ms)
+    namespace block preserves original declaration name for alias-only export (nsAliasOnly)
+      ✔ keeps enum declaration name as A, not alias (138ms)
+      ✔ emits alias export inside namespace block (104ms)
+      ✔ preserves all enum members (100ms)
+    dual reference via original name and alias (dualAliasRef)
+      ✔ preserves enum declaration name as A (99ms)
+      ✔ emits alias export inside isolation namespace (97ms)
+      ✔ renames A reference to _test2.A (101ms)
+      ✔ renames aliasA reference to _test2.aliasA (102ms)
+    exported entity with alias-only export name (exportedAlias)
+      ✔ preserves declaration name as OverlayType (100ms)
+      ✔ emits alias export for EOverLayTypeName (98ms)
+      ✔ method parameter keeps original OverlayType reference (102ms)
+      ✔ no duplicate EOverLayTypeName in export statement (120ms)
+      ✔ namespace SysEnum contains OverlayType with alias (106ms)
+    same-named files in different directories (sameNameFiles)
+      ✔ generates distinct namespace names for same-named files (102ms)
+      ✔ preserves both class A declarations with different members (100ms)
+      ✔ is self-contained (102ms)
+    second merge preserves declaration names for aliased enums (secondMergeAlias)
+      ✔ preserves namespace _MapEnum with MapType enum (105ms)
+      ✔ preserves namespace SysEnum with OverlayType enum (102ms)
+      ✔ does not emit aliased enum at top level (99ms)
+      ✔ is self-contained (97ms)
+
+  test ets_checker file api
+    ✔ 1-1: test addLocalPackageSet for original ohmurl
+    ✔ 1-2: test addLocalPackageSet for normalized ohmurl
+    ✔ 1-3: test getOrCreateLanguageService when dependency in oh-package.json change (1195ms)
+    ✔ 1-4: test getOrCreateLanguageService when paths in compilerOptions change (1074ms)
+    ✔ 1-4-1: test enableAccurateNullChecks ArkTS version gate and cache invalidation (1416ms)
+    ✔ 1-4-2: test enableAccurateNullChecks uses the default ArkTS version (839ms)
+    ✔ 1-5: test obfuscation rule change rebuilds language service (1775ms)
+    ✔ 1-6: test disabled or absent obfuscation never rebuilds language service (1402ms)
+    ✔ 1-7: test obfuscation rule path list change rebuilds language service (2620ms)
+    ✔ 1-8: test obfuscation files and consumer rule paths rebuild language service (3283ms)
+    ✔ 1-9: test missing obfuscation rule file appearing rebuilds language service (1613ms)
+    ✔ 1-10: test obfuscation dependency rule paths rebuild language service (4277ms)
+    ✔ 1-11: test GetEmitHost of program (276ms)
+
+  test areEqualArrays function
+    ✔ 1-1: should return true for identical arrays
+    ✔ 1-2: should return true for arrays with same elements in different order
+    ✔ 1-3: should return false for arrays with different elements
+    ✔ 1-4: should return false for arrays with different lengths
+    ✔ 1-5: should return true for empty arrays
+    ✔ 1-6: should return false when one array is empty and other is not
+    ✔ 1-7: should return true when both arrays are undefined
+    ✔ 1-8: should return true when both arrays are null
+    ✔ 1-9: should return false when one array is undefined and other is not
+    ✔ 1-10: should return false when one array is null and other is not
+    ✔ 1-11: should handle duplicate elements correctly
+    ✔ 1-12: should be case sensitive
+    ✔ 1-13: should handle special values
+    ✔ 1-14: should handle large arrays efficiently
+    ✔ 1-15: should return false for arrays with same length but different content
+    ✔ 1-16: should return true for single element arrays
+
+  getMaxFlowDepth
+    ✔ 1-1: test should return the default value when maxFlowDepth is undefined
+[33mArkTS: Invalid maxFlowDepth for control flow analysis.The value of maxFlowDepth ranges from 2000 to 65535.
+If the modification does not take effect, set maxFlowDepth to the default value.
+    ✔ 1-2: test should return the default value and log a warning when maxFlowDepth is less than the minimum valid value
+    ✔ 1-3: test should return the value of maxFlowDepth when it is 2000 within the valid range
+    ✔ 1-4: test should return the value of maxFlowDepth when it is 3000 within the valid range
+    ✔ 1-5: test should return the value of maxFlowDepth when it is 65535 within the valid range
+[33mArkTS: Invalid maxFlowDepth for control flow analysis.The value of maxFlowDepth ranges from 2000 to 65535.
+If the modification does not take effect, set maxFlowDepth to the default value.
+    ✔ 1-6: test should return the default value and log a warning when maxFlowDepth is greater than the maximum valid value
+
+  setProgramSourceFiles
+    ✔ 1-1: test add new sourcefile to program (240ms)
+    ✔ 1-2: test should do nothing when adding an existed sourcefile to the program (238ms)
+
+  initProcessingFiles and getProcessingFiles
+    ✔ 1-1: test should return undefined when processingDefaultFiles and processingOtherFiles is undefined (237ms)
+    ✔ 1-2: test should return array when processingDefaultFiles and processingOtherFiles is not undefined (235ms)
+
+  refreshTypeChecker
+    ✔ 1-1: test should recreate typeChecker and linterTypeChecker (328ms)
+
+  deleteProgramSourceFiles
+    ✔ 1-1: test should delete when sourcefiles are exist in program (297ms)
+    ✔ 1-2: test should do nothing when sourcefiles are not exist in program (251ms)
+
+  optimize createProgram
+    ✔ 1-1: test should return file content when file exists 
+    ✔ 1-2: test should cache the file content after first read
+
+  function isOhExport
+    ✔ 1-1: should return true when both parameters are undefined
+    ✔ 1-2: should return true when resolvedFileName is undefined
+    ✔ 1-3: should return true when packageName is undefined
+    ✔ 1-4: should return true when package exists and file path matches
+    ✔ 1-5: Should return true when package is not configured in oh-exports
+    ✔ 1-6: Should return false when package exists but file path does not match
+
+  function resolveModuleNames externalApiPaths filtering
+    ✔ 1-1: should return null when resolvedFileName starts with an externalApiPath
+    ✔ 1-2: should return null when only originalPath starts with an externalApiPath
+    ✔ 1-3: should pass through the resolved module when no path matches
+    ✔ 1-4: should pass through when externalApiPaths is undefined or an empty array
+    ✔ 1-5: should return null when the second externalApiPath matches
+    ✔ 1-6: should not treat a prefix occurring in the middle of the path as a match
+    ✔ 1-7: should filter before the .js to .d.ets redirection when path matches
+    ✔ 1-8: should filter each module independently in a mixed list
+    ✔ 1-9: should not match a sibling directory whose name starts with the externalApiPath
+    ✔ 1-10: should not match when resolvedFileName extends the externalApiPath without a path separator
+    ✔ 1-11: should not match a sibling directory via originalPath prefix
+    ✔ 1-12: should still match when the externalApiPath has a trailing separator
+
+  test interop_manager file api
+    ✔ 1-1: test SDK path
+    ✔ 1-2: test ets-loader/declarations path
+    ✔ 1-3: test ets-loader/component path
+    ✔ 1-4: test SDK glue code path
+    ✔ 1-5: test SDK interop decl path
+    ✔ 1-6: test source code from 1.1 module
+    ✔ 1-7: test glue code file from 1.2 module
+    ✔ 1-8: test decl file from 1.2 module
+    ✔ 1-9: test source code file from hybrid module
+    ✔ 1-10: test source code file from hybrid module
+    ✔ 1-11: test remote har declaration file from remoteHar module
+    ✔ 2-1: test matchModulePath api with 1.1 module
+    ✔ 2-2: test matchModulePath api with 1.2 module
+    ✔ 2-3: test matchModulePath api with isHybrid module
+    ✔ 2-4: test matchModulePath api with remote har module
+    ✔ 2-4-1: test matchModulePathByDeclgenPath api with remote har module
+    ✔ 3-1: test init SDK
+
+  test mixCompile
+    ✔ 1-1 test mixCompile is false
+start scanning interop entry config { moduleCount: 1 }
+skip module because package does not participate in compilation { currentPackageName: 'entry' }
+skip metadata initialization because declgenBridgeConfigPath was not found
+    ✔ 1-2 test mixCompile is true
+start scanning interop entry config { moduleCount: 1 }
+skip module because package does not participate in compilation { currentPackageName: 'entry' }
+skip metadata initialization because declgenBridgeConfigPath was not found
+    ✔ 1-3 test mixCompile is false when destroy interop
+
+  test transformModuleNameToRelativePath api
+start scanning interop entry config { moduleCount: 1 }
+skip module because package does not participate in compilation { currentPackageName: 'entry' }
+skip metadata initialization because declgenBridgeConfigPath was not found
+    ✔ 1-1 test transformModuleNameToRelativePath when compile common module
+start scanning interop entry config { moduleCount: 1 }
+skip module because package does not participate in compilation { currentPackageName: 'entry' }
+skip metadata initialization because declgenBridgeConfigPath was not found
+    ✔ 1-2 test transformModuleNameToRelativePath when compile ohostest
+    ✔ 1-3 test transformModuleNameToRelativePath throws when sourceRoot not in path
+
+  test queryOriginApiName api
+{ originalAPIName: '@ohos.util.HashSet', isStatic: true }
+    ✔ 1-1: should return alias config from alias.json
+{ originalAPIName: '@ohos.util.HashSet', isStatic: true }
+    ✔ 1-2: should parse static@ prefix directly
+    ✔ 1-3: should return undefined when mixCompile is false
+    ✔ 1-4: should return undefined for non-existent alias
+    ✔ 1-5: should return undefined when containing file is not in any module
+
+  test queryOriginApiName api - isInteropSDKEnabled disabled
+    ✔ 2-1: should return undefined when isInteropSDKEnabled is false
+
+  test queryOriginApiName api - no alias for package
+    ✔ 3-1: should return undefined when aliasConfig has no entry for the package
+
+  test parseStaticAlias edge cases via queryOriginApiName
+    ✔ 4-1: should parse static@ with @ prefix correctly
+    ✔ 4-2: should return alias with @ for static@ with only @ suffix
+    ✔ 4-3: should return alias for static@ with whitespace after @
+    ✔ 4-4: should parse static@ with slash path
+
+  test getGlueCodePathByModuleRequest api
+    ✔ 5-1: should return path when glue code .ts file exists
+    ✔ 5-2: should return undefined when no glue code file exists
+
+  test getGlueCodePathByModuleRequest with .ets extension
+    ✔ 6-1: should return path when glue code .ets file exists
+
+  test processAbilityPagesFullPath api
+    ✔ 8-1: should not modify set when mixCompile is false
+start scanning interop entry config { moduleCount: 1 }
+skip module because package does not participate in compilation { currentPackageName: 'entry' }
+skip metadata initialization because declgenBridgeConfigPath was not found
+    ✔ 8-2: should remove page with use static directive
+start scanning interop entry config { moduleCount: 1 }
+skip module because package does not participate in compilation { currentPackageName: 'entry' }
+skip metadata initialization because declgenBridgeConfigPath was not found
+    ✔ 8-3: should keep page without use static directive
+start scanning interop entry config { moduleCount: 1 }
+skip module because package does not participate in compilation { currentPackageName: 'entry' }
+skip metadata initialization because declgenBridgeConfigPath was not found
+    ✔ 8-4: should skip page when file does not exist
+start scanning interop entry config { moduleCount: 1 }
+skip module because package does not participate in compilation { currentPackageName: 'entry' }
+skip metadata initialization because declgenBridgeConfigPath was not found
+    ✔ 8-5: should handle file without extension by appending .ets
+start scanning interop entry config { moduleCount: 1 }
+skip module because package does not participate in compilation { currentPackageName: 'entry' }
+skip metadata initialization because declgenBridgeConfigPath was not found
+    ✔ 8-6: should handle file without extension by appending .ts
+
+  test initSDK with checkFileExist=false
+    ✔ 9-1: should set paths even when files do not exist if checkFileExist is false
+
+  test FileManager init and clean lifecycle
+    ✔ 10-1: should only init once (singleton pattern)
+    ✔ 10-2: cleanFileManagerObject should reset all static members
+
+  test getLanguageVersionByFilePath edge cases
+    ✔ 11-1: should match dynamic SDK path
+    ✔ 11-2: should match static SDK declaration path
+    ✔ 11-3: should match static SDK glue code path
+    ✔ 11-4: should return undefined for file not in any module or SDK path when hybrid has no match
+
+  test addEntriesFromInteropConfig api
+start scanning interop entry config { moduleCount: 4 }
+read interop entry config {
+  currentPackageName: 'appPkg',
+  configPath: '/tmp/interop-config-test-zgUWaT/app/interopConfig.json5'
+}
+add dynamic entry {
+  entryKey: 'appModule/pages/local',
+  currentPackageName: 'appPkg',
+  entryPath: '/tmp/interop-config-test-zgUWaT/app/src/main/ets/pages/local.ets'
+}
+add dependency dynamic entry {
+  entryKey: 'staticModule/staDyn',
+  currentModuleName: 'appPkg',
+  entryPath: '/tmp/interop-config-test-zgUWaT/staticModule/src/main/ets/staDyn.ets'
+}
+skip dependency source because package does not participate in compilation { dependencyPackageName: 'excludedPkg', currentPackageName: 'appPkg' }
+add dependency dynamic entry {
+  entryKey: 'dynamicModule/ArrayBar',
+  currentModuleName: 'appPkg',
+  entryPath: '/tmp/interop-config-test-zgUWaT/dynamicModule/src/main/ets/ArrayBar.ets'
+}
+add dependency dynamic entry {
+  entryKey: 'dynamicModule/nested/Other',
+  currentModuleName: 'appPkg',
+  entryPath: '/tmp/interop-config-test-zgUWaT/dynamicModule/src/main/ets/nested/Other.ets'
+}
+skip dependency package because package does not participate in compilation { dependencyPackageName: 'excludedPkg', currentPackageName: 'appPkg' }
+skip module because interopConfigPath is not configured { currentPackageName: 'sta' }
+skip module because interopConfigPath is not configured { currentPackageName: 'dynpkg' }
+skip module because package does not participate in compilation { currentPackageName: 'excludedPkg' }
+    ✔ 9-1: should add dependency package dynamic files by package name
+start scanning interop entry config { moduleCount: 4 }
+read interop entry config {
+  currentPackageName: 'appPkg',
+  configPath: '/tmp/interop-config-test-Zu77OD/app/interopConfig.json5'
+}
+add dynamic entry {
+  entryKey: 'appModule/pages/local',
+  currentPackageName: 'appPkg',
+  entryPath: '/tmp/interop-config-test-Zu77OD/app/src/main/ets/pages/local.ets'
+}
+add dependency dynamic entry {
+  entryKey: 'sharedCurrentModule/SourceSelf',
+  currentModuleName: 'appPkg',
+  entryPath: '/tmp/interop-config-test-Zu77OD/sharedCurrent/src/main/ets/SourceSelf.ets'
+}
+skip dependency source because package does not participate in compilation { dependencyPackageName: 'sharedSource', currentPackageName: 'appPkg' }
+add dependency dynamic entry {
+  entryKey: 'sharedCurrentModule/PackageSelf',
+  currentModuleName: 'appPkg',
+  entryPath: '/tmp/interop-config-test-Zu77OD/sharedCurrent/src/main/ets/PackageSelf.ets'
+}
+skip dependency package because package does not participate in compilation {
+  dependencyPackageName: 'sharedPackage',
+  currentPackageName: 'appPkg'
+}
+read interop entry config {
+  currentPackageName: 'sharedCurrent',
+  configPath: '/tmp/interop-config-test-Zu77OD/sharedCurrent/interopConfig.json5'
+}
+add dynamic entry {
+  entryKey: 'sharedCurrentModule/pages/sharedLocal',
+  currentPackageName: 'sharedCurrent',
+  entryPath: '/tmp/interop-config-test-Zu77OD/sharedCurrent/src/main/ets/pages/sharedLocal.ets'
+}
+skip module because package does not participate in compilation { currentPackageName: 'sharedSource' }
+skip module because package does not participate in compilation { currentPackageName: 'sharedPackage' }
+    ✔ 9-2: should process entry shared module and skip shared dependencies
+start scanning interop entry config { moduleCount: 2 }
+read interop entry config {
+  currentPackageName: 'appPkg',
+  configPath: '/tmp/interop-config-test-fIQDHt/app/interopConfig.json5'
+}
+add dynamic entry {
+  entryKey: 'appModule/pages/direct',
+  currentPackageName: 'appPkg',
+  entryPath: '/tmp/interop-config-test-fIQDHt/app/src/main/ets/pages/direct.ets'
+}
+skip module because package does not participate in compilation { currentPackageName: 'excludedPkg' }
+    ✔ 9-3: should skip parsing interop config for packages that do not participate in compilation
+
+  test matchModulePathByDeclgenPath edge cases
+    ✔ 12-1: should return undefined when interopConfig is not set
+    ✔ 12-2: should return undefined when path is not under declgen directory
+    ✔ 12-3: should return undefined when harName does not match any module
+    ✔ 12-4: should match declgen path under custom cache directory
+    ✔ 12-5: should match fallback declgen path by custom buildDir
+
+  test queryOriginApiName - non-static alias via aliasConfig
+    ✔ 13-1: should return non-static alias config from alias.json
+    ✔ 13-2: should return undefined for module not in alias map
+
+  test parseAliasJson with invalid config
+    ✔ 14-1: should log error for invalid alias config and still create map
+
+  test glue code file info cache
+    ✔ 15-1: should persist and restore glue code file infos
+    ✔ 15-2: should throw for an invalid glue code file info cache
+    ✔ 15-3: should clear cached glue code file infos when cache path is empty
+    ✔ 15-4: should throw when glue code file infos cannot be persisted
+
+  test mock config static file validation in module_source_file
+    ✔ 1: report error when mock source file is static
+    ✔ 2: no error when all mock files are dynamic
+    ✔ 3: skip validation without crash when mock source file does not exist
+    ✔ 4: report error and stop processing when mocked target file is static
+    ✔ 5: report error when mocked target is a static SDK request
+    ✔ 6: skip target validation for absent keys, empty or missing target files
+    ✔ 7: resolve mock source path through source2ModuleIdMap
+    ✔ 8: detect static mock source by language version from FileManager
+    ✔ 9: report error when mock-config.json5 does not exist
+    ✔ 10: report error when mock-config.json5 contains invalid JSON5
+    ✔ 12: keep cache valid when mock config is readable and unchanged
+    ✔ 14: generateNewMockInfo falls back to modulePath when map misses the source
+    ✔ 15: isMockFile recognizes mock files outside modulePath via source2ModuleIdMap
+    ✔ 16: validate mock source via modulePath fallback when map misses the source
+    ✔ 17: invalidate cache when mock config content changes between builds
+    ✔ 18: generateNewMockInfo resolves the ohmurl through source2ModuleIdMap when map hits the source
+    ✔ reject static HAR target static-har without HSP metadata
+    ✔ reject static HAR target @scope/static-har without HSP metadata
+    ✔ reject static single-file target common/StaticCalc.ets without HSP metadata
+    ✔ reject static single-file target common/StaticCalc.ts without HSP metadata
+    ✔ accept dynamic HAR and single-file targets without HSP metadata
+    ✔ detect HAR language from module metadata even without use static in the entry
+    ✔ reject static moduleRequest ../common/calc relative to its importer
+    ✔ reject static moduleRequest ../common/calc.ets relative to its importer
+    ✔ reject static moduleRequest ./calc relative to its importer
+    ✔ reject static moduleRequest ./calc.ets relative to its importer
+    ✔ use each importer for identical requests and ignore a static file at the module root
+    ✔ validate original static source when ../common/calc resolves to an interop declaration
+    ✔ validate original static source when ../common/calc.ets resolves to an interop declaration
+    ✔ do not reject static imports when the request has no matching mock key or mock is disabled
+
+  process arkts evolution tests
+"\u001b[31m"
+    ✔ 1-1: test error message of collectArkTSEvolutionModuleInfo (useNormalizedOHMUrl is false)
+    ✔ 1-2: test error message of collectArkTSEvolutionModuleInfo (1.2 module information is incorrect)
+    ✔ 1-3: test error message of collectArkTSEvolutionModuleInfo (1.1 module information is incorrect)
+    ✔ 2-1: test generate declFilesInfo in mixed compilation
+    ✔ 2-2: test resolveTargetsPath with empty sourceRoots
+    ✔ 2-3: test resolveTargetsPath with single sourceRoot (length < 2)
+    ✔ 2-4: test resolveTargetsPath with multiple sourceRoots (second path exists)
+    ✔ 2-5: test resolveTargetsPath with multiple sourceRoots (first path exists)
+    ✔ 2-6: test resolveTargetsPath with no existing path
+    ✔ 2-7: test resolveTargetsPath with moduleRequest not starting with pkgName
+    ✔ 2-8: test resolveTargetsPath with empty moduleRequest
+    ✔ 2-9: test resolveTargetsPath with null sourceRoots
+    3: process arkts evolution tests: interop transform
+      ✔ 3-1-0: reports an error for a dynamic import of a static file
+      ✔ 3-1-0-1: does not report an error for a dynamic import of a dynamic file
+      ✔ 3-1-1: test mixCompile is false (242ms)
+      ✔ 3-1-2: test error message of ArkTS evoluion class does not has a no-argument constructor
+      ✔ 3-1-3-1: test import ArkTS evoluion Record in object literal
+      ✔ 3-1-3-2: test import ArkTS evoluion Record alias name in object literal
+      ✔ 3-1-4-1: test import ArkTS evoluion class (variable init) in object literal
+      ✔ 3-1-4-2: test import ArkTS evoluion class (object assignment) in object literal
+      ✔ 3-1-4-3: test import ArkTS evoluion class (type assertions) in object literal
+      ✔ 3-1-4-4: test import ArkTS evoluion class (property init) in object literal
+      ✔ 3-1-4-5: test import ArkTS evoluion class (contr function call) in object literal
+      ✔ 3-1-4-6: test import ArkTS evoluion class (multi-layer object assignment) in object literal
+      ✔ 3-1-4-7: test import ArkTS evoluion class (parameter initp) in object literal
+      ✔ 3-1-4-8: test import ArkTS evoluion class (function call) in object literal
+      ✔ 3-1-4-9: test import ArkTS evoluion class (arrow function return value) in object literal
+      ✔ 3-1-4-10: test import ArkTS evoluion class (function return value) in object literal
+      ✔ 3-1-5-1: test import ArkTS evoluion interface (variable init) in object literal
+      ✔ 3-1-5-2: test import ArkTS evoluion interface (type assertions) in object literal
+      ✔ 3-1-5-3: test import ArkTS evoluion interface (property init) in object literal
+      ✔ 3-1-5-4: test import ArkTS evoluion interface (contr function call) in object literal
+      ✔ 3-1-5-5: test import ArkTS evoluion interface (parameter initp) in object literal
+      ✔ 3-1-5-6: test import ArkTS evoluion interface (function call) in object literal
+      ✔ 3-1-5-7: test import ArkTS evoluion interface (arrow function return value) in object literal
+      ✔ 3-1-5-8: test import ArkTS evoluion interface (function return value) in object literal
+      ✔ 3-1-5-9: test import ArkTS evoluion namespace (variable init) in object literal
+      ✔ 3-1-5-10: test import ArkTS evoluion namespace (variable init) in object literal
+      ✔ 3-1-6: test import ArkTS evoluion function in object literal
+      ✔ 3-1-7: test union type (no ambiguity) in object literal
+      ✔ 3-1-8: test union type (ambiguity) in object literal
+      ✔ 3-1-9: test parenthesized type in object literal
+      ✔ 3-1-10: test import ArkTS evoluion Obejct in object literal
+      ✔ 3-1-11-1: test concurrent function with ArkTS evolution class in object literal
+      ✔ 3-1-11-2: test concurrent function with ArkTS evolution interface in object literal
+      ✔ 3-1-11-3: test concurrent and non-concurrent mix with ArkTS evolution class in object literal
+      ✔ 3-1-11-4: test concurrent function with ArkTS evolution record in object literal
+      ✔ 3-2-1: test class extends arkTS evolution class or implement arkTS evolution interface
+
+  process custom component require param undefined type interop tests
+    ✔ warns once when a @Require regular param is initialized with undefined
+    ✔ warns once when a @Require @Param is initialized with undefined in V2
+
+  test process_obfuscation_config file api
+    1: test filterStaticObfuscationConfig related apis
+      ✔ 1-1: test filterStaticObfuscationConfig with valid config
+      ✔ 1-2: test filterStaticConfigByPath with existing file
+# Comment line
+-apply-namecache /srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/arkTest_build/ark_compiler_ut/interop/temp_test_dir/relative-cache.txt
+-print-namecache
+/srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/arkTest_build/ark_compiler_ut/interop/temp_test_dir/output/relative-print-cache.txt
+-enable-export-obfuscation
+-keep-global-name
+Index
+-keep ../../../../../../../../src/main/Test.ets
+-keep
+../../../../../../../../src/main/TestB.ets
+-keep
+../../../../../../../../src/main/TestC.ets
+../../../../../../../../src/main/TestD.ets
+
+-keep ../../../../../../../../src/main/TestE.ets
+../../../../../../../../src/main/TestF.ets
+../../../../../../../../src/main/TestG.ets
+-keep ../../../../../../../../src/main/test/*.ets
+!../../../../../../../../src/main/test/TestA.ets
+!../../../../../../../../src/main/test/TestC.ets
+
+-keep-dts src/main/ets.d.ts
+      ✔ 1-3: test cleanObfuscationRules functionality
+      ✔ 1-4: test processNameCacheLine function
+      ✔ 1-5: test not keep-dts line
+    2: test mergeNameCache related apis
+      ✔ 2-1: test mergeNameCache with normal case
+      ✔ 2-2: test mergeNameCache with config files not exist
+      ✔ 2-3: test mergeNameCache with obfuscation disabled
+      ✔ 2-4: test mergeNameCache with empty printNameCache path
+      ✔ 2-5: test mergeNameCache with name cache files not exist
+      ✔ 2-6: test mergeNameCache with error handling
+      ✔ 2-7: test mergeNameCache with Set values
+    3: test mergeObfuscationRules related apis
+      ✔ 3-1: test mergeObfuscationRules merges dynamic first then unique static lines
+      ✔ 3-2: test mergeObfuscationRules copies only dynamic when static file missing
+      ✔ 3-3: test mergeObfuscationRules copies only static when dynamic file missing
+      ✔ 3-4: test mergeObfuscationRules no-op when both inputs missing
+      ✔ 3-5: test mergeObfuscationRules returns early when any directory arg is empty
+      ✔ 3-6: test mergeObfuscationRules creates output directory when absent
+      ✔ 3-8: test mergeObfuscationRules when args are obfuscation.txt file paths (hvigor)
+      ✔ 3-7: test mergeObfuscationRules error handling invokes printObfLogger
+
+  process static interop imports tests
+metadata initialized successfully {
+  metadataFilePath: '/tmp/static-interop-imports-2nPgHh/staticInteropMetadata.json',
+  entryCount: 2
+}
+    9) removes an import that resolves to the configured file
+    10) supports a configurable target file
+    ✔ does not match text outside an import declaration
+    ✔ keeps imports that resolve to another file
+    11) matches a package alias by its resolved reference path
+    12) drops type-only imports that resolve to a static target
+    13) drops named type-only imports that resolve to a static target
+    ✔ keeps type-only imports that do not resolve to a static target
+    14) adds the replacement only once when multiple imports resolve to the target
+    ✔ keeps unresolved imports even when their text resembles the target path
+    ✔ does not replace dynamic import from a static target
+    ✔ does not replace dynamic import from a dynamic target
+    ✔ does not process concurrent usage when the file has no static import
+    ✔ does not create a self import when Concurrent does not use a static binding
+    15) creates a self import when Concurrent uses a static binding
+    16) creates a self import for a Concurrent static function binding
+    17) reports an error for a re-export from a static target
+    18) reports an error for a star re-export from a static target
+    ✔ does not report an error for a re-export from a non-static target
+    ✔ does not report an error for a local re-export without a module specifier
+    ✔ bridges tmpClass when used in a Concurrent function IIFE
+    ✔ bridges tmpRecord when used in a Concurrent function comma expression
+    ✔ does not bridge tmpObj declaration without initializer
+    ✔ does not bridge tmpClass when not used in a Concurrent function
+    ✔ bridges tmpClass without any static import replacement
+
+  run_declgen_standalone module name resolver
+    ✔ 1-1: resolves explicit ets and ts module names
+    ✔ 1-2: prefers paired d.ets when a js module is resolved by default
+    ✔ 1-3: caches resolved module results for repeated lookups
+    ✔ 1-4: returns undefined for unresolved module names
+
+  InteropContext
+    ✔ 1-1: add ets decl files
+    ✔ 1-2: add js decl files
+    ✔ 1-3: add hsp decl files (no version in ohmUrl)
+
+  test main file api
+    ✔ 1-1: test setEntryArrayForObf
+    ✔ 1-2: test setStartupPagesForObf withTask
+    ✔ 1-2: test setStartupPagesForObf noTask
+
+  test module_build_mode file api
+    ✔ 1-1: test the error message of ModuleBuildMode executeArkCompiler
+    ✔ 1-2: test the error message of ModuleBuildMode executeArkCompiler without getHvigorConsoleLogger
+
+  test module_coldreload_mode file api
+    ✔ 1-1: test the error message of the ModuleColdreloadMode constructor
+    ✔ 1-1-1: test the error message of the ModuleColdreloadMode constructor without getHvigorConsoleLogger
+    ✔ 1-2: test addColdReloadArgs under cold reload debug
+    ✔ 1-3: test addColdReloadArgs under cold reload release
+    ✔ 1-4: test addColdReloadArgs under cold reload debug not first
+    ✔ 1-5: test addColdReloadArgs under cold reload release not first
+    ✔ 1-6: test updateSourceMapFromFileList under cold reload debug
+    ✔ 1-7: test compileContextInfo regenerated by changedFileList under cold reload not first build
+
+  test module_hotfix_mode file api
+    ✔ 1-1: test generateEs2AbcCmdForHotfix under hot fix debug
+    ✔ 1-2: test generateEs2AbcCmdForHotfix under hot fix release
+    ✔ 1-3: test generateEs2AbcCmdForHotfix enable column under hot fix release
+    ✔ 1-4: test generateEs2AbcCmdForHotfix disable column under hot fix release
+    ✔ 1-5: test generateEs2AbcCmdForHotfix enable callable name by default
+    ✔ 1-6: test generateEs2AbcCmdForHotfix disable callable name
+
+  test module_hotreload_mode file api
+    ✔ 1-1: test updateSourceMapFromFileList under hot reload debug
+    ✔ 2-1: test addHotReloadArgs under hot reload debug
+    ✔ 2-2: test addHotReloadArgs under hot reload debug
+    ✔ 3-1: test the error message of the ModuleHotreloadMode constructor
+    ✔ 3-2: test the error message of the ModuleHotreloadMode constructor without getHvigorConsoleLogger
+
+  test module_mode file api
+    ✔ 1-1: test collectModuleFileList under build debug
+    ✔ 1-2: test collectModuleFileList under build release
+    ✔ 1-3: test collectModuleFileList under preview debug
+    ✔ 1-4: test collectModuleFileList under hot reload debug
+    ✔ 1-5: test collectModuleFileList useNormalizedOHMUrl under build debug
+    ✔ 1-6: test collectModuleFileList useNormalizedOHMUrl under build release
+    ✔ 1-7: test collectModuleFileList useNormalizedOHMUrl under preview debug
+    ✔ 1-8: test collectModuleFileList useNormalizedOHMUrl under hot reload debug
+    ✔ 2-1-1: test addModuleInfoItem under build debug: isPackageModulesFile`s return is true
+    ✔ 2-1-2: test addModuleInfoItem under build debug: isPackageModulesFile`s return is false
+    ✔ 2-2: test addModuleInfoItem under build release
+    ✔ 2-3: test addModuleInfoItem under preview debug
+    ✔ 2-4: test addModuleInfoItem under hot reload debug
+    ✔ 2-5-1: test addModuleInfoItem under build debug: sourceFile equals sourcemap new key
+    ✔ 2-5-2: test addModuleInfoItem under build release: sourceFile equals sourcemap new key
+    ✔ 2-5-3: test addModuleInfoItem under preview debug: sourceFile equals sourcemap new key
+    ✔ 2-5-4: test addModuleInfoItem under hot reload debug: sourceFile equals sourcemap new key
+    ✔ 2-6-1: test addModuleInfoItem under build debug: sourceFile equals sourcemap old key
+    ✔ 2-6-2: test addModuleInfoItem under build release: sourceFile equals sourcemap old key
+    ✔ 2-6-3: test addModuleInfoItem under preview debug: sourceFile equals sourcemap old key
+    ✔ 2-6-4: test addModuleInfoItem under hot reload debug: sourceFile equals sourcemap old key
+    ✔ 2-7-1: test addModuleInfoItem under build release with obfuscatedEnabled and isPackageModulesFile`s return is true
+    ✔ 2-7-2: test addModuleInfoItem under build release with obfuscatedEnabled and isPackageModulesFile`s return is true and old key
+    ✔ 2-7-3: test addModuleInfoItem under build release with obfuscatedEnabled and isPackageModulesFile`s return is false
+    ✔ 2-7-4: test addModuleInfoItem under build release with obfuscatedEnabled and isPackageModulesFile`s return is false and old key
+    ✔ 3-1-1: test updateCachedSourceMaps under build debug: cacheSourceMapPath not exist
+    ✔ 3-1-2: test updateCachedSourceMaps under build debug: compileFileList has not sourceFileAbsolutePath
+    ✔ 3-2: test updateCachedSourceMaps under build release
+    ✔ 3-3: test updateCachedSourceMaps under preview debug
+    ✔ 3-4: test updateCachedSourceMaps under hot reload debug
+    ✔ 3-5: test updateCachedSourceMaps when ets(ts) file is transformed to js file
+    ✔ 4-1: test generateCompileFilesInfo under build debug
+    ✔ 4-2: test generateCompileFilesInfo under build release
+    ✔ 4-3: test generateCompileFilesInfo under preview debug
+    ✔ 4-4: test generateCompileFilesInfo under hot reload debug
+    ✔ 4-5: test generateCompileFilesInfo under exist abcPaths
+    ✔ 4-6: test generateCompileFilesInfo under hot reload debug incremental
+    ✔ 4-7: test source language in filesInfo
+    ✔ 4-8: test the error message of generateCompileFilesInfo 
+    ✔ 5-1: test generateNpmEntriesInfo under build debug
+    ✔ 5-2: test generateNpmEntriesInfo under build release
+    ✔ 5-3: test generateNpmEntriesInfo under preview debug
+    ✔ 5-4: test generateNpmEntriesInfo under hot reload debug
+    ✔ 6-1: test generateAbcCacheFilesInfo under build debug
+    ✔ 6-2: test generateAbcCacheFilesInfo under build release
+    ✔ 6-3: test generateAbcCacheFilesInfo under preview debug
+    ✔ 6-4: test generateAbcCacheFilesInfo under hot reload debug
+    ✔ 6-5: test generateAbcCacheFilesInfo add bchar under build debug
+    ✔ 7-1: test getPackageEntryInfo under build debug
+    ✔ 7-2: test getPackageEntryInfo under build release
+    ✔ 7-3: test getPackageEntryInfo under preview debug
+    ✔ 7-4: test getPackageEntryInfo under hot reload debug
+    ✔ 7-5: test the error message of getPackageEntryInfo under build debug
+    ✔ 7-5-1: test the error message of getPackageEntryInfo under build debug without getHvigorConsoleLogger
+    ✔ 7-6: test the error message of getPackageEntryInfo under build release
+    ✔ 7-6-1: test the error message of getPackageEntryInfo under build release without getHvigorConsoleLogger
+    ✔ 7-7: test the error message of getPackageEntryInfo under preview debug
+    ✔ 7-7-1: test the error message of getPackageEntryInfo under preview debug without getHvigorConsoleLogger
+    ✔ 7-8: test the error message of getPackageEntryInfo under hot reload debug
+    ✔ 7-8-1: test the error message of getPackageEntryInfo under hot reload debug without getHvigorConsoleLogger
+    ✔ 8-1: test buildModuleSourceMapInfo under build debug (1003ms)
+    ✔ 8-2: test buildModuleSourceMapInfo under build release (1001ms)
+    ✔ 8-3: test buildModuleSourceMapInfo under preview debug (1001ms)
+    ✔ 8-4: test buildModuleSourceMapInfo under hot reload debug (1001ms)
+    ✔ 8-5: test the error message of buildModuleSourceMapInfo under build debug (102ms)
+    ✔ 8-5-1: test the error message of buildModuleSourceMapInfo under build debug without getHvigorConsoleLogger (101ms)
+    ✔ 8-6: test the error message of buildModuleSourceMapInfo under build release (101ms)
+    ✔ 8-6-1: test the error message of buildModuleSourceMapInfo under build release without getHvigorConsoleLogger (101ms)
+    ✔ 8-7: test the error message of buildModuleSourceMapInfo under preview debug (102ms)
+    ✔ 8-7-1: test the error message of buildModuleSourceMapInfo under preview debug without getHvigorConsoleLogger (100ms)
+    ✔ 8-8: test the error message of buildModuleSourceMapInfo under hot reload debug (101ms)
+    ✔ 8-8-1: test the error message of buildModuleSourceMapInfo under hot reload debug without getHvigorConsoleLogger (101ms)
+    ✔ 8-9: test merge bytecode source map of buildModuleSourceMapInfo under build debug (1002ms)
+    ✔ 9-1: test getPkgModulesFilePkgName under build debug
+    ✔ 9-2: test getPkgModulesFilePkgName under build release
+    ✔ 9-3: test getPkgModulesFilePkgName under preview debug
+    ✔ 9-4: test getPkgModulesFilePkgName under hot reload debug
+    ✔ 10-1: test generateEs2AbcCmd under build debug
+    ✔ 10-2: test generateEs2AbcCmd under build release
+    ✔ 10-3: test generateEs2AbcCmd under preview debug
+    ✔ 10-4: test generateEs2AbcCmd under preview debug
+    ✔ 10-5: test generateEs2AbcCmd with enable column
+    ✔ 10-6: test generateEs2AbcCmd with enable callable name
+    ✔ 11-1: test addCacheFileArgs under build debug
+    ✔ 11-2: test addCacheFileArgs under build release
+    ✔ 11-3: test addCacheFileArgs under preview debug
+    ✔ 11-4: test addCacheFileArgs under hot reload debug
+    ✔ 12-1: test genFileCachePath under build debug
+    ✔ 12-2: test genFileCachePath under build release
+    ✔ 12-3: test genFileCachePath under preview debug
+    ✔ 12-4: test genFileCachePath under hot reload debug
+    ✔ 12-5: test genFileCachePath under hot fix debug
+    ✔ 12-6: test genFileCachePath under hot fix release
+    ✔ 13-1: test the error message of generateMergedAbcOfEs2Abc throw error on failed code (1005ms)
+    ✔ 13-2: test the error message of generateMergedAbcOfEs2Abc throw error(Failed to startup es2abc) (104ms)
+    ✔ 13-3: test the error message of generateMergedAbcOfEs2Abc handle error
+    ✔ 13-4: test the error message of generateMergedAbcOfEs2Abc throw error on failed code without getHvigorConsoleLogger (1004ms)
+    ✔ 13-5: test the error message of generateMergedAbcOfEs2Abc throw error(Failed to startup es2abc)without getHvigorConsoleLogger (107ms)
+    ✔ 13-6: test the error message of generateMergedAbcOfEs2Abc handle error without getHvigorConsoleLogger
+    ✔ 14-1: test the error message of filterModulesByHashJson
+    ✔ 15-1: test the error message of mergeProtoToAbc
+    ✔ 16-1: test the error message of invokeTs2AbcWorkersToGenProto
+    ✔ 17-1: test the error message of processTs2abcWorkersToGenAbc
+    ✔ 18-1: test generateCompileContext under build debug
+    ✔ 18-2: test generateCompileContext under build release
+    ✔ 18-3: test generateCompileContext under build preview
+    ✔ 18-4: test generateCompileContext under build hotReload
+    ✔ 18-5: test generateCompileContext widget compile under build debug
+    ✔ 18-6: test generateCompileContext widget compile under build release
+    ✔ 18-7: test generateCompileContext widget compile under build preview
+    ✔ 18-8: test generateCompileContext widget compile under build hotReload
+    ✔ 18-9: test generateCompileContext has router map entries
+    ✔ 18-10: test generateCompileContext has declaration entries
+    ✔ 18-11: test generateCompileContext has not exist moduleId
+    ✔ 18-11-1: test generateCompileContext has not exist moduleIdwithout getHvigorConsoleLogger
+    ✔ 18-12: test generateCompileContext accurate update version
+    ✔ 18-13: test generateCompileContext has not exist meta info
+    ✔ 18-13-1: test generateCompileContext has not exist meta info without getHvigorConsoleLogger
+    ✔ 18-14: test generateCompileContext inter—app hsp deps bytecode har
+    ✔ 18-15: test generateCompileContext HAP/HSP ResourceTable
+    ✔ 18-16: test generateCompileContext customized har collect compile files
+    ✔ 18-17: test generateCompileContext inter—app hsp deps bytecode har with bundleType appPlugin
+    19) 18-18: test generateCompileContext inter—app hsp deps bytecode har with bundleType appService
+    ✔ 19-1: test the error message of removeCompilationCache
+    ✔ 19-2: test the error message of removeCompilationCache without getHvigorConsoleLogger
+    ✔ 20-1: test collectDeclarationFilesEntry build
+
+  test module_preview_mode file api
+    ✔ 1-1: test the error message of ModulePreviewMode executeArkCompiler
+    ✔ 1-2: test the error message of ModulePreviewMode executeArkCompiler without getHvigorConsoleLogger
+
+  test module_source_file file api
+    ✔ 1-1-1: test getOhmUrl under build debug: systemOrLibOhmUrl is not undefined
+    ✔ 1-1-2: test getOhmUrl under build debug: filePath exist
+    ✔ 1-1-3: test getOhmUrl under build debug: harOhmUrl is not undefined
+    ✔ 1-2: test getOhmUrl under build release
+    ✔ 1-3: test getOhmUrl under preview debug
+    ✔ 1-4: test getOhmUrl under hot reload debug
+    ✔ 1-5: test the error message of getOhmUrl: GetModuleInfoFaild
+    ✔ 1-5-1: test the error message of getOhmUrl: GetModuleInfoFaild without getHvigorConsoleLogger
+    ✔ 1-6: test the error message of getOhmUrl: UnableToGetModuleInfoMeta
+    ✔ 1-7: test the error message of getOhmUrl: UnableToGetModuleInfoMeta without getHvigorConsoleLogger
+    ✔ 2-1: test processJsModuleRequest under build debug
+    ✔ 2-2: test processJsModuleRequest under build release
+    ✔ 2-3: test processJsModuleRequest under preview debug
+    ✔ 2-4: test processJsModuleRequest under hot reload debug
+    ✔ 3-1-1: test processTransformedJsModuleRequest under build debug: hasDynamicImport is false
+    ✔ 3-1-2: test processTransformedJsModuleRequest under build debug: hasDynamicImport is true
+    ✔ 3-2: test processTransformedJsModuleRequest under build release
+    ✔ 3-3: test processTransformedJsModuleRequest under preview debug
+    ✔ 3-4: test processTransformedJsModuleRequest under hot reload debug
+    ✔ 4-1: test processTransformedTsModuleRequest under build debug
+    ✔ 4-1-1: test single file processTransformedTsModuleRequest under build debug
+    ✔ 4-2: test processTransformedTsModuleRequest under build release
+    ✔ 4-3: test processTransformedTsModuleRequest under preview debug
+    ✔ 4-3-1: test single file processTransformedTsModuleRequest under preview debug
+    ✔ 4-4: test processTransformedTsModuleRequest under reload debug
+    ✔ 4-4-1: test single file processTransformedTsModuleRequest under reload debug
+    ✔ 5-1: test setProcessMock under LocalTest mode
+    ✔ 5-2: test collectMockConfigInfo under LocalTest mode
+    ✔ 5-3: test addMockConfig under LocalTest mode
+    ✔ 5-4: test generateNewMockInfo under LocalTest mode
+    ✔ 5-5: test generateMockConfigFile under LocalTest mode
+    ✔ 5-6: test generateNewMockInfo under LocalTest mode (useNormalizedOHMUrl is true)
+    ✔ 5-7: test generateNewMockInfo under LocalTest mode (has source2ModuleIdMap)
+    ✔ 5-8: test generateNewMockInfo under ohosTest mode (has source2ModuleIdMap)
+    ✔ 5-9: test generateMockConfigFile under LocalTest mode (useNormalizedOHMUrl)
+    ✔ 6-1: test removePotentialMockConfigCache delete mock-config
+    ✔ 7-1: test the error message of generateTransformedMockInfo
+    ✔ 7-2: test the error message of generateTransformedMockInfowithout getHvigorConsoleLogger
+    ✔ 8-1: test isMockFile under LocalTest mode
+    ✔ 9-1: test collectRecordNameMockFile normalized ohmurl
+    ✔ 9-2: test collectRecordNameMockFile old ohmurl
+
+  generate ohmUrl
+    ✔ nested src main ets|js in filePath
+    ✔ nested src ohosTest ets|js in filePath
+    ✔ system builtins & app builtins
+    ✔ shared library
+    ✔ project module
+    ✔ thirdParty module
+    ✔ static library entry
+    ✔ ohosTest module
+    ✔ the error message of processPackageDir
+    ✔ the error message of processPackageDir without getHvigorConsoleLogger
+    ✔ the error message of processPackageDir(packageDir is invalid value)
+    ✔ the error message of processPackageDir(packageDir is invalid value) without getHvigorConsoleLogger
+    ✔ NormalizedOHMUrl inter-app hsp self import
+    ✔ NormalizedOHMUrl inter-app hsp others import
+    ✔ NormalizedOHMUrl in-app hsp self import
+    ✔ NormalizedOHMUrl in-app hsp others import
+    ✔ NormalizedOHMUrl hap self import
+    ✔ NormalizedOHMUrl source code har self import (hap/in-app hsp)
+    ✔ NormalizedOHMUrl source code har others import (hap/in-app hsp)
+    ✔ NormalizedOHMUrl source code har self import (inter-app hsp)
+    ✔ NormalizedOHMUrl source code har others import (inter-app hsp)
+    ✔ NormalizedOHMUrl product har self import (hap/in-app hsp)
+    ✔ NormalizedOHMUrl product har others import (hap/in-app hsp)
+    ✔ NormalizedOHMUrl remote source code har self import (inter-app hsp)
+    ✔ NormalizedOHMUrl remote source code har others import (inter-app hsp)
+    ✔ NormalizedOHMUrl native so others import (hap/in-app hsp)
+    ✔ NormalizedOHMUrl native so others import (inter-app hsp)
+    ✔ NormalizedOHMUrl native so others import (source code har)
+    ✔ NormalizedOHMUrl native so others import (product har)
+    ✔ NormalizedOHMUrl ohpm package others import (hap/in-app hsp)
+    ✔ NormalizedOHMUrl ohpm package others import (inter-app hsp)
+    ✔ the error message of getNormalizedOhmUrlByFilepath
+    ✔ the error message of getNormalizedOhmUrlByFilepath without getHvigorConsoleLogger
+    ✔ transform mockConfigInfo
+    ✔ NormalizedOHMUrl transform mockConfigInfo
+    ✔ NormalizedOHMUrl bytecode har import
+    ✔ useNormalizedOHMUrl app builtins error message
+    ✔ useNormalizedOHMUrl app builtins error message without getHvigorConsoleLogger
+    ✔ the error message of getNormalizedOhmUrlByModuleRequest
+    ✔ the error message of processPackageDir when useNormalizedOHMUrl is false
+    ✔ the error message of getNormalizedOhmUrlByAliasName
+    ✔ the error message of getNormalizedOhmUrlByAliasName without getHvigorConsoleLogger
+    ✔ Collect. so libraries referenced in the project and generate JSON files
+    ✔ Collect. so libraries referenced in the project and generate JSON files,remove one file
+    ✔ test process customizedHar import declfile ohmurl
+
+  verify that the obfuscateWhiteList.json5 contains wildcards
+    ✔ should not contain wildcards(* or ?) in ReservedPropertyNames
+    ✔ should not contain wildcards(* or ?) in OptimizedReservedPropertyNames
+
+
+  1122 passing (58s)
+  19 failing
+
+  1) process Lazy Imports tests
+       1-1: test transformLazyImport (ts.sourceFile): perform lazy conversion:
+     Error: Debug Failure. Unexpected moduleResolution: node
+      at Object.resolveModuleName (node_modules/typescript/lib/typescript.js:39734:22)
+      at resolveModuleName (lib/ets_checker.js:4:466)
+      at getStaticImportPath (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:6777)
+      at getStaticImport (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:6661)
+      at processStaticInteropImportStatement (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:2504)
+      at /srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:1792
+      at Array.forEach (<anonymous>)
+      at processStaticInteropImports (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:1747)
+      at /srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/lib/process_kit_import.js:1:4887
+      at transformSourceFileOrBundle (node_modules/typescript/lib/typescript.js:85321:49)
+      at transformation (node_modules/typescript/lib/typescript.js:102781:14)
+      at transformRoot (node_modules/typescript/lib/typescript.js:102807:71)
+      at transformNodes (node_modules/typescript/lib/typescript.js:102790:70)
+      at emitJsFileOrBundle (node_modules/typescript/lib/typescript.js:103366:24)
+      at emitSourceFileOrBundle (node_modules/typescript/lib/typescript.js:103295:5)
+      at forEachEmittedFile (node_modules/typescript/lib/typescript.js:103060:24)
+      at emitFiles (node_modules/typescript/lib/typescript.js:103267:3)
+      at emitWorker (node_modules/typescript/lib/typescript.js:110179:24)
+      at /srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/node_modules/typescript/lib/typescript.js:110159:51
+      at runWithCancellationToken (node_modules/typescript/lib/typescript.js:110263:14)
+      at Object.emit (node_modules/typescript/lib/typescript.js:110159:20)
+      at Object.transpileModule (node_modules/typescript/lib/typescript.js:124094:11)
+      at Context.<anonymous> (arkTest_build/ark_compiler_ut/common/process_lazy_import.test.js:111:8)
+      at process.processImmediate (node:internal/timers:483:21)
+
+  2) process Lazy Imports tests
+       1-2: test transformLazyImport (ts.sourceFile): no lazy conversion:
+     Error: Debug Failure. Unexpected moduleResolution: node
+      at Object.resolveModuleName (node_modules/typescript/lib/typescript.js:39734:22)
+      at resolveModuleName (lib/ets_checker.js:4:466)
+      at getStaticImportPath (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:6777)
+      at getStaticImport (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:6661)
+      at processStaticInteropImportStatement (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:2504)
+      at /srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:1792
+      at Array.forEach (<anonymous>)
+      at processStaticInteropImports (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:1747)
+      at /srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/lib/process_kit_import.js:1:4887
+      at transformSourceFileOrBundle (node_modules/typescript/lib/typescript.js:85321:49)
+      at transformation (node_modules/typescript/lib/typescript.js:102781:14)
+      at transformRoot (node_modules/typescript/lib/typescript.js:102807:71)
+      at transformNodes (node_modules/typescript/lib/typescript.js:102790:70)
+      at emitJsFileOrBundle (node_modules/typescript/lib/typescript.js:103366:24)
+      at emitSourceFileOrBundle (node_modules/typescript/lib/typescript.js:103295:5)
+      at forEachEmittedFile (node_modules/typescript/lib/typescript.js:103060:24)
+      at emitFiles (node_modules/typescript/lib/typescript.js:103267:3)
+      at emitWorker (node_modules/typescript/lib/typescript.js:110179:24)
+      at /srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/node_modules/typescript/lib/typescript.js:110159:51
+      at runWithCancellationToken (node_modules/typescript/lib/typescript.js:110263:14)
+      at Object.emit (node_modules/typescript/lib/typescript.js:110159:20)
+      at Object.transpileModule (node_modules/typescript/lib/typescript.js:124094:11)
+      at Context.<anonymous> (arkTest_build/ark_compiler_ut/common/process_lazy_import.test.js:153:8)
+      at process.processImmediate (node:internal/timers:483:21)
+
+  3) process Lazy Imports tests
+       2-1: the error message of lazy-import re-export (ts.sourceFile):
+     Error: Debug Failure. Unexpected moduleResolution: node
+      at Object.resolveModuleName (node_modules/typescript/lib/typescript.js:39734:22)
+      at resolveModuleName (lib/ets_checker.js:4:466)
+      at getStaticImportPath (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:6777)
+      at getStaticImport (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:6661)
+      at processStaticInteropImportStatement (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:2504)
+      at /srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:1792
+      at Array.forEach (<anonymous>)
+      at processStaticInteropImports (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:1747)
+      at /srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/lib/process_kit_import.js:1:4887
+      at transformSourceFileOrBundle (node_modules/typescript/lib/typescript.js:85321:49)
+      at transformation (node_modules/typescript/lib/typescript.js:102781:14)
+      at transformRoot (node_modules/typescript/lib/typescript.js:102807:71)
+      at transformNodes (node_modules/typescript/lib/typescript.js:102790:70)
+      at emitJsFileOrBundle (node_modules/typescript/lib/typescript.js:103366:24)
+      at emitSourceFileOrBundle (node_modules/typescript/lib/typescript.js:103295:5)
+      at forEachEmittedFile (node_modules/typescript/lib/typescript.js:103060:24)
+      at emitFiles (node_modules/typescript/lib/typescript.js:103267:3)
+      at emitWorker (node_modules/typescript/lib/typescript.js:110179:24)
+      at /srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/node_modules/typescript/lib/typescript.js:110159:51
+      at runWithCancellationToken (node_modules/typescript/lib/typescript.js:110263:14)
+      at Object.emit (node_modules/typescript/lib/typescript.js:110159:20)
+      at Object.transpileModule (node_modules/typescript/lib/typescript.js:124094:11)
+      at Context.<anonymous> (arkTest_build/ark_compiler_ut/common/process_lazy_import.test.js:205:8)
+      at process.processImmediate (node:internal/timers:483:21)
+
+  4) process Lazy Imports tests
+       2-2: the error message of lazy-import re-export with the name lazy (ts.sourceFile):
+     Error: Debug Failure. Unexpected moduleResolution: node
+      at Object.resolveModuleName (node_modules/typescript/lib/typescript.js:39734:22)
+      at resolveModuleName (lib/ets_checker.js:4:466)
+      at getStaticImportPath (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:6777)
+      at getStaticImport (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:6661)
+      at processStaticInteropImportStatement (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:2504)
+      at /srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:1792
+      at Array.forEach (<anonymous>)
+      at processStaticInteropImports (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:1747)
+      at /srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/lib/process_kit_import.js:1:4887
+      at transformSourceFileOrBundle (node_modules/typescript/lib/typescript.js:85321:49)
+      at transformation (node_modules/typescript/lib/typescript.js:102781:14)
+      at transformRoot (node_modules/typescript/lib/typescript.js:102807:71)
+      at transformNodes (node_modules/typescript/lib/typescript.js:102790:70)
+      at emitJsFileOrBundle (node_modules/typescript/lib/typescript.js:103366:24)
+      at emitSourceFileOrBundle (node_modules/typescript/lib/typescript.js:103295:5)
+      at forEachEmittedFile (node_modules/typescript/lib/typescript.js:103060:24)
+      at emitFiles (node_modules/typescript/lib/typescript.js:103267:3)
+      at emitWorker (node_modules/typescript/lib/typescript.js:110179:24)
+      at /srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/node_modules/typescript/lib/typescript.js:110159:51
+      at runWithCancellationToken (node_modules/typescript/lib/typescript.js:110263:14)
+      at Object.emit (node_modules/typescript/lib/typescript.js:110159:20)
+      at Object.transpileModule (node_modules/typescript/lib/typescript.js:124094:11)
+      at Context.<anonymous> (arkTest_build/ark_compiler_ut/common/process_lazy_import.test.js:235:8)
+      at process.processImmediate (node:internal/timers:483:21)
+
+  5) process Lazy Imports tests
+       2-3: the warn message of lazy-import re-export (ts.sourceFile):
+     Error: Debug Failure. Unexpected moduleResolution: node
+      at Object.resolveModuleName (node_modules/typescript/lib/typescript.js:39734:22)
+      at resolveModuleName (lib/ets_checker.js:4:466)
+      at getStaticImportPath (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:6777)
+      at getStaticImport (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:6661)
+      at processStaticInteropImportStatement (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:2504)
+      at /srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:1792
+      at Array.forEach (<anonymous>)
+      at processStaticInteropImports (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:1747)
+      at /srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/lib/process_kit_import.js:1:4887
+      at transformSourceFileOrBundle (node_modules/typescript/lib/typescript.js:85321:49)
+      at transformation (node_modules/typescript/lib/typescript.js:102781:14)
+      at transformRoot (node_modules/typescript/lib/typescript.js:102807:71)
+      at transformNodes (node_modules/typescript/lib/typescript.js:102790:70)
+      at emitJsFileOrBundle (node_modules/typescript/lib/typescript.js:103366:24)
+      at emitSourceFileOrBundle (node_modules/typescript/lib/typescript.js:103295:5)
+      at forEachEmittedFile (node_modules/typescript/lib/typescript.js:103060:24)
+      at emitFiles (node_modules/typescript/lib/typescript.js:103267:3)
+      at emitWorker (node_modules/typescript/lib/typescript.js:110179:24)
+      at /srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/node_modules/typescript/lib/typescript.js:110159:51
+      at runWithCancellationToken (node_modules/typescript/lib/typescript.js:110263:14)
+      at Object.emit (node_modules/typescript/lib/typescript.js:110159:20)
+      at Object.transpileModule (node_modules/typescript/lib/typescript.js:124094:11)
+      at Context.<anonymous> (arkTest_build/ark_compiler_ut/common/process_lazy_import.test.js:262:8)
+      at process.processImmediate (node:internal/timers:483:21)
+
+  6) process Lazy Imports tests
+       2-4: the error message of lazy-import re-export when the autoLazyImport is true (ts.sourceFile):
+     Error: Debug Failure. Unexpected moduleResolution: node
+      at Object.resolveModuleName (node_modules/typescript/lib/typescript.js:39734:22)
+      at resolveModuleName (lib/ets_checker.js:4:466)
+      at getStaticImportPath (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:6777)
+      at getStaticImport (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:6661)
+      at processStaticInteropImportStatement (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:2504)
+      at /srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:1792
+      at Array.forEach (<anonymous>)
+      at processStaticInteropImports (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:1747)
+      at /srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/lib/process_kit_import.js:1:4887
+      at transformSourceFileOrBundle (node_modules/typescript/lib/typescript.js:85321:49)
+      at transformation (node_modules/typescript/lib/typescript.js:102781:14)
+      at transformRoot (node_modules/typescript/lib/typescript.js:102807:71)
+      at transformNodes (node_modules/typescript/lib/typescript.js:102790:70)
+      at emitJsFileOrBundle (node_modules/typescript/lib/typescript.js:103366:24)
+      at emitSourceFileOrBundle (node_modules/typescript/lib/typescript.js:103295:5)
+      at forEachEmittedFile (node_modules/typescript/lib/typescript.js:103060:24)
+      at emitFiles (node_modules/typescript/lib/typescript.js:103267:3)
+      at emitWorker (node_modules/typescript/lib/typescript.js:110179:24)
+      at /srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/node_modules/typescript/lib/typescript.js:110159:51
+      at runWithCancellationToken (node_modules/typescript/lib/typescript.js:110263:14)
+      at Object.emit (node_modules/typescript/lib/typescript.js:110159:20)
+      at Object.transpileModule (node_modules/typescript/lib/typescript.js:124094:11)
+      at Context.<anonymous> (arkTest_build/ark_compiler_ut/common/process_lazy_import.test.js:289:8)
+      at process.processImmediate (node:internal/timers:483:21)
+
+  7) process Lazy Imports tests
+       4-1: test autoLazyImport supports exclude list and include list: include list:
+     Error: Debug Failure. Unexpected moduleResolution: node
+      at Object.resolveModuleName (node_modules/typescript/lib/typescript.js:39734:22)
+      at resolveModuleName (lib/ets_checker.js:4:466)
+      at getStaticImportPath (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:6777)
+      at getStaticImport (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:6661)
+      at processStaticInteropImportStatement (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:2504)
+      at /srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:1792
+      at Array.forEach (<anonymous>)
+      at processStaticInteropImports (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:1747)
+      at /srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/lib/process_kit_import.js:1:4887
+      at transformSourceFileOrBundle (node_modules/typescript/lib/typescript.js:85321:49)
+      at transformation (node_modules/typescript/lib/typescript.js:102781:14)
+      at transformRoot (node_modules/typescript/lib/typescript.js:102807:71)
+      at transformNodes (node_modules/typescript/lib/typescript.js:102790:70)
+      at emitJsFileOrBundle (node_modules/typescript/lib/typescript.js:103366:24)
+      at emitSourceFileOrBundle (node_modules/typescript/lib/typescript.js:103295:5)
+      at forEachEmittedFile (node_modules/typescript/lib/typescript.js:103060:24)
+      at emitFiles (node_modules/typescript/lib/typescript.js:103267:3)
+      at emitWorker (node_modules/typescript/lib/typescript.js:110179:24)
+      at /srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/node_modules/typescript/lib/typescript.js:110159:51
+      at runWithCancellationToken (node_modules/typescript/lib/typescript.js:110263:14)
+      at Object.emit (node_modules/typescript/lib/typescript.js:110159:20)
+      at Object.transpileModule (node_modules/typescript/lib/typescript.js:124094:11)
+      at Context.<anonymous> (arkTest_build/ark_compiler_ut/common/process_lazy_import.test.js:517:8)
+      at process.processImmediate (node:internal/timers:483:21)
+
+  8) process Lazy Imports tests
+       4-2: test autoLazyImport supports exclude list and include list: exclude list:
+     Error: Debug Failure. Unexpected moduleResolution: node
+      at Object.resolveModuleName (node_modules/typescript/lib/typescript.js:39734:22)
+      at resolveModuleName (lib/ets_checker.js:4:466)
+      at getStaticImportPath (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:6777)
+      at getStaticImport (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:6661)
+      at processStaticInteropImportStatement (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:2504)
+      at /srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:1792
+      at Array.forEach (<anonymous>)
+      at processStaticInteropImports (lib/fast_build/ark_compiler/interop/process_static_interop_imports.js:1:1747)
+      at /srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/lib/process_kit_import.js:1:4887
+      at transformSourceFileOrBundle (node_modules/typescript/lib/typescript.js:85321:49)
+      at transformation (node_modules/typescript/lib/typescript.js:102781:14)
+      at transformRoot (node_modules/typescript/lib/typescript.js:102807:71)
+      at transformNodes (node_modules/typescript/lib/typescript.js:102790:70)
+      at emitJsFileOrBundle (node_modules/typescript/lib/typescript.js:103366:24)
+      at emitSourceFileOrBundle (node_modules/typescript/lib/typescript.js:103295:5)
+      at forEachEmittedFile (node_modules/typescript/lib/typescript.js:103060:24)
+      at emitFiles (node_modules/typescript/lib/typescript.js:103267:3)
+      at emitWorker (node_modules/typescript/lib/typescript.js:110179:24)
+      at /srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/node_modules/typescript/lib/typescript.js:110159:51
+      at runWithCancellationToken (node_modules/typescript/lib/typescript.js:110263:14)
+      at Object.emit (node_modules/typescript/lib/typescript.js:110159:20)
+      at Object.transpileModule (node_modules/typescript/lib/typescript.js:124094:11)
+      at Context.<anonymous> (arkTest_build/ark_compiler_ut/common/process_lazy_import.test.js:554:8)
+      at process.processImmediate (node:internal/timers:483:21)
+
+  9) process static interop imports tests
+       removes an import that resolves to the configured file:
+     AssertionError: expected 'import { test } from "./teststatic";\…' to not include 'import { test } from "./teststatic";'
+      at Context.<anonymous> (arkTest_build/ark_compiler_ut/interop/process_static_interop_imports.test.js:179:38)
+      at process.processImmediate (node:internal/timers:483:21)
+
+  10) process static interop imports tests
+       supports a configurable target file:
+     AssertionError: expected 'import value from "./custom.ets";\nva…' to not include 'import value from "./custom.ets";'
+      at Context.<anonymous> (arkTest_build/ark_compiler_ut/interop/process_static_interop_imports.test.js:190:38)
+      at process.processImmediate (node:internal/timers:483:21)
+
+  11) process static interop imports tests
+       matches a package alias by its resolved reference path:
+     AssertionError: expected 'import { test } from "@static/test";\…' to not include 'import { test } from "@static/test";'
+      at Context.<anonymous> (arkTest_build/ark_compiler_ut/interop/process_static_interop_imports.test.js:203:38)
+      at process.processImmediate (node:internal/timers:483:21)
+
+  12) process static interop imports tests
+       drops type-only imports that resolve to a static target:
+     AssertionError: expected 'import type { test } from "./teststat…' to not include 'import type { test } from "./teststat…'
+      at Context.<anonymous> (arkTest_build/ark_compiler_ut/interop/process_static_interop_imports.test.js:209:38)
+      at process.processImmediate (node:internal/timers:483:21)
+
+  13) process static interop imports tests
+       drops named type-only imports that resolve to a static target:
+     AssertionError: expected 'import { type test } from "./teststat…' to not include 'import { type test } from "./teststat…'
+      at Context.<anonymous> (arkTest_build/ark_compiler_ut/interop/process_static_interop_imports.test.js:215:38)
+      at process.processImmediate (node:internal/timers:483:21)
+
+  14) process static interop imports tests
+       adds the replacement only once when multiple imports resolve to the target:
+     AssertionError: expected 'import { test } from "./teststatic";\…' to not include 'import '
+      at Context.<anonymous> (arkTest_build/ark_compiler_ut/interop/process_static_interop_imports.test.js:224:38)
+      at process.processImmediate (node:internal/timers:483:21)
+
+  15) process static interop imports tests
+       creates a self import when Concurrent uses a static binding:
+     AssertionError: expected 'import { test } from "./teststatic";\…' to include 'import { __staticInteropConcurrent_te…'
+      at Context.<anonymous> (arkTest_build/ark_compiler_ut/interop/process_static_interop_imports.test.js:253:34)
+      at process.processImmediate (node:internal/timers:483:21)
+
+  16) process static interop imports tests
+       creates a self import for a Concurrent static function binding:
+     AssertionError: expected 'import custom from "./custom.ets";\nf…' to include 'import { __staticInteropConcurrent_cu…'
+      at Context.<anonymous> (arkTest_build/ark_compiler_ut/interop/process_static_interop_imports.test.js:260:34)
+      at process.processImmediate (node:internal/timers:483:21)
+
+  17) process static interop imports tests
+       reports an error for a re-export from a static target:
+
+      AssertionError: expected [] to have a length of 1 but got +0
+      + expected - actual
+
+      -0
+      +1
+      
+      at Context.<anonymous> (arkTest_build/ark_compiler_ut/interop/process_static_interop_imports.test.js:272:65)
+      at process.processImmediate (node:internal/timers:483:21)
+
+  18) process static interop imports tests
+       reports an error for a star re-export from a static target:
+
+      AssertionError: expected [] to have a length of 1 but got +0
+      + expected - actual
+
+      -0
+      +1
+      
+      at Context.<anonymous> (arkTest_build/ark_compiler_ut/interop/process_static_interop_imports.test.js:290:65)
+      at process.processImmediate (node:internal/timers:483:21)
+
+  19) test module_mode file api
+       18-18: test generateCompileContext inter—app hsp deps bytecode har with bundleType appService:
+
+      AssertionError: expected false to be true
+      + expected - actual
+
+      -false
+      +true
+      
+      at Context.<anonymous> (arkTest_build/ark_compiler_ut/module/module_mode.test.js:2014:94)
+      at process.processImmediate (node:internal/timers:483:21)
+
+
+
