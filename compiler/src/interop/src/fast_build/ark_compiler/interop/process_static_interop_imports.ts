@@ -576,13 +576,14 @@ function createStaticInteropDeclaration(symbol: StaticInteropSymbol, declaration
     return '';
   }
   const runtimeName: string = JSON.stringify(symbol.runtimeName);
+  const localName: string = symbol.localName ?? symbol.name;
   let expression: string;
   switch (symbol.kind) {
     case 'function':
-      expression = `(globalThis as any).Panda.getFunction(${runtimeName}, ${JSON.stringify(symbol.name)})`;
+      expression = `(globalThis as any).Panda.getFunction(${runtimeName}, ${JSON.stringify(localName)})`;
       break;
     case 'property':
-      expression = `(globalThis as any).Panda.getClass(${runtimeName}).${symbol.name}`;
+      expression = `(globalThis as any).Panda.getClass(${runtimeName}).${localName}`;
       break;
     case 'class':
       expression = `(globalThis as any).Panda.getClass(${runtimeName})`;
