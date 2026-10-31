@@ -849,6 +849,7 @@ export let fastBuildLogger = null;
 export const checkerResult: CheckerResult = { count: 0 };
 export const warnCheckerResult: WarnCheckerResult = { count: 0 };
 export let languageService: ts.LanguageService = null;
+let hasSelfHealed: boolean = false;
 let tsImportSendable: boolean = false;
 let skipOhModulesLint: boolean = false;
 let enableStrictCheckOHModule: boolean = false;
@@ -908,6 +909,7 @@ function buildCheckerProgram(rootFileNames: string[], rollupShareObject?: Object
 
 export function serviceChecker(rootFileNames: string[], newLogger: Object = null, resolveModulePaths: string[] = null,
   parentEvent?: CompileEvent, rollupShareObject?: Object): void {
+  hasSelfHealed = false;
   releaseModuleResolutionCaches();
   fastBuildLogger = newLogger;
   let cacheFile: string = null;
@@ -923,6 +925,10 @@ export function serviceChecker(rootFileNames: string[], newLogger: Object = null
     buildCheckerProgram(rootFileNames, rollupShareObject);
   } finally {
     releaseModuleResolutionCaches();
+  }
+
+  if (process.env.watchMode !== 'true') {
+    ensureHealthyProgram(rootFileNames, resolveModulePaths, parentEvent, rollupShareObject);
   }
   ts.PerformanceDotting?.startAdvanced('runArkTSLinterTime');
   const runArkTSLinterRecordInfo = MemoryMonitor.recordStage(MemoryDefine.RUN_ARK_TS_LINTER);
@@ -1093,6 +1099,42 @@ function processHarSourceFiles(rootFileNames: string[]): void {
       } catch (err) {}
     }
   });
+}
+
+export function isSuspiciousSDKError(diagnostics: ts.Diagnostic[]): boolean {
+  return diagnostics.some((diag: ts.Diagnostic) => {
+    return isInSDK(diag.file?.fileName);
+  });
+}
+
+export function ensureHealthyProgram(rootFileNames: string[], resolveModulePaths: string[] | undefined,
+  parentEvent: CompileEvent, rollupShareObject?: Object): void {
+  const allDiagnostics: ts.Diagnostic[] = globalProgram.builderProgram
+    .getSyntacticDiagnostics()
+    .concat(globalProgram.builderProgram.getSemanticDiagnostics());
+
+  if (isSuspiciousSDKError(allDiagnostics) && !hasSelfHealed) {
+    hasSelfHealed = true;
+    const eventSelfHealing = createAndStartEvent(parentEvent, 'selfHealing: Suspicious SDK error detected in incremental compilation, cleaning LanguageService cache and rebuilding Program for self-healing.');
+    const etsCheckerLogger = fastBuildLogger || logger;
+    etsCheckerLogger.info?.('[ArkTS] Suspicious SDK error detected in incremental compilation, cleaning LanguageService cache and rebuilding Program for self-healing.');
+    setRollupCommonCache(rollupShareObject, 'documentRegistry', ts.createDocumentRegistry());
+    const cacheKey: string = 'service';
+    setRollupCache(rollupShareObject, projectConfig, cacheKey, undefined);
+    if (compilerOptions?.tsBuildInfoFile) {
+      deleteBuildInfoCache(compilerOptions.tsBuildInfoFile);
+      filesBuildInfo.clear();
+    }
+    fileCache.clear();
+    languageService = createLanguageService(rootFileNames, resolveModulePaths, parentEvent, rollupShareObject);
+    globalProgram.builderProgram = languageService.getBuilderProgram(/*withLinterProgram*/ true);
+    globalProgram.program = globalProgram.builderProgram.getProgram();
+    traverseProgramSourceFiles(languageService.getProps());
+    props = languageService.getProps();
+    collectAllFiles(globalProgram.program, undefined, undefined, rollupShareObject);
+    collectFileToIgnoreDiagnostics(rootFileNames);
+    stopEvent(eventSelfHealing);
+  }
 }
 
 function processBuildHap(cacheFile: string, rootFileNames: string[], parentEvent: CompileEvent,
@@ -2228,7 +2270,7 @@ function isInOhModuleFile(diagnostics: ts.Diagnostic): boolean {
     ((diagnostics.file.fileName.indexOf('/oh_modules/') !== -1) || diagnostics.file.fileName.indexOf('\\oh_modules\\') !== -1);
 }
 
-function isInSDK(fileName: string | undefined): boolean {
+export function isInSDK(fileName: string | undefined): boolean {
   if (projectConfig.etsLoaderPath === undefined || fileName === undefined) {
     return false;
   }
@@ -2416,6 +2458,7 @@ export function resetEtsCheck(): void {
   cache = {};
   props = new Set();
   needReCheckForChangedDepUsers = false;
+  hasSelfHealed = false;
   resetEtsCheckTypeScript();
   allResolvedModules.clear();
   checkerResult.count = 0;

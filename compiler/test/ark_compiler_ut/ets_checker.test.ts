@@ -43,7 +43,10 @@ import {
   getFileContentWithHash,
   areEqualArrays,
   obfuscationConfigChanged,
-  isOhExport
+  isOhExport,
+  isSuspiciousSDKError,
+  ensureHealthyProgram,
+  isInSDK
 } from '../../lib/ets_checker';
 import { TS_BUILD_INFO_SUFFIX } from '../../lib/pre_define';
 import {
@@ -161,6 +164,222 @@ mocha.describe('test ets_checker file api', function () {
         resetEtsCheck();
         expect(needReCheckForChangedDepUsers).to.be.false;
         expect(globalProgram.program == null).to.be.true;
+    });
+
+    mocha.it('1-3-1: test getOrCreateLanguageService when changedDeps exist in incremental mode reuses service and preserves tsbuildinfo', function () {
+        this.timeout(10000);
+        this.rollup.build();
+        this.rollup.share.initWithCache();
+        let rollupObject = this.rollup;
+
+        // 1. Initial build with incremental mode
+        rollupObject.share.depInfo = { enableIncre: true };
+        rollupObject.share.projectConfig.pkgJsonFileHash = '26bde0f30dda53b0afcbf39428ec9851';
+        Object.assign(projectConfig, rollupObject.share.projectConfig);
+
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, rollupObject.share);
+        const firstCache = rollupObject.share.cache.get('service') as {
+            service: ts.LanguageService;
+        };
+        const firstService = firstCache.service;
+        expect(firstService != null).to.be.true;
+
+        // Mock a tsbuildinfo file
+        const tsBuildInfoFilePath: string = path.resolve(projectConfig.cachePath, '..', TS_BUILD_INFO_SUFFIX);
+        const tsBuildInfoLinterFilePath: string = tsBuildInfoFilePath + '.linter';
+        fs.writeFileSync(tsBuildInfoFilePath, 'mock tsbuildinfo content');
+        fs.writeFileSync(tsBuildInfoLinterFilePath, 'mock tsbuildinfo linter content');
+        expect(fs.existsSync(tsBuildInfoFilePath)).to.be.true;
+        expect(fs.existsSync(tsBuildInfoLinterFilePath)).to.be.true;
+
+        resetEtsCheck();
+
+        // 2. Incremental build with non-empty changedDeps
+        rollupObject.share.depInfo = {
+            enableIncre: true,
+            changedDeps: ['@ohos/hypium']
+        };
+        rollupObject.share.projectConfig.pkgJsonFileHash = 'modified_hash_for_hypium_upgrade';
+        Object.assign(projectConfig, rollupObject.share.projectConfig);
+
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, rollupObject.share);
+        const secondCache = rollupObject.share.cache.get('service') as {
+            service: ts.LanguageService;
+        };
+        // Service is reused to preserve fast incremental compilation and tsbuildinfo is preserved
+        expect(secondCache.service).to.equal(firstService);
+        expect(fs.existsSync(tsBuildInfoFilePath)).to.be.true;
+        expect(fs.existsSync(tsBuildInfoLinterFilePath)).to.be.true;
+
+        // Clean up
+        if (fs.existsSync(tsBuildInfoFilePath)) {
+            fs.unlinkSync(tsBuildInfoFilePath);
+        }
+        if (fs.existsSync(tsBuildInfoLinterFilePath)) {
+            fs.unlinkSync(tsBuildInfoLinterFilePath);
+        }
+        resetEtsCheck();
+    });
+
+    mocha.it('1-3-2: test getOrCreateLanguageService when changedDeps is empty in incremental mode reuses service and does not delete tsbuildinfo', function () {
+        this.timeout(10000);
+        this.rollup.build();
+        this.rollup.share.initWithCache();
+        let rollupObject = this.rollup;
+
+        // 1. Initial build with incremental mode
+        rollupObject.share.depInfo = { enableIncre: true };
+        rollupObject.share.projectConfig.pkgJsonFileHash = '26bde0f30dda53b0afcbf39428ec9851';
+        Object.assign(projectConfig, rollupObject.share.projectConfig);
+
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, rollupObject.share);
+        const firstCache = rollupObject.share.cache.get('service') as {
+            service: ts.LanguageService;
+        };
+        const firstService = firstCache.service;
+        expect(firstService != null).to.be.true;
+
+        // Mock a tsbuildinfo file
+        const tsBuildInfoFilePath: string = path.resolve(projectConfig.cachePath, '..', TS_BUILD_INFO_SUFFIX);
+        fs.writeFileSync(tsBuildInfoFilePath, 'mock tsbuildinfo content');
+        expect(fs.existsSync(tsBuildInfoFilePath)).to.be.true;
+
+        resetEtsCheck();
+
+        // 2. Incremental build with empty changedDeps (e.g. only description in pkg changed)
+        rollupObject.share.depInfo = {
+            enableIncre: true,
+            changedDeps: []
+        };
+        rollupObject.share.projectConfig.pkgJsonFileHash = 'description_only_change_hash';
+        Object.assign(projectConfig, rollupObject.share.projectConfig);
+
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, rollupObject.share);
+        const secondCache = rollupObject.share.cache.get('service') as {
+            service: ts.LanguageService;
+        };
+        expect(secondCache.service).to.equal(firstService);
+        expect(fs.existsSync(tsBuildInfoFilePath)).to.be.true;
+
+        // Clean up
+        if (fs.existsSync(tsBuildInfoFilePath)) {
+            fs.unlinkSync(tsBuildInfoFilePath);
+        }
+        resetEtsCheck();
+    });
+
+    mocha.it('1-3-3: test isSuspiciousSDKError identifies errors in SDK files', function () {
+        this.rollup.build();
+        Object.assign(projectConfig, this.rollup.share.projectConfig);
+
+        const sdkPath = path.resolve(projectConfig.etsLoaderPath, '../../../');
+        const userSourceFile = { fileName: EXPECT_INDEX_ETS } as ts.SourceFile;
+        const sdkSourceFile = { fileName: path.resolve(sdkPath, 'api/@arkts.collections.d.ets') } as ts.SourceFile;
+        const externalOhModuleFile = { fileName: '/workspace/project/oh_modules/@types/lib/index.d.ts' } as ts.SourceFile;
+
+        const normalDiag: ts.Diagnostic = {
+            file: userSourceFile,
+            start: 0,
+            length: 1,
+            messageText: 'Cannot find name x',
+            category: ts.DiagnosticCategory.Error,
+            code: 2304
+        };
+
+        const sdkDiag: ts.Diagnostic = {
+            file: sdkSourceFile,
+            start: 0,
+            length: 1,
+            messageText: 'A computed property name in an interface must refer to an expression whose type is a literal type or a unique symbol type.',
+            category: ts.DiagnosticCategory.Error,
+            code: 1165
+        };
+
+        const ohModuleDiag: ts.Diagnostic = {
+            file: externalOhModuleFile,
+            start: 0,
+            length: 1,
+            messageText: 'Type error in third party dts',
+            category: ts.DiagnosticCategory.Error,
+            code: 2300
+        };
+
+        const noFileDiag: ts.Diagnostic = {
+            file: undefined,
+            start: 0,
+            length: 1,
+            messageText: 'General error',
+            category: ts.DiagnosticCategory.Error,
+            code: 9999
+        };
+
+        expect(isSuspiciousSDKError([normalDiag])).to.be.false;
+        expect(isSuspiciousSDKError([noFileDiag])).to.be.false;
+        expect(isSuspiciousSDKError([ohModuleDiag])).to.be.false;
+        expect(isSuspiciousSDKError([sdkDiag])).to.be.true;
+        expect(isSuspiciousSDKError([normalDiag, sdkDiag])).to.be.true;
+    });
+
+    mocha.it('1-3-4: test ensureHealthyProgram triggers self-healing when SDK error is detected and cleans tsbuildinfo', function () {
+        this.timeout(10000);
+        this.rollup.build();
+        this.rollup.share.initWithCache();
+        let rollupObject = this.rollup;
+        Object.assign(projectConfig, rollupObject.share.projectConfig);
+
+        // Initial build
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, rollupObject.share);
+        const firstService = (rollupObject.share.cache.get('service') as { service: ts.LanguageService }).service;
+        expect(firstService != null).to.be.true;
+
+        // Mock a tsbuildinfo file
+        const tsBuildInfoFilePath: string = path.resolve(projectConfig.cachePath, '..', TS_BUILD_INFO_SUFFIX);
+        fs.writeFileSync(tsBuildInfoFilePath, 'mock tsbuildinfo content');
+        expect(fs.existsSync(tsBuildInfoFilePath)).to.be.true;
+
+        // Mock suspicious SDK error on current builderProgram so ensureHealthyProgram detects it
+        const sdkPath = path.resolve(projectConfig.etsLoaderPath, '../../../');
+        const sdkSourceFile = { fileName: path.resolve(sdkPath, 'api/@arkts.collections.d.ets') } as ts.SourceFile;
+        const mockSdkDiag: ts.Diagnostic = {
+            file: sdkSourceFile,
+            start: 0,
+            length: 1,
+            messageText: 'A computed property name in an interface must refer to unique symbol',
+            category: ts.DiagnosticCategory.Error,
+            code: 1165
+        };
+        const originGetSemanticDiagnostics = globalProgram.builderProgram.getSemanticDiagnostics;
+        globalProgram.builderProgram.getSemanticDiagnostics = () => [mockSdkDiag];
+
+        // Ensure healthy program resets service cache on suspicious SDK errors and purges tsbuildinfo to avoid dirty diagnostic replay
+        ensureHealthyProgram([EXPECT_INDEX_ETS], undefined, null, rollupObject.share);
+        expect(fs.existsSync(tsBuildInfoFilePath)).to.be.false;
+
+        globalProgram.builderProgram.getSemanticDiagnostics = originGetSemanticDiagnostics;
+        if (fs.existsSync(tsBuildInfoFilePath)) {
+            fs.unlinkSync(tsBuildInfoFilePath);
+        }
+        resetEtsCheck();
+    });
+
+    mocha.it('1-3-5: test continuous self-healing lifecycle resets across multiple builds in serviceChecker', function () {
+        this.timeout(10000);
+        this.rollup.build();
+        this.rollup.share.initWithCache();
+        let rollupObject = this.rollup;
+        Object.assign(projectConfig, rollupObject.share.projectConfig);
+
+        // Round 1 build
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, rollupObject.share);
+        expect(rollupObject.share.cache.get('service') != null).to.be.true;
+
+        // Reset check clears the local flag
+        resetEtsCheck();
+
+        // Round 2 build: entering serviceChecker resets hasSelfHealed for the new build round
+        serviceChecker([EXPECT_INDEX_ETS], null, null, null, rollupObject.share);
+
+        resetEtsCheck();
     });
 
     mocha.it('1-4: test getOrCreateLanguageService when paths in compilerOptions change', function () {
