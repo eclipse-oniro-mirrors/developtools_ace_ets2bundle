@@ -19,7 +19,7 @@
 
 | 文档 | 路径 | 状态 |
 |------|------|------|
-| Requirement | `proposal.md`（issue-4719-require-type-check，基线 v1.8） | Approved |
+| Requirement | `proposal.md`（issue-4719-require-type-check，基线 v1.9） | Approved |
 
 > AC 对应关系：proposal 以 AC-1 为首的 6 条 AC ↔ 本文档 AC-1.1～AC-1.6（顺序一一对应）。其中本文档 AC-1.6 为 v1.8 新增类型级触发正例，与 v1.7 移除的 interop 维度 AC-1.6 无关（编号复用，v1.8 基线记录注记）。需求基线、不涉及项、影响范围详见 proposal.md，本文档不重复摘录。
 
@@ -27,7 +27,7 @@
 
 ### US-1: @Require 字段 undefined 传值编译期告警
 
-**作为** ArkUI 应用开发者,
+**作为** 鸿蒙应用开发者,
 **我想要** 在向 `@Require` 修饰的 non-null（声明类型不含 `undefined`）字段显式传入 `undefined` 时获得编译期告警,
 **以便** 在开发阶段发现并修正类型不一致，避免运行时异常。
 
@@ -35,15 +35,15 @@
 
 | AC编号 | 验收标准 | 可观察表面 | 类型 |
 |--------|----------|--------------|------|
-| AC-1.1 | Given ArkTS 应用工程中 V1 组件（`@Component`）构造传参对象含 `@Require` 修饰（单独使用或与 `@Prop`/`@State`/`@Provide`/`@BuilderParam` 组合，有无默认值不限）且声明类型不含 `undefined` 的字段，WHEN 构造传参中该字段显式传入 `undefined` 标识符后编译 THEN 编译输出 1 条 WARNING 级别诊断（无数字错误码，文案与定位见 R-1），且编译继续完成、无新增 ERROR | 终端用户（应用开发者编译/构建输出） | 正常 |
-| AC-1.2 | Given ArkTS 应用工程中 V2 组件（`@ComponentV2`）构造传参对象含 `@Require` 与 `@Param` 共同修饰且声明类型不含 `undefined` 的字段，WHEN 构造传参中该字段显式传入 `undefined` 后编译 THEN 编译输出与 R-1 相同级别、相同文案的 1 条 WARNING，且编译继续完成 | 终端用户（应用开发者编译/构建输出） | 正常 |
+| AC-1.1 | Given ArkTS 应用工程中 V1 组件（`@Component`）构造传参对象含 `@Require` 修饰（单独使用或与 `@Prop`/`@State`/`@Provide`/`@BuilderParam` 组合，有无默认值不限）且声明类型不含 `undefined` 的字段（含数组/集合等泛型引用类型，如 `string[]`、`Array<number>`、`Map<string, number>`），WHEN 构造传参中该字段显式传入 `undefined` 标识符后编译 THEN 编译输出 1 条 WARNING 级别诊断（无数字错误码，文案为消息模板 `'@Require' decorated '${paramName}' expects type '${paramType}' but got '${actualType}' through the component constructor.`——`${paramName}` 为字段名、`${paramType}` 为该字段声明类型文本、`${actualType}` 为实际传入值类型文本（渲染口径见 R-1 消息模板说明）；诊断定位该字段的传值属性行），且编译继续完成、无新增 ERROR | 终端用户（应用开发者编译/构建输出） | 正常 |
+| AC-1.2 | Given ArkTS 应用工程中 V2 组件（`@ComponentV2`）构造传参对象含 `@Require` 与 `@Param` 共同修饰且声明类型不含 `undefined` 的字段，WHEN 构造传参中该字段显式传入 `undefined` 后编译 THEN 编译输出与 AC-1.1 相同级别、相同文案（AC-1.1 内嵌消息模板）的 1 条 WARNING，且编译继续完成 | 终端用户（应用开发者编译/构建输出） | 正常 |
 | AC-1.3 | Given `@Require` 字段声明类型含 `undefined`（如 `number \| undefined` 联合类型），或字段类型不可解析/不可判定，WHEN 该字段显式传入 `undefined` 后编译 THEN 编译不输出本特性告警（既有行为不变） | 终端用户（应用开发者编译/构建输出） | 异常 |
 | AC-1.4 | Given 构造传参对象中的字段无 `@Require` 修饰，WHEN 该字段显式传入 `undefined` 后编译 THEN 编译不输出本特性告警 | 终端用户（应用开发者编译/构建输出） | 异常 |
-| AC-1.5 | Given 构造传参对象的字段值不是 `undefined` 标识符，且其解析类型不含 `undefined`（如普通变量/表达式传值、联合类型变量经空值守卫收窄后传值、对象字面量及其嵌套属性内部出现 `undefined`、`any`/`unknown` 动态类型值），WHEN 编译该构造传参对象 THEN 编译不输出本特性告警 | 终端用户（应用开发者编译/构建输出） | 异常 |
+| AC-1.5 | Given 构造传参对象的字段值不是 `undefined` 标识符，且其解析类型不含 `undefined`（如普通变量/表达式传值、联合类型变量经空值守卫收窄后传值、对象字面量及其嵌套属性内部出现 `undefined`、数组/集合字面量内部元素出现 `undefined`（如 `[1, undefined, 2]`，元素级嵌套值，判定不展开元素类型）、`any`/`unknown` 动态类型值），WHEN 编译该构造传参对象 THEN 编译不输出本特性告警 | 终端用户（应用开发者编译/构建输出） | 异常 |
 
 ### US-2: @Require 字段非标识符 undefined 传值编译期告警（v1.8）
 
-**作为** ArkUI 应用开发者,
+**作为** 鸿蒙应用开发者,
 **我想要** 以 `void 0` 或类型含 `undefined` 的变量等非标识符形式向 `@Require` 修饰的 non-null（声明类型不含 `undefined`）字段传入可能为 `undefined` 的值时，同样获得编译期告警,
 **以便** 该写法不绕过显式 `undefined` 场景的检查。
 
@@ -51,7 +51,7 @@
 
 | AC编号 | 验收标准 | 可观察表面 | 类型 |
 |--------|----------|--------------|------|
-| AC-1.6 | Given V1/V2 组件构造传参对象含 `@Require` 修饰（V1 单独使用或与 `@Prop`/`@State`/`@Provide`/`@BuilderParam` 组合；V2 `@Require`+`@Param`）且声明类型不含 `undefined` 的字段，WHEN 构造传参中该字段传入值不是 `undefined` 标识符、但其解析类型包含 `undefined`（如 `void 0` 表达式、类型为 `xxx \| undefined` 的变量或表达式）后编译 THEN 编译输出 1 条 WARNING 级别诊断（无数字错误码，文案与定位见 R-7），且编译继续完成、无新增 ERROR | 终端用户（应用开发者编译/构建输出） | 正常 |
+| AC-1.6 | Given V1/V2 组件构造传参对象含 `@Require` 修饰（V1 单独使用或与 `@Prop`/`@State`/`@Provide`/`@BuilderParam` 组合；V2 `@Require`+`@Param`）且声明类型不含 `undefined` 的字段，WHEN 构造传参中该字段传入值不是 `undefined` 标识符、但其解析类型包含 `undefined`（如 `void 0` 表达式、类型为 `xxx \| undefined` 的变量或表达式）后编译 THEN 编译输出 1 条 WARNING 级别诊断（无数字错误码，文案为 AC-1.1 内嵌消息模板——`${actualType}` 为该传入值的解析类型文本，渲染口径见 R-7；定位同 AC-1.1），且编译继续完成、无新增 ERROR | 终端用户（应用开发者编译/构建输出） | 正常 |
 
 ## 验收追溯
 
@@ -72,7 +72,7 @@
 | R-2 | 行为 | V2 组件（`@ComponentV2`）构造传参对象中，`@Require`+`@Param` 字段、类型不含 `undefined`、显式传 `undefined` | 输出与 R-1 相同文案、相同级别的 1 条 WARNING，定位规则同 R-1 | V2 中 `@Require` 仅可与 `@Param` 组合 | AC-1.2 |
 | R-3 | 边界 | `@Require` 字段声明类型含 `undefined` 成员（联合类型如 `number \| undefined`、可选属性语法等价形式、`any`、`unknown`）且显式传 `undefined` | 不输出本特性告警 | 类型判定仅看 `undefined` 成员：类型含 `null`（如 `number \| null`）不改变判定，仍按"不含 undefined"处理；显式传 `null` 值本身不在本特性范围 | AC-1.3 |
 | R-4 | 边界 | 构造传参对象中，无 `@Require` 修饰的字段显式传 `undefined` | 不输出本特性告警 | — | AC-1.4 |
-| R-5 | 边界 | 构造传参对象的字段值表达式不是 `undefined` 标识符，且其解析类型不含 `undefined`（普通变量引用、对象字面量、调用表达式等；嵌套属性内部出现 `undefined`；联合类型变量经空值守卫收窄后传值；`any`/`unknown` 动态类型值） | 不输出本特性告警 | 仅顶层字段值本身进入判定；非标识符但解析类型含 `undefined` 的传值归 R-7 判定 | AC-1.5 |
+| R-5 | 边界 | 构造传参对象的字段值表达式不是 `undefined` 标识符，且其解析类型不含 `undefined`（普通变量引用、对象字面量、调用表达式等；嵌套属性内部出现 `undefined`；数组/集合字面量内部元素出现 `undefined`（如 `[1, undefined, 2]`）；联合类型变量经空值守卫收窄后传值；`any`/`unknown` 动态类型值） | 不输出本特性告警 | 仅顶层字段值本身进入判定（数组/集合字面量不展开类型参数与内部元素，元素级 `undefined` 不触发）；非标识符但解析类型含 `undefined` 的传值归 R-7 判定 | AC-1.5 |
 | R-6 | 边界 | 字段声明类型无法解析或无法判定是否含 `undefined`（如外部类型引用解析失败） | 不输出本特性告警 | 保守策略，保证零误报；类型别名优先按解析后的实际类型判定（见下表） | AC-1.3 |
 | R-7 | 行为 | 构造传参对象中，字段带 `@Require`（V1 单独或合法组合、V2 `@Require`+`@Param`），该字段声明类型（经类型别名解析后）不含 `undefined` 成员，且传值表达式不是 `undefined` 标识符、但其解析类型包含 `undefined` 成员（如 `void 0`、类型为 `xxx \| undefined` 的变量或表达式） | 输出与 R-1 相同级别、相同消息模板的 1 条 WARNING：`${actualType}` 为该传入值的解析类型文本（如 `number \| undefined`；`void` 表达式与 `undefined` 标识符同样渲染为 `undefined`）；同一传参对象中每个命中字段各输出 1 条；诊断定位规则同 R-1 | 传入值解析类型不明（`any`/`unknown`，ArkTS 中如 `ESObject` 动态值）不判定为含 `undefined`，不触发（保守，零误报）；传入值经空值守卫（如 `!== undefined`）收窄后解析类型不含 `undefined` 时不触发 | AC-1.6 |
 
@@ -97,6 +97,8 @@
 | 可选属性语法 | `field?: number`（等价 `number \| undefined`） | 含 `undefined`（不告警） |
 | `any` / `unknown` | `any` | 含 `undefined`（不告警，保守） |
 | 无法解析/不可判定 | 外部类型引用解析失败 | 不告警（R-6 保守策略） |
+
+**数组/集合等泛型引用类型口径（v1.9 注记）：** ① 字段声明类型为数组/集合等泛型引用（如 `string[]`、`Array<number>`、`Map<string, number>`）时，按上表「泛型引用」行判定为不含 `undefined`——构造传参中向该字段本身显式传入 `undefined`（或解析类型含 `undefined` 的值）属正例，告警适用（AC-1.1/AC-1.2/AC-1.6）；② 传入的数组/集合字面量内部元素出现 `undefined`（如 `[1, undefined, 2]`）——属传入值内部的元素级嵌套 `undefined`，判定不展开类型参数与元素类型、仅按传入值顶层类型判定，归 R-5 边界不告警（AC-1.5）。
 
 > 约束：组合装饰器的既有问号限制规则不变（如 `@Require @Prop x?: number` 仍按既有规则报 ERROR），与本特性告警相互独立；类型判定的实现方式（TypeScript Checker 或类型节点分析）由 design.md 决定。
 
@@ -184,4 +186,4 @@ context-queries:
     query: "ut_validate.test.ts + transform_ut_error.json + helpers/pathConfig.ts 的 fixture 断言机制与 etsTest/interopArkTest 测试命令"
 ```
 
-**关键文档：** `proposal.md`（issue-4719-require-type-check，Approved v1.8）；GitCode Issue https://gitcode.com/openharmony/developtools_ace_ets2bundle/issues/4719；知识库 `docs/specs/02-校验规则/02-05 @Require.md`（既有 `@Require` 规则先例）。
+**关键文档：** `proposal.md`（issue-4719-require-type-check，Approved v1.9）；GitCode Issue https://gitcode.com/openharmony/developtools_ace_ets2bundle/issues/4719；知识库 `docs/specs/02-校验规则/02-05 @Require.md`（既有 `@Require` 规则先例）。

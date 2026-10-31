@@ -73,6 +73,16 @@ commits: []
 - Commit：`单 commit（Change-Id Ia0e5e0a，2026-10-31）`——代码+文档同 commit，owner 指令上传，已推送 fork 分支并评论 start build 触发门禁；追溯同 #1 口径（review.md 开放问题 #7 已处置）。
 - 引擎坑位（本轮新发现，validate 修复后闭合）：引擎表格解析按 `|` 朴素切分不识别 `\|` 转义——追溯表内 `\|` 使列位错列（AC-1.6 行 Commit 被错读为结果列）；AC 追溯结果列须裸 `pass`；Verification Actual 判定为 PASS 子串匹配（`passing` 即满足，eslint 行需显式 PASS 前缀）；code-quality 的 Task 覆盖按 H2 精确标题 `## Plan Scope vs Actual Code Scope` 提取（v1.8 增补段 H3 表不入场，TASK-4 行须登记进 H2 原表）；sfv 双 Owner 结论格 lower 后须精确等于 approved/pass/通过/同意（带括注长文本不匹配，批准依据入追认记录）。
 
+## v1.9 评审意见处置修订——文档链澄清（2026-10-31 proposal v1.9，PR #1747 评审意见 owner 逐项拍板）
+
+- 背景：design-docs 归档 PR #1747 收到 TerryTsao/caojin 10 条评审意见（resolved=False），owner 逐项拍板「1. 是，2. B，3. 不做，4. 不关闭，5. 我已手动回复，不用处理。」并补充「跨平台改成是」；处置映射：①proposal AC 改 GWT ②角色措辞「鸿蒙应用开发者」③静态工具链意见 owner 已手动回复（文档不动）④数组/集合口径明示 ⑤告警消息模板内嵌 AC ⑥5.3 跨平台按 ArkUI-X（iOS & Android）口径重写、interop 降格仓内镜像铁律、ArkUI-X 实测登记后续验证项（B 方案在本环境不可行——iOS 需 macOS+Xcode、ArkUI-X SDK 四源全断、PR #7243 未合入，经 owner 知悉后以「跨平台改成是」收口）⑦sfv 错误信息列反引号 ⑧5.12 理由补强 ⑨6.1 编译性能影响分析；另 #1655 保持开启（PR #1747 门禁维持重复 PR 检测封锁现状）。行为契约（触发条件/级别/文案模板/定位/反例边界）与代码零变更。
+- proposal.md：frontmatter evidence/基线版本/确认依据三处 v1.9 记录；受众表 + US-1/US-2 措辞改「鸿蒙应用开发者」；AC-1～AC-6 改 Given/When/Then（对齐 spec AC-1.1～AC-1.6 既有三段式），AC-1 内嵌消息模板 + 数组/集合泛型引用括注，AC-5 反例补数组/集合元素级 undefined；baseline_digest 复算回填 `34e1df20…cc9b8`（回填后复算幂等）。
+- spec.md：输入文档/关键文档 v1.9 标签；US-1/US-2 措辞；AC-1.1 THEN 内嵌消息模板（三插值说明），AC-1.2/AC-1.6 改引用 AC-1.1 模板；AC-1.1 Given 与 AC-1.5 反例补数组/集合口径；类型判定矩阵后新增「数组/集合等泛型引用类型口径（v1.9 注记）」两维度注记；R-5 触发条件补数组/集合字面量元素示例、边界列补「不展开类型参数与内部元素」。
+- sfv：refresh（v1.8 先例模式，diff 全量核对仅预期变更：EXTERNAL-SPEC 投影 + hash 自动回填 + 骨架重置）+ 恢复清单回填（frontmatter status/subprofiles、产物状态、创建日期、八章两列——AC-1.5 行补数组/集合元素级反例、术语表 5 条、十一章审批区与 5 条追认记录）+ 手工区修订——5.3 跨平台重写（ArkUI-X 定性 + 后续验证项两行表）、5.5 AC-1.1/1.2/1.6 消息模板反引号 + AC-1.1/1.5 数组/集合括注、5.12 自解释型诊断理由补强、6.1 编译性能影响分析、术语表 interop 去跨平台化、十一章追加 v1.9 修订记录；source_spec_hash 由 refresh 自动回填 `2188bc41…260be`（design 未变更 `a416f735…dbcc9` 不动，ch10/十一章 hash 同步自动更新）。新坑位：refresh 将元信息「创建日期」重置为当日，恢复清单须一并恢复原值。
+- review.md：GA v1.9 括注 + 最终决策 v1.9 增补句（文档修订零代码变更，GA/GB/GC Approved 维持；spec-compliance.md v1.8 增补段所录 spec md5 为当时审查基准的历史记录，不复改）。
+- 验证：`ohos-sdd spec-for-validation check` 15/15 PASS；`ohos-sdd validate --level all` 46 checks / 0 broken / 0 warn PASS。
+- 后续（待 owner 放行）：commit → push fork（PR #7243 随动）→ 同步 PR #1747 分支（10 文件 + PR 侧独有 feature.md/metadata_tracking.yaml）→ 逐条回复 TerryTsao（③跳过）→ 按配额评论 start build（#1655 未关，门禁仍会被封锁——届时与 owner 确认）。
+
 ## spec-for-validation refresh 后恢复清单（2026-10-29 固化）
 
 `ohos-sdd spec-for-validation refresh <change>` 全量重渲染模板（仅保留 `TEST-ANALYSIS` 人工区），以下 owner 回填内容会被重置为骨架；未来因 spec.md/design.md 变更再次 refresh 后，须按本清单恢复并重跑校验：
