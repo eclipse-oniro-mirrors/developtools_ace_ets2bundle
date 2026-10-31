@@ -78,3 +78,29 @@
 1. Commit SHA 已回填 execution-plan 代码范围映射与本表（`单 commit（Change-Id Ieca81b2）`，2026-10-29；追溯链 Commit 环节已闭合，开放问题 #1 已处置）。
 2. design.md ADR-2 的 isBuilder 附注与实测不符（行为本身合规），列为开放问题，不阻塞。
 3. 需回修的 Spec/Plan 项：无。
+
+---
+
+## v1.8 增补段（TASK-4 类型级触发扩展，2026-10-31）
+
+> 本段为 execution-plan v1.8 修订新增 TASK-4 交付后的增补审查记录；上文 v1.5 周期审查内容为历史基线，不改写。v1.8 审查基准：`spec.md` md5 `254bf315c9444956a20f9df36c717172`（Approved，v1.8 基线；v1.5 周期为 `18389cfede968245190cc3346fa877bd`，见上文 Metadata）。
+
+### v1.8 AC → Task → Code → Review
+
+| AC | Task | Code Ref（工作区态） | Commit | Verification Evidence | Result | Gap |
+|----|------|---------------------|--------|-----------------------|--------|-----|
+| AC-6（proposal，对应 AC-1.6） | TASK-4 | 主链 `isTypeDefinitelyIncludingUndefined`（:2087-2097；Any/Unknown→false，与声明侧 `isTypeIncludingUndefined` 方向相反、同保守）+ 触发条件类型级替换（:2147-2148）；镜像同构（helper :2103-2113 / 触发 :2163-2164，新增块 diff IDENTICAL）；Extension fixture 2 页每页恰 2 WARN | `单 commit（Change-Id Ia0e5e0a）` | `evidence/checks/task4-red-green/README.md`（Red 357/4 + 1122/21 → Green 359/2 + 1124/19 成对 fresh） | PASS | 无 |
+| AC-1.6（spec） | TASK-4 | 同 AC-6；期望消息逐字符：V1 got `'undefined'`/`'number \| undefined'`，V2 got `'undefined'`/`'string \| undefined'`；interop `expectRequireUndefinedWarns` 计数 + 逐条消息断言 | 同上 | 同上（Green `✔ 1-62/1-63`、`✔ V1/V2 extension`；ERROR=0 反证无噪音） | PASS | 无 |
+| AC-1.5 v1.8 扩展边界 | TASK-4 | Extension fixture 独立反例 child：`narrowed_value`（`!== undefined` 守卫内收窄传值）、`any_var_value`（ESObject 动态值）——类型级触发下 0 告警；声明侧 `isTypeIncludingUndefined`（any/unknown→true）语义未动，两 helper 并存符合 ADR-4 | 同上 | 同上（反例含于同页 0 告警断言；三态失败集对照零漂移） | PASS | 无 |
+
+### v1.8 Anti-Fake Completion Check
+
+| Check | Result | Evidence |
+|-------|--------|----------|
+| 断言非恒真 | PASS | Red 态（实现前）新 2 页 WARN 计数 0≠2 断言失败、新 2 用例 `expected [] to have a length of 2`；ERROR 断言先行通过 ⇒ 无 ERROR 噪音（ESObject/`void 0`/if 守卫未触发新诊断） |
+| 既有用例零漂移 | PASS | 既有 2 页/2 用例保持 ✔；etsTest 失败集三态（基线 2 → Red 4 → Green 2）与 interop IDENTICAL-19 对照一致；`transform_ut_error.json` 既有期望条目 diff = 0（+20/-0 纯追加） |
+| 实现与声明范围一致 | PASS | 净 diff = execution-plan Files 表 7 项（2 src 修改 + pathConfig/JSON/interop 测试修改 + 2 fixture 新建），无超范围 |
+
+### v1.8 Conclusion
+
+**Approved（维持）。** TASK-4 实现与 spec AC-6/AC-1.6/AC-1.5 v1.8 扩展边界精确对应：正例（`void 0`、联合类型变量）每页恰 2 WARN 且文案逐字符，反例（收窄后联合变量、`any`/`unknown` 动态值）0 告警，既有 v1.5 行为零漂移。Commit 追溯待 owner 提交决策后以 Change-Id 承载（非阻塞，与 review.md 开放问题同口径）。

@@ -5362,5 +5362,25 @@
             "message": "'@Require' decorated 'require_param_value' expects type 'string' but got 'undefined' through the component constructor.",
             "type": "WARN"
         }
+    ],
+    "validateRequireParamUndefinedTypeExtension": [
+        {
+            "message": "'@Require' decorated 'void_value' expects type 'number' but got 'undefined' through the component constructor.",
+            "type": "WARN"
+        },
+        {
+            "message": "'@Require' decorated 'union_variable_value' expects type 'number' but got 'number | undefined' through the component constructor.",
+            "type": "WARN"
+        }
+    ],
+    "validateRequireParamUndefinedTypeExtensionV2": [
+        {
+            "message": "'@Require' decorated 'void_param_value' expects type 'string' but got 'undefined' through the component constructor.",
+            "type": "WARN"
+        },
+        {
+            "message": "'@Require' decorated 'union_param_value' expects type 'string' but got 'string | undefined' through the component constructor.",
+            "type": "WARN"
+        }
     ]
 }

@@ -55,3 +55,20 @@
 代码与规格一致：AC-1.1～AC-1.6 全部经 fresh 执行验证闭合（正例计数/文案/级别/编译继续、反例零误报、interop 同构、既有行为零漂移），证据链含 Red→Green 成对、双基线对照、最终态复跑与边界探针四层。
 
 剩余验证风险：极低。Commit 追溯已回填（`单 commit（Change-Id Ieca81b2）`，2026-10-29，开放问题 #1 已处置）。**允许进入 GC。**
+
+---
+
+## v1.8 增补段（TASK-4 执行记录，2026-10-31）
+
+> 期望值定义于 spec.md 验证映射 VM-7/VM-8（v1.8 新增）与 execution-plan TASK-4 Verification 表（执行前已定义）。全部输出为 fresh 全量捕获（含 mocha epilogue 与失败详情），存档 `evidence/checks/task4-red-green/`。Commit/Head 注记：v1.8 单 commit（Change-Id Ia0e5e0a，代码+文档同 commit，2026-10-31 owner 指令上传）；v1.5 基线 HEAD `321cd5dd6`（PR #7243 门禁绿对该 head 有效）。
+
+| # | Task / AC | Command | Expected Result | Actual Result | Fresh Evidence | Result |
+|---|-----------|---------|-----------------|---------------|----------------|--------|
+| 1 | TASK-4（基线复核） | `npm run etsTest` / `npm run interopArkTest`（Red 前） | 357/2、1122/19（IDENTICAL-19） | 一致（预存基线 2 + 19，非本变更引入） | `baseline-etsTest.txt`、`baseline-interopArkTest.txt` | PASS |
+| 2 | TASK-4（Red 证据） | 同上（Red 资产落地、src 未改） | 新 2 页/2 用例失败（WARN 0 vs 期望 2），既有零漂移 | etsTest 357/4（1-62/1-63 `expected false to be true`）；interopArkTest 1122/21（`expected [] to have a length of 2 but got +0`，errorInfos=0 断言先行通过） | `red-etsTest.txt`、`red-interopArkTest.txt` | PASS（Red 成立） |
+| 3 | TASK-4（编译） | `npm run build` | build 无错误、新 helper/触发条件入 lib | `Successfully compiled 114 files with Babel`，copyJsonFiles 完成 | `green-build.txt` | PASS |
+| 4 | TASK-4（静态检查，只读） | `./node_modules/.bin/eslint src/process_custom_component.ts src/interop/src/process_custom_component.ts --ext .ts` | 新增区间 0 error | 103 error 全预存（主 50/镜像 53，行号编辑区外），新增区间（主 :2087-2097/:2147-2148、镜像 :2103-2113/:2163-2164）0 命中；exit=1 系预存违规所致 | `green-eslint.txt` | PASS |
+| 5 | TASK-4 / AC-6、AC-1.6、AC-1.5 v1.8（VM-7/VM-8 Green 主链） | `npm run etsTest` | 359 passing / 2 failing；新 2 页转绿；既有 1-60/1-61 零漂移 | **359 passing / 2 failing**；`✔ 1-62 validateRequireParamUndefinedTypeExtension`、`✔ 1-63 ...ExtensionV2`（恰 2 WARN + ERROR 0 + 消息逐字符）；失败仅预存基线 2 例 | `green-etsTest.txt` | PASS |
+| 6 | TASK-4 / AC-6、AC-1.6（interop Green） | `npm run interopArkTest` | 1124 passing / 19 failing；新 2 用例转绿；IDENTICAL-19 | **1124 passing / 19 failing**；`✔ warns once per field for void expression and union variable in V1/V2 extension`（计数=2 + 文案与主链一致 + ERROR=0）；失败集与基线 IDENTICAL-19 | `green-interopArkTest.txt` | PASS |
+
+工作区纪律记录：测试污染的被跟踪 testdata/build 产物每轮按排除式清单 `git checkout --` 选择性恢复（保留 3 个 Red 资产 tracked 修改）；Green interop 轮曾出现 `EntryAbility.js` 删除态（` M` 匹配遗漏），已单独 `git checkout --` 恢复；最终 tracked 修改恰 = 5 M + 2 新建 fixture，与 execution-plan 代码范围映射 TASK-4 行一致。

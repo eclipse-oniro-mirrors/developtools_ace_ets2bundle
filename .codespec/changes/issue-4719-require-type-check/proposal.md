@@ -3,9 +3,9 @@ phase_status: approved
 approval:
   status: approved
   approver: "@youzhi92"
-  evidence: "v1.1：2026-10-29 会话明确回复「批准 Define」；v1.2：同日 owner 会话逐项确认元数据补全（@youzhi92 认领、需求ID REQ-09-01-01-01、Profile 规范化 arkui），需求语义/范围/AC 无变更；v1.3：同日 owner 会话指示修复外部测试设计 skill 校验发现的文档缺口，新增设备差异规格（1+8）/DFX 设计显式不涉及声明，需求语义/范围/AC 无变更；v1.4：同日 owner 会话选定新告警文案模板（C-2：体现声明类型与实际赋值类型），spec.md/spec-for-validation.md/execution-plan.md 消息模板与 ${paramType} 口径同步更新，触发条件/级别/定位/反例口径不变，判定范围无扩大；v1.5：2026-10-30 owner 会话指示 got 段由硬编码 'undefined' 改为实际传入类型插值 ${actualType}（触发条件下渲染恒为 'undefined'，渲染结果逐字符不变），模板契约三插值齐备，触发/级别/定位/反例口径不变；v1.6：2026-10-30 owner 会话确认整改方案后回复「执行」，spec.md/spec-for-validation.md 消息模板口径说明段改写为实现中立表述（去除 checker API 调用与源码路径引用，系外部测试设计 skill arkui-spec-check AC-05 整改），模板本体/触发/级别/定位/反例口径与渲染结果不变"
+  evidence: "v1.1：2026-10-29 会话明确回复「批准 Define」；v1.2：同日 owner 会话逐项确认元数据补全（@youzhi92 认领、需求ID REQ-09-01-01-01、Profile 规范化 arkui），需求语义/范围/AC 无变更；v1.3：同日 owner 会话指示修复外部测试设计 skill 校验发现的文档缺口，新增设备差异规格（1+8）/DFX 设计显式不涉及声明，需求语义/范围/AC 无变更；v1.4：同日 owner 会话选定新告警文案模板（C-2：体现声明类型与实际赋值类型），spec.md/spec-for-validation.md/execution-plan.md 消息模板与 ${paramType} 口径同步更新，触发条件/级别/定位/反例口径不变，判定范围无扩大；v1.5：2026-10-30 owner 会话指示 got 段由硬编码 'undefined' 改为实际传入类型插值 ${actualType}（触发条件下渲染恒为 'undefined'，渲染结果逐字符不变），模板契约三插值齐备，触发/级别/定位/反例口径不变；v1.6：2026-10-30 owner 会话确认整改方案后回复「执行」，spec.md/spec-for-validation.md 消息模板口径说明段改写为实现中立表述（去除 checker API 调用与源码路径引用，系外部测试设计 skill arkui-spec-check AC-05 整改），模板本体/触发/级别/定位/反例口径与渲染结果不变；v1.7：2026-10-31 owner 会话指示全链路移除 interop 一致性验收维度（验证点6/AC-6/AC-1.6/VM-6/interop 规则 R-6，原 R-7 重编号为 R-6），spec/sfv/execution-plan/design/review 六文档同步，interop 镜像代码与既有 interop 回归测试保留为附加覆盖（仓内架构铁律，非 AC 验收项）；AC-1.1～AC-1.5 行为契约与需求语义无变更；v1.8：2026-10-31 owner 会话确认既有触发条件缺口（`void 0` 与类型含 `undefined` 的联合类型变量当前不告警），经方案澄清选定「两者都告警（类型级触发）」并批准 v1.8 方案与文档链先行：触发条件由「`undefined` 标识符」语法级升级为「传入值解析类型含 `undefined`」类型级（`any`/`unknown` 动态类型不判定、收窄后不触发，零误报口径不变），新增 US-2/AC-6，AC-1～AC-5 文案/级别/定位契约不变、AC-5 反例边界按类型级口径重写"
   approved_at: "2026-10-29"
-  baseline_digest: a619a94b4960dadf64689fd1cf2d665971098a97cc98aeb4d7d5386b051c14f1
+  baseline_digest: 90954a24e283960fefb01eaa702290d1f211faf3f576337725583bbb85085380
 target_release:
   id: OpenHarmony-7.1-Release
   status: proposed
@@ -81,11 +81,11 @@ struct Child {
 
 | 字段 | 内容 |
 |------|------|
-| 基线版本 | v1.6（2026-10-30 owner 指示执行外部测试设计 skill arkui-spec-check 的 AC-05 整改：消息模板口径说明段改写为实现中立表述，去除 checker API 与源码路径引用；模板本体与渲染结果不变，sfv source_spec_hash 同步回填）。v1.5（2026-10-30 owner 指示 got 段占位符化：模板 `but got '${actualType}'`，实际传入类型经 checker 解析；渲染结果不变）。v1.4（2026-10-29 owner 选定新告警文案模板 C-2：消息体现声明类型与实际赋值类型，spec 模板与 ${paramType} 口径同步；触发条件/级别/定位/反例口径不变）。v1.3（2026-10-29 外部测试设计规则校验后的文档补全：新增「设备差异规格（1+8）」「DFX 设计」显式不涉及声明，需求语义/范围/AC 无变更）。v1.2（2026-10-29 v1.1 之上 owner 元数据补全：@youzhi92 认领、需求ID REQ-09-01-01-01、Profile 规范化 arkui；需求语义/范围/AC 无变更。v1.1：2026-08-11 v1.0 首次基线的模板迁移与范围刷新，明确 interop 覆盖与 target_release） |
+| 基线版本 | v1.8（2026-10-31 owner 确认触发条件缺口并批准类型级触发扩展：`void 0` 与联合类型变量等解析类型含 `undefined` 的传值纳入告警，新增 US-2/AC-6，范围包含项4/不包含项5 重写为类型级口径；`any`/`unknown` 动态值不判定、收窄后不触发，零误报约束不变；模板/级别/定位契约不变）。v1.7（2026-10-31 owner 指示全链路移除 interop 一致性验收维度：删除 AC-6/AC-1.6/VM-6/验证点6 与 interop 规则 R-6（原 R-7 重编号为 R-6），spec/sfv/execution-plan/design/review 同步；interop 镜像代码与既有 interop 回归测试保留为附加覆盖，非 AC 验收项；需求语义/范围/其余 AC 无变更）。v1.6（2026-10-30 owner 指示执行外部测试设计 skill arkui-spec-check 的 AC-05 整改：消息模板口径说明段改写为实现中立表述，去除 checker API 与源码路径引用；模板本体与渲染结果不变，sfv source_spec_hash 同步回填）。v1.5（2026-10-30 owner 指示 got 段占位符化：模板 `but got '${actualType}'`，实际传入类型经 checker 解析；渲染结果不变）。v1.4（2026-10-29 owner 选定新告警文案模板 C-2：消息体现声明类型与实际赋值类型，spec 模板与 ${paramType} 口径同步；触发条件/级别/定位/反例口径不变）。v1.3（2026-10-29 外部测试设计规则校验后的文档补全：新增「设备差异规格（1+8）」「DFX 设计」显式不涉及声明，需求语义/范围/AC 无变更）。v1.2（2026-10-29 v1.1 之上 owner 元数据补全：@youzhi92 认领、需求ID REQ-09-01-01-01、Profile 规范化 arkui；需求语义/范围/AC 无变更。v1.1：2026-08-11 v1.0 首次基线的模板迁移与范围刷新，明确 interop 覆盖与 target_release） |
 | 基线日期 | 2026-10-29 |
 | Owner | @youzhi92（2026-10-29 认领） |
 | 确认人 | @youzhi92（用户，本会话需求方） |
-| 确认依据 | v1.1：2026-10-29 会话明确回复「批准 Define」，批准候选基线（范围/非目标/AC 摘要已在会话中呈现）；v1.2：同日 owner 会话逐项确认元数据补全（Owner 认领、需求ID、Profile 规范化）；v1.3：同日 owner 会话指示修复外部测试设计 skill 校验发现的文档缺口（仅新增显式不涉及声明，语义/范围/AC 无变更）；v1.4：同日 owner 会话三轮候选（A/B/C → C → C-1/C-2/C-3）后明确回复「选择C-2」，批准新告警文案模板与文档同步；v1.5：2026-10-30 owner 会话明确指示「got 'undefined' 要改成 got '实际传入的类型'」，批准 got 段占位符化与文档同步；v1.6：2026-10-30 owner 会话针对外部测试设计 skill arkui-spec-check 的 AC-05 检查项（用户视角而非内部实现视角），确认口径说明段实现中立化改写方案后回复「执行」，批准该段改写与文档同步（需求语义/范围/AC 无变更） |
+| 确认依据 | v1.1：2026-10-29 会话明确回复「批准 Define」，批准候选基线（范围/非目标/AC 摘要已在会话中呈现）；v1.2：同日 owner 会话逐项确认元数据补全（Owner 认领、需求ID、Profile 规范化）；v1.3：同日 owner 会话指示修复外部测试设计 skill 校验发现的文档缺口（仅新增显式不涉及声明，语义/范围/AC 无变更）；v1.4：同日 owner 会话三轮候选（A/B/C → C → C-1/C-2/C-3）后明确回复「选择C-2」，批准新告警文案模板与文档同步；v1.5：2026-10-30 owner 会话明确指示「got 'undefined' 要改成 got '实际传入的类型'」，批准 got 段占位符化与文档同步；v1.6：2026-10-30 owner 会话针对外部测试设计 skill arkui-spec-check 的 AC-05 检查项（用户视角而非内部实现视角），确认口径说明段实现中立化改写方案后回复「执行」，批准该段改写与文档同步（需求语义/范围/AC 无变更）；v1.7：2026-10-31 owner 会话明确指示「不需要验证点6，请同步更新spec和spec-for-validation」并确认「全链路一致移除」口径，批准 interop 验收维度移除与六文档同步（AC-1.1～AC-1.5 行为契约不变）；v1.8：2026-10-31 owner 会话指出「当前没有考虑到传 void 0 或者传变量（xxx | undefined）的情况」，经方案澄清选定「两者都告警（类型级触发）」并回复「批准，文档链先行」，批准 v1.8 行为扩展方案（含行为变化表、新 fixture 策略、VM/验证点跳 6 编号） |
 | 复杂度 | 简单 |
 | Profile | arkui（owner 已确认规范化，2026-10-29） |
 | 目标发行版本 | 引用 proposal.target_release（OpenHarmony-7.1-Release） |
@@ -98,15 +98,15 @@ struct Child {
 
 | 目标 | 成功指标 | 验证方式 |
 |------|----------|----------|
-| 编译期识别 `@Require` non-null 字段显式 `undefined` 传值并告警 | 全部正例场景输出 WARNING（非 ERROR），编译不失败 | compiler 单测（构造传参校验相关套件） |
-| 零误报：合法场景不受影响 | 可选类型字段、非 `@Require` 字段、嵌套属性内部 `undefined` 均不触发该告警 | compiler 反例单测 |
-| 主链路与 interop 镜像行为一致 | interop 模式编译相同场景输出同样告警 | interop 路径单测 |
+| 编译期识别 `@Require` non-null 字段的 `undefined` 传值并告警（显式 `undefined` 标识符与解析类型含 `undefined` 的 `void 0`/联合类型变量/表达式） | 全部正例场景输出 WARNING（非 ERROR），编译不失败 | compiler 单测（构造传参校验相关套件） |
+| 零误报：合法场景不受影响 | 可选类型字段、非 `@Require` 字段、嵌套属性内部 `undefined`、解析类型不含 `undefined` 的变量传值（含收窄后）、`any`/`unknown` 动态类型值均不触发该告警 | compiler 反例单测 |
 
 ### 用户故事与 AC
 
 | Story ID | 用户故事 | 优先级 |
 |----------|----------|--------|
 | US-1 | 作为 ArkUI 应用开发者，我希望在向 `@Require` 修饰的 non-null 字段显式传入 `undefined` 时获得编译期告警，以便在开发阶段发现并修正类型不一致，避免运行时异常 | P0 |
+| US-2 | 作为 ArkUI 应用开发者，我希望以 `void 0` 或类型含 `undefined` 的变量等非标识符形式向 `@Require` 修饰的 non-null 字段传入可能为 `undefined` 的值时，同样获得编译期告警，以免该写法绕过显式 `undefined` 场景的检查 | P0 |
 
 | AC编号 | 验收标准 | 类型 | 关联Story |
 |--------|----------|------|-----------|
@@ -114,8 +114,8 @@ struct Child {
 | AC-2 | WHEN V2 组件（`@ComponentV2`）构造传参中，向 `@Require` 与 `@Param` 共同修饰且声明类型不含 `undefined` 的字段显式传入 `undefined` THEN 编译输出同一条 WARNING，且编译继续不失败 | 正常 | US-1 |
 | AC-3 | WHEN `@Require` 字段声明类型含 `undefined`（如 `number \| undefined`）且显式传入 `undefined` THEN 编译不输出该告警 | 边界 | US-1 |
 | AC-4 | WHEN 非 `@Require` 修饰的字段显式传入 `undefined` THEN 编译不输出该告警 | 边界 | US-1 |
-| AC-5 | WHEN 构造传参对象的嵌套属性内部出现 `undefined`（非顶层字段值本身）THEN 编译不输出该告警 | 边界 | US-1 |
-| AC-6 | WHEN 以 interop 编译模式构建 AC-1 场景 THEN 输出与主链路一致的同文案 WARNING | 正常 | US-1 |
+| AC-5 | WHEN 构造传参对象的字段值不是 `undefined` 标识符且其解析类型不含 `undefined`（如普通变量/表达式传值、联合类型变量经空值守卫收窄后传值、嵌套属性内部出现 `undefined`、`any`/`unknown` 动态类型值）THEN 编译不输出该告警 | 边界 | US-1 |
+| AC-6 | WHEN V1/V2 组件构造传参中，向 `@Require` 修饰且声明类型不含 `undefined` 的字段传入非 `undefined` 标识符、但解析类型含 `undefined` 的值（如 `void 0`、类型为 `xxx \| undefined` 的变量）THEN 编译输出与 AC-1 相同级别、相同文案模板的 1 条 WARNING（实际类型段为该传入值的解析类型文本），且编译继续不失败 | 正常 | US-2 |
 
 ### 范围边界
 
@@ -124,7 +124,7 @@ struct Child {
 1. compiler/（动态类型工具链）组件构造传参阶段的 `@Require` 字段传值类型一致性告警
 2. V1 与 V2 组件的 `@Require` 字段（V1：单独 `@Require` 或与 `@Prop`/`@State`/`@Provide`/`@BuilderParam` 组合；V2：`@Require`+`@Param`）
 3. non-null 判定：字段声明类型不含 `undefined`
-4. 显式 `undefined` 传值检测，仅顶层字段
+4. `undefined` 传值检测（v1.8 类型级触发）：显式 `undefined` 标识符、`void` 表达式、解析类型含 `undefined` 的变量/表达式，仅顶层字段
 5. WARNING 级别（非阻断）
 6. interop 镜像路径（`compiler/src/interop/src/`）同步实现
 7. 配套单元测试（正例/反例/双路径）
@@ -135,7 +135,7 @@ struct Child {
 2. 其它装饰器（`@Prop`、`@State` 等单独使用）的 `undefined` 传值检查
 3. 可选类型字段（声明类型含 `undefined`）传 `undefined` 的告警
 4. 显式 `null` 传值的告警
-5. 经变量/表达式间接传递（类型推断为 `undefined`）的场景
+5. 解析类型不含 `undefined` 的变量/表达式传值（含联合类型变量经空值守卫收窄后传值）与 `any`/`unknown` 动态类型值——不判定为 `undefined` 传值，不告警（v1.8 类型级口径下的反例边界）
 6. 嵌套对象属性内部的 `undefined` 检查
 7. 运行时组件行为修改
 8. 新增/修改/废弃公共 API
@@ -178,7 +178,7 @@ struct Child {
 |------|--------|------|--------------------------|
 | 性能 | 否 | 静态检查仅在既有构造传参遍历中增加类型判定，无运行时热路径；编译产物不变 | — |
 | 安全与权限 | N/A | 编译期诊断，不触及安全/隐私/权限面 | — |
-| 兼容性 | 是 | 新增 WARNING 改变开发者可见编译输出（存量工程可能出现新告警）；非 ERROR，不阻断编译 | spec.md |
+| 兼容性 | 是 | 新增 WARNING 改变开发者可见编译输出（存量工程可能出现新告警，v1.8 类型级触发扩展后 `void 0`/联合类型变量场景同样纳入新告警面）；非 ERROR，不阻断编译 | spec.md |
 | API/SDK | 否 | 无 API/SDK 变更 | — |
 | IPC/跨进程 | N/A | 编译期工具链，无跨进程交互 | — |
 | 构建与部件 | 否 | 不改 GN/插件链顺序/构建脚本；仅在 `src/` 校验逻辑内新增（`lib/` 由 `npm run build` 再生成） | — |
@@ -191,15 +191,14 @@ struct Child {
 
 ### DFX 设计
 
-不涉及：本特性为编译期 WARNING 诊断，无运行时维测、日志格式变更、定界定位等 DFX 指标要求。新增诊断本身（级别、文案、行列定位）即为可观察输出，可测试性由 spec.md 验证映射 VM-1～VM-6 承载；编译耗时影响限于构造传参遍历内的类型判定，无用户可感知阈值要求（spec.md 非功能性需求 N/A）。
+不涉及：本特性为编译期 WARNING 诊断，无运行时维测、日志格式变更、定界定位等 DFX 指标要求。新增诊断本身（级别、文案、行列定位）即为可观察输出，可测试性由 spec.md 验证映射 VM-1～VM-5 与 VM-7～VM-8 承载（VM-6 编号已随 v1.7 interop 维度移除不复用）；编译耗时影响限于构造传参遍历内的类型判定，无用户可感知阈值要求（spec.md 非功能性需求 N/A）。
 
 ### 依赖、风险与外部约束
 
 | 依赖/风险 | 类型 | 影响 | 缓解措施/Owner | 状态 |
 |-----------|------|------|----------------|------|
-| 存量工程可能出现新告警（用户感知变化） | 兼容 | 中 | WARNING 非阻断；诊断文案给出修正指引；发布说明同步 | 已确认（spec 兼容性声明承载；全量回归零漂移实测） |
-| "类型不含 undefined"判定复杂度（联合类型、类型别名） | 技术 | 中 | 设计阶段基于 TS Checker/类型节点验证判定方案；反例单例覆盖（AC-3） | 已验证（design ADR-1 checker 判定落地；联合/any/嵌套反例 0 误报实测） |
-| interop 镜像与主链路漂移 | 技术 | 低 | 双路径同步修改与测试（AC-6） | 已确认（用户选定覆盖） |
+| 存量工程可能出现新告警（用户感知变化） | 兼容 | 中 | WARNING 非阻断；诊断文案给出修正指引；发布说明同步 | 已确认（spec 兼容性声明承载；全量回归零漂移实测；v1.8 类型级扩展后新增告警面为 `void 0`/联合类型变量场景，回归口径见 spec VM-7/VM-8） |
+| "类型不含 undefined"判定复杂度（联合类型、类型别名） | 技术 | 中 | 设计阶段基于 TS Checker/类型节点验证判定方案；反例单例覆盖（AC-3） | 已验证（design ADR-1 checker 判定落地；联合/any/嵌套反例 0 误报实测；v1.8 传入值侧同源口径已探针实测：`void 0`/联合变量命中、收窄豁免、`any` 排除） |
 | 诊断码策略（是否分配 10905xxx 数字码） | 技术 | 低 | spec 阶段定；既有 WARN 先例存在无码告警（private 传参告警） | 已决策（spec O-3：WARN 无数字码，沿用仓内无码告警先例） |
 
 ### 依据与上下文引用
@@ -216,6 +215,7 @@ struct Child {
 | 知识库 | `docs/kb/02-装饰器速查.md`、`docs/specs/02-校验规则/02-05 @Require.md` | `@Require` 既有校验规则先例（WARN 级别；跨工具链一致性惯例） | 高 | 本仓 |
 | Issue | issue 4719 | 需求原始来源与场景描述 | 中 | https://gitcode.com/openharmony/developtools_ace_ets2bundle/issues/4719 |
 | 用户澄清 | 2026-10-29 会话（详见 `evidence/checks/check-proposal.md`） | 仅 compiler/；含 interop 副本；target_release=OpenHarmony-7.1-Release | 高 | `.codespec/changes/issue-4719-require-type-check/evidence/checks/check-proposal.md` |
+| 设计前置实测 | 2026-10-31 会话探针验证（v1.8）：forked TS linter checker 对构造传参各形态的类型解析与渲染——`void 0`/`undefined` 标识符→`'undefined'`、联合属性→`'number \| undefined'`、空值守卫收窄后→`'number'`、`any`→`'any'`、嵌套对象顶层不含 `undefined` | 类型级触发方案可行：收窄豁免成立、`any` 需谓词显式排除；结论落入 design.md ADR 与 fixture 设计（探针脚本为临时件未入库） | 高 | 会话记录；结论固化于 design.md 与 spec-for-validation.md 验证点 |
 
 ### 变更控制与下游条件
 

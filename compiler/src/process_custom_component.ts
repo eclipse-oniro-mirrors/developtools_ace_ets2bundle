@@ -2084,6 +2084,18 @@ function isTypeIncludingUndefined(type: ts.Type): boolean {
   return !!(type.flags & ts.TypeFlags.Undefined);
 }
 
+// Strict actual-value-side counterpart of isTypeIncludingUndefined: any and unknown are
+// inconclusive rather than undefined-including, so they never trigger the warning.
+function isTypeDefinitelyIncludingUndefined(type: ts.Type): boolean {
+  if (type.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) {
+    return false;
+  }
+  if (type.types && type.types.length) {
+    return type.types.some((item: ts.Type) => !!(item.flags & ts.TypeFlags.Undefined));
+  }
+  return !!(type.flags & ts.TypeFlags.Undefined);
+}
+
 function getStructDeclarationFromComponentUseSite(checker: ts.TypeChecker, node: ts.CallExpression): ts.Node {
   const componentSymbol: ts.Symbol = checker.getSymbolAtLocation(node.expression);
   if (!componentSymbol) {
@@ -2133,7 +2145,7 @@ function validateRequireParamUndefinedType(node: ts.CallExpression, name: string
   ]);
   (nodeArguments[0] as ts.ObjectLiteralExpression).properties.forEach((item: ts.ObjectLiteralElementLike) => {
     if (!(ts.isPropertyAssignment(item) && ts.isIdentifier(item.name) &&
-      ts.isIdentifier(item.initializer) && item.initializer.text === 'undefined')) {
+      isTypeDefinitelyIncludingUndefined(checker.getTypeAtLocation(item.initializer)))) {
       return;
     }
     const paramName: string = item.name.escapedText.toString();

@@ -3,13 +3,13 @@ artifact: spec-for-validation
 format_version: arkui-detailed-v1
 status: Approved
 source_spec: spec.md
-source_spec_hash: 8b7425a60b0b24b5dbde66ab591774552dc9534dc5a76afcdc25a492437477d9
+source_spec_hash: adab36ea90522c97876949f7557e32d71c628cc47ba48632c2ab6447c5b5ed0f
 source_design: design.md
-source_design_hash: e2f629fc84989ce89c0b8d5ba345f202ee64eacfcb5aeff6d895853e2f072ab0
+source_design_hash: a416f7352dc3fb173b980ed8ae0eea0ba0d0458cb694dc9d6398994cb11dbcc9
 source_consistency: current
 profile: arkui
 subprofiles: []
-generated_at: 2026-10-29T13:16:01+00:00
+generated_at: 2026-10-31T03:49:24+00:00
 ---
 
 # @Require 装饰器 non-null 字段 undefined 传值编译期新增告警 — 测试设计规格
@@ -34,10 +34,10 @@ generated_at: 2026-10-29T13:16:01+00:00
 | 目标版本 | OpenHarmony-7.1-Release（引用 proposal.target_release） |
 | SIG归属 | 无（单仓编译工具链变更） |
 | 来源规格状态 | Approved |
-| 产物状态 | Approved |
+| 产物状态 | Approved（v1.8 修订稿经 owner 批准——2026-10-31 指示「根据新的规格，更新代码实现」即批准文档链并授权 TASK-4 执行；v1.5/v1.7 历史版本已批准，见第十一章追认记录） |
 | 复杂度 | 简单 |
 | 创建日期 | 2026-10-29 |
-| 最后更新 | 2026-10-29 |
+| 最后更新 | 2026-10-31 |
 
 ---
 
@@ -73,8 +73,19 @@ generated_at: 2026-10-29T13:16:01+00:00
 | AC-1.2 | Given ArkTS 应用工程中 V2 组件（`@ComponentV2`）构造传参对象含 `@Require` 与 `@Param` 共同修饰且声明类型不含 `undefined` 的字段，WHEN 构造传参中该字段显式传入 `undefined` 后编译 THEN 编译输出与 R-1 相同级别、相同文案的 1 条 WARNING，且编译继续完成 | 终端用户（应用开发者编译/构建输出） | 正常 |
 | AC-1.3 | Given `@Require` 字段声明类型含 `undefined`（如 `number \| undefined` 联合类型），或字段类型不可解析/不可判定，WHEN 该字段显式传入 `undefined` 后编译 THEN 编译不输出本特性告警（既有行为不变） | 终端用户（应用开发者编译/构建输出） | 异常 |
 | AC-1.4 | Given 构造传参对象中的字段无 `@Require` 修饰，WHEN 该字段显式传入 `undefined` 后编译 THEN 编译不输出本特性告警 | 终端用户（应用开发者编译/构建输出） | 异常 |
-| AC-1.5 | Given 构造传参对象的字段值不是 `undefined` 标识符（如对象字面量，其嵌套属性内部出现 `undefined`；或变量/表达式传值），WHEN 编译该构造传参对象 THEN 编译不输出本特性告警 | 终端用户（应用开发者编译/构建输出） | 异常 |
-| AC-1.6 | Given AC-1.1/AC-1.2 场景的 ArkTS 应用工程，WHEN 以 interop 编译模式构建 THEN 构建输出与主链路一致的同级别、同文案 WARNING | 终端用户（应用开发者编译/构建输出） | 正常 |
+| AC-1.5 | Given 构造传参对象的字段值不是 `undefined` 标识符，且其解析类型不含 `undefined`（如普通变量/表达式传值、联合类型变量经空值守卫收窄后传值、对象字面量及其嵌套属性内部出现 `undefined`、`any`/`unknown` 动态类型值），WHEN 编译该构造传参对象 THEN 编译不输出本特性告警 | 终端用户（应用开发者编译/构建输出） | 异常 |
+
+#### US-2: @Require 字段非标识符 undefined 传值编译期告警（v1.8）
+
+**作为** ArkUI 应用开发者,
+**我想要** 以 `void 0` 或类型含 `undefined` 的变量等非标识符形式向 `@Require` 修饰的 non-null（声明类型不含 `undefined`）字段传入可能为 `undefined` 的值时，同样获得编译期告警,
+**以便** 该写法不绕过显式 `undefined` 场景的检查。
+
+**验收标准（AC, Acceptance Criteria）：**
+
+| AC编号 | 验收标准 | 可观察表面 | 类型 |
+|--------|----------|--------------|------|
+| AC-1.6 | Given V1/V2 组件构造传参对象含 `@Require` 修饰（V1 单独使用或与 `@Prop`/`@State`/`@Provide`/`@BuilderParam` 组合；V2 `@Require`+`@Param`）且声明类型不含 `undefined` 的字段，WHEN 构造传参中该字段传入值不是 `undefined` 标识符、但其解析类型包含 `undefined`（如 `void 0` 表达式、类型为 `xxx \| undefined` 的变量或表达式）后编译 THEN 编译输出 1 条 WARNING 级别诊断（无数字错误码，文案与定位见 R-7），且编译继续完成、无新增 ERROR | 终端用户（应用开发者编译/构建输出） | 正常 |
 
 ## 二、规则定义 `[源: spec.md]`
 
@@ -86,19 +97,19 @@ generated_at: 2026-10-29T13:16:01+00:00
 | R-2 | 行为 | V2 组件（`@ComponentV2`）构造传参对象中，`@Require`+`@Param` 字段、类型不含 `undefined`、显式传 `undefined` | 输出与 R-1 相同文案、相同级别的 1 条 WARNING，定位规则同 R-1 | V2 中 `@Require` 仅可与 `@Param` 组合 | AC-1.2 |
 | R-3 | 边界 | `@Require` 字段声明类型含 `undefined` 成员（联合类型如 `number \| undefined`、可选属性语法等价形式、`any`、`unknown`）且显式传 `undefined` | 不输出本特性告警 | 类型判定仅看 `undefined` 成员：类型含 `null`（如 `number \| null`）不改变判定，仍按"不含 undefined"处理；显式传 `null` 值本身不在本特性范围 | AC-1.3 |
 | R-4 | 边界 | 构造传参对象中，无 `@Require` 修饰的字段显式传 `undefined` | 不输出本特性告警 | — | AC-1.4 |
-| R-5 | 边界 | 构造传参对象的字段值表达式不是 `undefined` 标识符（变量引用、对象字面量、调用表达式等；含嵌套属性内部出现 `undefined`） | 不输出本特性告警 | 仅顶层字段值本身为 `undefined` 标识符时进入判定 | AC-1.5 |
-| R-6 | 行为 | interop 编译模式下出现 R-1/R-2 场景 | 输出与主链路一致的同级别、同文案、同定位规则的 WARNING | 主链路与 interop 镜像工具链行为保持一致 | AC-1.6 |
-| R-7 | 边界 | 字段声明类型无法解析或无法判定是否含 `undefined`（如外部类型引用解析失败） | 不输出本特性告警 | 保守策略，保证零误报；类型别名优先按解析后的实际类型判定（见下表） | AC-1.3 |
+| R-5 | 边界 | 构造传参对象的字段值表达式不是 `undefined` 标识符，且其解析类型不含 `undefined`（普通变量引用、对象字面量、调用表达式等；嵌套属性内部出现 `undefined`；联合类型变量经空值守卫收窄后传值；`any`/`unknown` 动态类型值） | 不输出本特性告警 | 仅顶层字段值本身进入判定；非标识符但解析类型含 `undefined` 的传值归 R-7 判定 | AC-1.5 |
+| R-6 | 边界 | 字段声明类型无法解析或无法判定是否含 `undefined`（如外部类型引用解析失败） | 不输出本特性告警 | 保守策略，保证零误报；类型别名优先按解析后的实际类型判定（见下表） | AC-1.3 |
+| R-7 | 行为 | 构造传参对象中，字段带 `@Require`（V1 单独或合法组合、V2 `@Require`+`@Param`），该字段声明类型（经类型别名解析后）不含 `undefined` 成员，且传值表达式不是 `undefined` 标识符、但其解析类型包含 `undefined` 成员（如 `void 0`、类型为 `xxx \| undefined` 的变量或表达式） | 输出与 R-1 相同级别、相同消息模板的 1 条 WARNING：`${actualType}` 为该传入值的解析类型文本（如 `number \| undefined`；`void` 表达式与 `undefined` 标识符同样渲染为 `undefined`）；同一传参对象中每个命中字段各输出 1 条；诊断定位规则同 R-1 | 传入值解析类型不明（`any`/`unknown`，ArkTS 中如 `ESObject` 动态值）不判定为含 `undefined`，不触发（保守，零误报）；传入值经空值守卫（如 `!== undefined`）收窄后解析类型不含 `undefined` 时不触发 | AC-1.6 |
 
-**消息模板（R-1/R-2/R-6 统一）：**
+**消息模板（R-1/R-2 统一）：**
 
 ```text
 '@Require' decorated '${paramName}' expects type '${paramType}' but got '${actualType}' through the component constructor.
 ```
 
-其中 `${paramName}` 为字段名，`${paramType}` 为该字段的声明类型文本（与下述类型判定口径同源；命中本告警时该类型必然不含 `undefined`），`${actualType}` 为实际传入值的类型文本（本告警触发条件为显式传入 `undefined`，故其恒为 `undefined`）。文案为英文，遵循仓内编译器诊断既有惯例（既有 `@Require` 诊断同族句式）。
+其中 `${paramName}` 为字段名，`${paramType}` 为该字段的声明类型文本（与下述类型判定口径同源；命中本告警时该类型必然不含 `undefined`），`${actualType}` 为实际传入值的类型文本：`undefined` 标识符与 `void` 表达式（如 `void 0`）渲染为 `undefined`（R-1/R-2 触发条件），其余命中场景（R-7）为该传入值的解析类型文本（如 `number | undefined`）。文案为英文，遵循仓内编译器诊断既有惯例（既有 `@Require` 诊断同族句式）。
 
-**类型判定口径（"声明类型是否含 `undefined` 成员"，R-1/R-2/R-3/R-7 共用）：**
+**类型判定口径（"声明类型是否含 `undefined` 成员"，R-1/R-2/R-3/R-6 共用）：**
 
 | 类型类别 | 示例 | 判定 |
 |----------|------|------|
@@ -110,9 +121,11 @@ generated_at: 2026-10-29T13:16:01+00:00
 | 含 `undefined` 的联合类型 | `number \| undefined` / `T \| undefined` | 含 `undefined`（不告警） |
 | 可选属性语法 | `field?: number`（等价 `number \| undefined`） | 含 `undefined`（不告警） |
 | `any` / `unknown` | `any` | 含 `undefined`（不告警，保守） |
-| 无法解析/不可判定 | 外部类型引用解析失败 | 不告警（R-7 保守策略） |
+| 无法解析/不可判定 | 外部类型引用解析失败 | 不告警（R-6 保守策略） |
 
 > 约束：组合装饰器的既有问号限制规则不变（如 `@Require @Prop x?: number` 仍按既有规则报 ERROR），与本特性告警相互独立；类型判定的实现方式（TypeScript Checker 或类型节点分析）由 design.md 决定。
+
+**传入值类型判定（R-7，v1.8）：** 判定传入值解析类型是否含 `undefined` 成员，与上表同源口径。差异两点：① `any`/`unknown` 传入值类型不明，不判定为含 `undefined`（不告警，保守零误报）——与声明类型侧（判定为含 `undefined`、不告警）方向相反，但同为保守策略；② 传入值解析类型经类型收窄（如空值守卫 `!== undefined` 分支内）后不含 `undefined` 成员时不触发。
 
 ## 三、API 变更分析 `[源: spec.md]`
 
@@ -128,7 +141,7 @@ N/A：不变更、不废弃任何 API。
 
 ### 兼容性声明
 
-- **已有 API 行为变更:** 否。新增 WARNING 不阻断编译；存量工程中显式向 `@Require` non-null 字段传 `undefined` 的代码会出现新告警（预期行为，属本特性目的），其余行为不变。
+- **已有 API 行为变更:** 否。新增 WARNING 不阻断编译；存量工程中显式向 `@Require` non-null 字段传 `undefined` 的代码会出现新告警（预期行为，属本特性目的），其余行为不变。v1.8 类型级触发扩展后，传入 `void 0` 或解析类型含 `undefined` 的变量/表达式的代码同样出现新告警（同属预期行为，AC-1.6）；解析类型不含 `undefined` 的传值（含收窄后、动态类型值）行为不变。
 - **配置文件格式变更:** 否
 - **数据存储格式变更:** 否
 - **最低支持版本:** 随目标版本 OpenHarmony-7.1-Release 的编译工具链交付
@@ -154,8 +167,9 @@ N/A：不变更、不废弃任何 API。
 
 | 兼容性维度 | 修改前规格 | 修改后规格 | 影响范围 | 关联 AC | 测试侧验证方式 |
 |---|---|---|---|---|---|
-| API/行为兼容 | 向 `@Require` 修饰且声明类型不含 `undefined` 的字段显式传入 `undefined` 的存量工程：构建输出无本特性告警 | 同场景构建输出 1 条非阻断 WARNING（固定文案，见第二章消息模板）；编译继续完成、无新增 ERROR | 存量 ArkTS 应用工程构建输出新增非阻断告警（预期行为，属特性目的）；无编译阻断与产物格式变化 | AC-1.1、AC-1.2、AC-1.6 | 构建（编译）含该场景的 ArkTS 应用工程：核对输出恰 1 条 WARNING（级别/文案/定位）且编译完成；比对工具链升级前无此告警、升级后出现 |
+| API/行为兼容 | 向 `@Require` 修饰且声明类型不含 `undefined` 的字段显式传入 `undefined` 的存量工程：构建输出无本特性告警 | 同场景构建输出 1 条非阻断 WARNING（固定文案，见第二章消息模板）；编译继续完成、无新增 ERROR | 存量 ArkTS 应用工程构建输出新增非阻断告警（预期行为，属特性目的）；无编译阻断与产物格式变化 | AC-1.1、AC-1.2 | 构建（编译）含该场景的 ArkTS 应用工程：核对输出恰 1 条 WARNING（级别/文案/定位）且编译完成；比对工具链升级前无此告警、升级后出现 |
 | 配置/数据兼容 | 构建配置、工程数据与编译产物格式与该传值行为无关，不受影响 | 不变（仅新增告警输出，无配置、数据与产物格式变更） | 无 | AC-1.1 | 构建（编译）场景工程确认编译正常完成、产物生成无异常 |
+| API/行为兼容（v1.8 类型级触发扩展） | 向 `@Require` 修饰且声明类型不含 `undefined` 的字段传入 `void 0` 或类型含 `undefined` 的变量/表达式（非 `undefined` 标识符形态）的存量工程：构建输出无本特性告警（v1.8 前仅识别 `undefined` 标识符） | 同场景构建输出每命中字段 1 条非阻断 WARNING（同消息模板，`${actualType}` 为该传入值解析类型文本）；编译继续完成、无新增 ERROR | 存量 ArkTS 应用工程构建输出新增非阻断告警（预期行为，属特性目的）；无编译阻断与产物格式变化 | AC-1.6 | 构建（编译）含该场景的 ArkTS 应用工程：核对每命中字段恰 1 条 WARNING 且编译完成；比对工具链升级前无此告警、升级后出现 |
 
 **版本隔离与 changelog（应用兼容性四要素补全）：**
 
@@ -170,11 +184,11 @@ N/A：不变更、不废弃任何 API。
 
 **是否涉及：** 是
 
-**支持的平台/承载链路：** 跨平台 ArkTS UI 构建（Arkoala/ArkUI-X 方向，Android/iOS 目标）经本仓 interop 编译模式承载——`compiler/src/interop/src/` 自包含镜像工具链 + `fast_build/ets_ui` 插件集（含 `arkoala-plugin.ts`）。本特性为构建期诊断，无跨平台运行时行为；跨平台维度的可观察输出为 interop 构建链路的告警一致性。
+**支持的平台/承载链路：** 跨平台 ArkTS UI 构建（Arkoala/ArkUI-X 方向，Android/iOS 目标）经本仓 interop 编译模式承载——`compiler/src/interop/src/` 自包含镜像工具链 + `fast_build/ets_ui` 插件集（含 `arkoala-plugin.ts`）。本特性为构建期诊断，无跨平台运行时行为；主链路告警逻辑依仓内架构铁律同步实现于 interop 镜像（v1.7 起不设独立跨平台验收 AC）。
 
 | 跨平台验证项 | 内容 | 关联 AC | 测试侧验证方式 |
 |---|---|---|---|
-| interop（跨平台构建链路）告警一致性 | interop 编译模式下 AC-1.1/AC-1.2 场景输出与主链路一致的同级别、同文案、同定位 WARNING，不因跨平台构建链路漂移 | AC-1.6 | 以 interop 编译模式构建（编译）同场景工程：比对告警级别、文案、定位与主链路一致（VM-6：`cd compiler && npm run interopArkTest` 回归承载） |
+| interop（跨平台构建链路）镜像同步 | 主链路告警逻辑同步实现于 interop 镜像（仓内架构铁律，非 AC 验收项）；AC-1.1/AC-1.2/AC-1.6 场景（含 v1.8 类型级触发场景）在 interop 链路下行为与主链路一致 | —（非 AC） | 既有 interop 回归测试保留为附加覆盖（v1.8 起新增类型级触发用例）：`cd compiler && npm run interopArkTest`（不设 AC 验证点） |
 
 ---
 
@@ -196,8 +210,8 @@ N/A：不变更、不废弃任何 API。
 | V2 组件（`@ComponentV2`）构造传参对象中，向 `@Require` 与 `@Param` 共同修饰且声明类型不含 `undefined` 的字段显式传入 `undefined` | 告警（WARNING，无数字错误码，不阻断编译） | 同 AC-1.1（相同消息模板） | 同 AC-1.1（传值属性行） | AC-1.2 | 构建（编译）含该场景的工程：核对输出恰 1 条与 AC-1.1 同级别、同文案的告警，编译完成 |
 | `@Require` 字段声明类型含 `undefined`（`number` 与 `undefined` 的联合类型、可选属性等价形式、`any`、`unknown`）或类型不可解析、不可判定，且显式传入 `undefined` | 不涉及（不输出本特性告警） | 无本特性告警（既有行为不变） | 不适用 | AC-1.3 | 构建（编译）含上述反例字段的工程：检查输出不含本特性告警 |
 | 构造传参对象中向无 `@Require` 修饰的字段显式传入 `undefined` | 不涉及（不输出本特性告警） | 无本特性告警 | 不适用 | AC-1.4 | 构建（编译）含该场景的工程：检查输出不含本特性告警 |
-| 构造传参对象的字段值不是 `undefined` 标识符（变量或表达式传值；对象字面量嵌套属性内部出现 `undefined`） | 不涉及（不输出本特性告警） | 无本特性告警 | 不适用 | AC-1.5 | 构建（编译）含该场景的工程：检查输出不含本特性告警 |
-| 以 interop 编译模式构建 AC-1.1/AC-1.2 场景 | 告警（与主链路同级别） | 同 AC-1.1（相同消息模板） | 同 AC-1.1（定位规则一致） | AC-1.6 | 以 interop 编译模式构建（编译）同场景工程：比对告警级别、文案、定位与主链路一致 |
+| 构造传参对象的字段值不是 `undefined` 标识符且其解析类型不含 `undefined`（普通变量/表达式传值；联合类型变量经空值守卫收窄后传值；对象字面量嵌套属性内部出现 `undefined`；`any`/`unknown` 动态类型值传值） | 不涉及（不输出本特性告警） | 无本特性告警 | 不适用 | AC-1.5 | 构建（编译）含该场景的工程：检查输出不含本特性告警 |
+| V1/V2 组件构造传参对象中，向 `@Require` 修饰（V1 单独或与 `@Prop`/`@State`/`@Provide`/`@BuilderParam` 组合；V2 与 `@Param` 共同修饰）且声明类型不含 `undefined` 的字段传入值不是 `undefined` 标识符、但其解析类型含 `undefined`（如 `void 0` 表达式、类型含 `undefined` 的联合类型变量/表达式） | 告警（WARNING，无数字错误码，不阻断编译） | 同 AC-1.1 消息模板；`${actualType}` 为该传入值的解析类型文本（`void 0` 渲染为 `undefined`，联合类型变量渲染为该联合类型的类型文本） | 构造传参对象中该字段的传值属性行 | AC-1.6 | 构建（编译）含该场景的 ArkTS 应用工程：核对每命中字段恰 1 条该告警（级别/文案/定位/got 段），编译完成且无新增 ERROR |
 
 ---
 
@@ -264,7 +278,7 @@ N/A：不变更、不废弃任何 API。
 <!-- GENERATED:NFR-SPEC:BEGIN -->
 ### 非功能性需求
 
-N/A：本特性为编译期静态诊断，无运行时非功能指标（依据 proposal.md 不涉及项确认：性能否、安全与权限 N/A、IPC N/A 等）。可测试性由 VM-1～VM-6 承载；编译耗时影响限于构造传参遍历内的类型判定，无用户可感知阈值要求。
+N/A：本特性为编译期静态诊断，无运行时非功能指标（依据 proposal.md 不涉及项确认：性能否、安全与权限 N/A、IPC N/A 等）。可测试性由 VM-1～VM-5 与 VM-7～VM-8 承载；编译耗时影响限于构造传参遍历内的类型判定，无用户可感知阈值要求。
 
 ### 多设备适配声明
 
@@ -303,7 +317,7 @@ N/A：本特性为编译期静态诊断，无运行时非功能指标（依据 p
 
 **是否涉及：** 否
 
-**不涉及理由：** 不引入运行时故障模式；类型判定失败的保守方向是不输出告警（R-7）且编译不失败，已由 AC-1.1/AC-1.2 的编译继续完成验收覆盖，无独立稳定性指标。
+**不涉及理由：** 不引入运行时故障模式；类型判定失败的保守方向是不输出告警（R-6）且编译不失败，已由 AC-1.1/AC-1.2 的编译继续完成验收覆盖，无独立稳定性指标。
 
 ---
 
@@ -369,9 +383,8 @@ N/A：本特性为编译期静态诊断，无运行时非功能指标（依据 p
 | AC-1.2 | 见对外行为规格 | V2 正例：与 AC-1.1 同级别、同文案、同定位的 1 条 WARNING；编译继续完成 | 构建（编译）含 V2 场景（`@ComponentV2` 组件 + `@Require` 与 `@Param` 共同修饰字段 + 显式 `undefined`）的工程，核对构建输出 |
 | AC-1.3 | 见对外行为规格 | 边界：类型含 `undefined`（`number` 与 `undefined` 联合类型、可选属性等价形式、`any`、`unknown`）或不可解析、不可判定时，0 条本特性告警 | 构建（编译）含上述反例字段的工程，检查输出不含本特性告警 |
 | AC-1.4 | 见对外行为规格 | 边界：无 `@Require` 修饰的字段显式传 `undefined`，0 条本特性告警 | 构建（编译）含该场景的工程，检查输出不含本特性告警 |
-| AC-1.5 | 见对外行为规格 | 边界：字段值非 `undefined` 标识符（变量、表达式传值；嵌套对象内部出现 `undefined`），0 条本特性告警 | 构建（编译）含该场景的工程，检查输出不含本特性告警 |
-| AC-1.6 | 见对外行为规格 | interop 编译模式：输出与主链路一致的同级别、同文案、同定位 WARNING | 以 interop 编译模式构建（编译）AC-1.1/AC-1.2 同场景工程，比对输出与主链路一致 |
-| AC-6 | 见对外行为规格 | proposal 级验收项（对应本文档 AC-1.6）：interop 编译模式下行为与主链路一致 | 以 interop 编译模式构建（编译）同场景工程并比对告警一致（同 AC-1.6） |
+| AC-1.5 | 见对外行为规格 | 边界（v1.8 重写口径）：字段值不是 `undefined` 标识符且解析类型不含 `undefined`（普通变量/表达式传值、联合类型变量经空值守卫收窄后传值、嵌套对象内部出现 `undefined`、`any`/`unknown` 动态类型值），0 条本特性告警 | 构建（编译）含该场景的工程，检查输出不含本特性告警 |
+| AC-1.6 | 见对外行为规格 | 类型级正例（v1.8 新增）：V1/V2 组件向 `@Require` 修饰且声明类型不含 `undefined` 的字段传入 `void 0` 或类型含 `undefined` 的变量/表达式，每命中字段恰 1 条同契约 WARNING（`${actualType}` 为该传入值解析类型文本：`void 0` 渲染为 `undefined`，联合类型变量渲染为联合类型文本）；编译继续完成、无新增 ERROR | 构建（编译）含该场景的 ArkTS 应用工程，逐字段核对构建输出的告警计数、文案与定位 |
 <!-- GENERATED:AC-VERIFICATION:END -->
 
 ### 测试可观察性与验证约束 `[源: design.md]`
@@ -387,8 +400,8 @@ N/A：本特性为编译期静态诊断，无运行时非功能指标（依据 p
 | AC-1.2 | 同 AC-1.1 的 WARNING（级别、文案、定位规则一致），场景为 V2 组件（`@ComponentV2`） | 构建（编译）包含 V2 组件构造传参对象的 ArkTS 应用工程：对象中向 `@Require` 与 `@Param` 共同修饰且声明类型不含 `undefined` 的字段显式传入 `undefined`；检查构建输出：恰 1 条与 AC-1.1 同级别、同文案的 WARNING，且编译不失败 | 同 AC-1.1 | 无 |
 | AC-1.3 | 构建输出不出现本特性告警（既有行为不变） | 构建（编译）含以下 `@Require` 字段场景的 ArkTS 应用工程并检查输出不含本特性告警：① 声明类型含 `undefined`（`number` 与 `undefined` 的联合类型、可选属性等价形式）；② 类型为 `any` 或 `unknown`；均显式传入 `undefined` | 同 AC-1.1 | 无 |
 | AC-1.4 | 构建输出不出现本特性告警 | 构建（编译）含"无 `@Require` 修饰的字段显式传入 `undefined`"场景的 ArkTS 应用工程；检查构建输出不含本特性告警 | 同 AC-1.1 | 无 |
-| AC-1.5 | 构建输出不出现本特性告警 | 构建（编译）构造传参字段值不是 `undefined` 标识符的场景（变量或表达式传值；对象字面量嵌套属性内部出现 `undefined`）；检查构建输出不含本特性告警 | 同 AC-1.1 | 无 |
-| AC-1.6 | 以 interop 编译模式构建 AC-1.1/AC-1.2 场景时，构建输出与主链路一致的同级别、同文案、同定位规则的 WARNING | 以 interop 编译模式构建（编译）AC-1.1/AC-1.2 同场景工程；比对构建输出的告警级别、文案、定位与主链路构建一致 | 需支持 interop 编译模式的构建环境 | 无 |
+| AC-1.5 | 构建输出不出现本特性告警 | 构建（编译）构造传参字段值不是 `undefined` 标识符且解析类型不含 `undefined` 的场景（普通变量/表达式传值、联合类型变量经空值守卫收窄后传值、对象字面量嵌套属性内部出现 `undefined`、`any`/`unknown` 动态类型值）；检查构建输出不含本特性告警 | 同 AC-1.1 | 无 |
+| AC-1.6 | 应用工程构建输出中的 1 条 WARNING：同 AC-1.1 契约（级别/文案模板/无数字码/属性级定位），`${actualType}` 为传入值解析类型文本（`undefined` 标识符与 `void 0` 渲染为 `undefined`，联合类型变量渲染为该联合类型的类型文本，如 `number` 与 `undefined` 的联合类型）；编译继续完成、无新增 ERROR | 构建（编译）含 V1/V2 组件向 `@Require` 修饰且声明类型不含 `undefined` 的字段传入 `void 0` 或类型含 `undefined` 的变量/表达式的 ArkTS 应用工程；检查构建输出：每命中字段恰 1 条 WARNING 且 got 段与解析类型一致，编译不失败 | 同 AC-1.1 | 无 |
 
 ---
 <!-- GENERATED:DESIGN-CONSTRAINTS:END -->
@@ -398,7 +411,7 @@ N/A：本特性为编译期静态诊断，无运行时非功能指标（依据 p
 - 2D 能力特征分析（5.1～5.12）：12 个维度已逐项判定，“是”项（5.2 应用兼容性、5.3 跨平台、5.5 编译工具链）完成全部细项，其余均附不涉及理由。
 - 非功能性需求（6.1～6.5）：5 个维度均判定为否并附不涉及理由。
 - 2C 功能体验分析（7.1～7.4）：4 个维度均判定为否并附不涉及理由。
-- AC 验证点追溯（第八章）：已覆盖 spec 全部 AC（AC-1、AC-1.1～AC-1.6、AC-6）及验证点、测试侧验证方式。
+- AC 验证点追溯（第八章）：已覆盖 spec 全部 AC（AC-1、AC-1.1～AC-1.6）及验证点、测试侧验证方式。
 - 无遗留事项。
 <!-- TEST-ANALYSIS:END -->
 
@@ -406,22 +419,28 @@ N/A：本特性为编译期静态诊断，无运行时非功能指标（依据 p
 
 | 文档 | 路径 | 状态/Hash |
 |---|---|---|
-| spec.md | `spec.md` | Approved / `7f860398a9a318c16313dcd950bf534d9bb4e1366ac77460a46fd5b3f8b377fb` |
-| design.md | `design.md` | Approved / `e2f629fc84989ce89c0b8d5ba345f202ee64eacfcb5aeff6d895853e2f072ab0` |
+| spec.md | `spec.md` | Approved / `adab36ea90522c97876949f7557e32d71c628cc47ba48632c2ab6447c5b5ed0f` |
+| design.md | `design.md` | Approved / `a416f7352dc3fb173b980ed8ae0eea0ba0d0458cb694dc9d6398994cb11dbcc9` |
 | Profile playbook | `analysis/arkui/spec-for-validation.md` | Active |
 
 ## 十一、来源与审批
 
 | 项 | 内容 |
 |---|---|
-| Spec 来源 | `spec.md` / `7f860398a9a318c16313dcd950bf534d9bb4e1366ac77460a46fd5b3f8b377fb` |
-| Design 来源 | `design.md` / `e2f629fc84989ce89c0b8d5ba345f202ee64eacfcb5aeff6d895853e2f072ab0` |
+| Spec 来源 | `spec.md` / `adab36ea90522c97876949f7557e32d71c628cc47ba48632c2ab6447c5b5ed0f` |
+| Design 来源 | `design.md` / `a416f7352dc3fb173b980ed8ae0eea0ba0d0458cb694dc9d6398994cb11dbcc9` |
 | 开发/Spec Owner 结论 | Approved |
 | 测试 Owner 结论 | Approved |
 
 > 双 Owner 签署记录（2026-10-29，@youzhi92）：开发/Spec Owner 与测试 Owner 均为本会话用户（同一人双角色）批准——全文审查通过、spec/design 来源 hash 绑定一致、规格投影未改写；CLI check 15/15 PASS；验证经 VM-1～VM-6 mocha 单测承载。
 >
-> 修复追认记录（2026-10-29，@youzhi92 指示修复、同 owner 双角色签署）：按外部测试设计规则校验结论补全文档缺口——proposal 基线 v1.3（新增设备差异规格 1+8、DFX 设计显式不涉及声明）、spec.md AC 表改 Given/WHEN/THEN 三段式且类型列对齐 正常/异常、VM-1～VM-6 验证方式改述端到端构建输出断言口径（需求语义/范围/AC 行为无变更）；本文档 5.2 补应用兼容性四要素（版本隔离/changelog），5.3 跨平台由「否」修正为「是」（依据：interop 编译模式即本仓跨平台 ArkTS UI 构建链路——`src/interop/src/` 自包含镜像 + `fast_build/ets_ui/arkoala-plugin.ts`，AC-1.6/VM-6 已实测告警一致性），术语表补 interop 编译模式等 4 条；`refresh` 同步 GENERATED 区与 source_spec_hash 后八章验证点两列经 owner 回填复确认。修复后 CLI check 15/15 PASS、validate --level all 46 checks/0 broken PASS；测试输入语义与 AC 行为无变更。
+> 修复追认记录（2026-10-29，@youzhi92 指示修复、同 owner 双角色签署）：按外部测试设计规则校验结论补全文档缺口——proposal 基线 v1.3（新增设备差异规格 1+8、DFX 设计显式不涉及声明）、spec.md AC 表改 Given/WHEN/THEN 三段式且类型列对齐 正常/异常、VM-1～VM-6 验证方式改述端到端构建输出断言口径（需求语义/范围/AC 行为无变更）；本文档 5.2 补应用兼容性四要素（版本隔离/changelog），5.3 跨平台由「否」修正为「是」（依据：interop 编译模式即本仓跨平台 ArkTS UI 构建链路——`src/interop/src/` 自包含镜像 + `fast_build/ets_ui/arkoala-plugin.ts`，当时的 interop 验收 AC 与 VM-6 已实测告警一致性），术语表补 interop 编译模式等 4 条；`refresh` 同步 GENERATED 区与 source_spec_hash 后八章验证点两列经 owner 回填复确认。修复后 CLI check 15/15 PASS、validate --level all 46 checks/0 broken PASS；测试输入语义与 AC 行为无变更。
+>
+> 基线追认记录（2026-10-31，@youzhi92 指示移除、同 owner 双角色签署）：按 owner 会话指示（「不需要验证点6，请同步更新spec和spec-for-validation」，经确认按「全链路一致移除」口径执行）移除 interop 一致性验收维度——本文档与 spec.md 同步删除该维度的 proposal 级/spec 级验收条目、interop 规则（原 R-7 重编号为 R-6）与 VM-6/验证点6；5.2 关联 AC、5.3 跨平台（保留「是」的事实性承载描述并去验收化措辞）、5.5 interop 场景行、六章 6.3/6.5、八章追溯、九章完备性、附录术语表同步更新；AC-1.1～AC-1.5 行为契约与需求语义无变更。interop 镜像代码与既有 interop 回归测试（`cd compiler && npm run interopArkTest`）保留为附加覆盖（仓内架构铁律，非 AC 验收项）。source_spec_hash/source_design_hash 同步回填。
+>
+> v1.8 修订记录（2026-10-31，@youzhi92 指示扩展、同 owner 双角色待批）：按 owner 需求（`@Require` 告警未覆盖传入 `void 0` 与联合类型变量的场景，经方案澄清定为类型级触发：两场景均告警、联合类型变量经空值守卫收窄后不告警、解析类型不明不判定）修订测试输入——第一至四章与 NFR 区经 `refresh` 自动同步 spec.md v1.8（AC-1.5 反例边界按传入值解析类型口径重写、新增 US-2 与 AC-1.6 类型级正例、R-5 重写与 R-7 新增、消息模板 `${actualType}` 渲染口径、验证维度 VM-7/VM-8）；DESIGN-CONSTRAINTS 区同步 design.md v1.8 测试输入约束（AC-1.5 重写 + AC-1.6 新增）；八章 AC-1.5 行按 v1.8 口径回填、新撰 AC-1.6 行；5.2 补 AC-1.6 兼容行、5.3 补类型级场景、5.5 AC-1.5 场景行重写并新增 AC-1.6 正例行、6.5 与九章完备性同步、附录补「类型级触发」术语；source_spec_hash/source_design_hash 同步回填。v1.5/v1.7 已批准内容的行为契约未变更（仅传入值判定口径扩展），本修订稿随 v1.8 文档链呈报 owner 批准后生效。CLI check 15/15 PASS；validate --level all 46 checks / 5 broken 归因：4 项为 TASK-4 待执行（Phase Gate：等 owner 批准修订后的 execution-plan）与本文档待批的预期项（TASK-4 完成+本文档获批置 Approved 后闭合），1 项 design.md 代码事实基线探针行引用格式缺陷当期已修复。
+>
+> v1.8 批准与交付追认记录（2026-10-31，@youzhi92 同 owner 双角色签署）：owner 批准 v1.8 文档链（「批准，文档链先行（推荐）」）后于同日指示「根据新的规格，更新代码实现」（= execution-plan v1.8 修订获批 + TASK-4 执行授权），本文档随文档链获批置 Approved。TASK-4 已交付并经 Red→Green 闭合：etsTest 359 passing / 2 failing、interopArkTest 1124 passing / 19 failing（fresh，三态失败集对照零漂移），验证点7/8 测试输入已由 Extension fixture（`validateRequireParamUndefinedTypeExtension.ets`/`...ExtensionV2.ets`）承载；执行侧回填见 execution-plan.md（AC 追溯/范围映射/Verification）与 evidence/reviews/ 三份 v1.8 增补段；证据 `evidence/checks/task4-red-green/`。Commit 已落地：单 commit（Change-Id Ia0e5e0a，代码+文档同 commit，2026-10-31 owner 指令上传并触发门禁）。
 
 ## 附录：术语表
 
@@ -429,10 +448,11 @@ N/A：本特性为编译期静态诊断，无运行时非功能指标（依据 p
 |---|---|
 | 2D | 能力特征维度分析 |
 | 2C | 功能体验维度分析 |
-| interop 编译模式 | 本仓工具链的跨平台 ArkTS UI 构建链路：`compiler/src/interop/src/` 自包含镜像工具链 + `fast_build/ets_ui` 插件集（含 `arkoala-plugin.ts`），主链路改动须同步镜像副本；其行为一致性由 AC-1.6/VM-6 承载 |
+| interop 编译模式 | 本仓工具链的跨平台 ArkTS UI 构建链路：`compiler/src/interop/src/` 自包含镜像工具链 + `fast_build/ets_ui` 插件集（含 `arkoala-plugin.ts`），主链路改动须同步镜像副本（仓内架构铁律）；行为一致性由既有 interop 回归测试附加承载（非 AC 验收项） |
 | non-null 字段 | 声明类型不含 `undefined` 成员的字段（类型别名经解析后判定，见第二章类型判定口径表） |
-| 消息模板 | WARN 诊断的固定英文文案模板（R-1/R-2/R-6 统一，`${paramName}` 为字段名占位） |
+| 消息模板 | WARN 诊断的固定英文文案模板（R-1/R-2 统一，`${paramName}` 为字段名占位） |
 | Red 条件 | TDD 红灯信号：实现前运行验证命令应观察到的断言失败（spec.md 验证映射表列） |
+| 类型级触发 | 传入值解析类型含 `undefined` 成员即触发告警的判定口径（v1.8 起），区别于仅识别 `undefined` 标识符的语法级口径；传入值解析类型不明（`any`/`unknown`）不判定为含 `undefined`，不触发 |
 
 ---
 

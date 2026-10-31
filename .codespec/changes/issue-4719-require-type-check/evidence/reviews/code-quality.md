@@ -28,6 +28,7 @@
 | TASK-1 | `compiler/src/process_custom_component.ts:validateRequireParamUndefinedType` + `validateCustomComponentPrams` 挂载行 | 同文件：4 函数（`isTypeIncludingUndefined`/`getStructDeclarationFromComponentUseSite`/`isRequireParamTypeExcludingUndefined`/`validateRequireParamUndefinedType`，:2077-2151）+ 挂载 :1575；无新 import（全部复用文件内既有模块级符号，:90-145 既有 import 覆盖） | `单 commit（Change-Id Ieca81b2）` | 函数签名省略 parentStructInfo（childStructInfo 内部派生）——已登记 execution-plan 偏差表，行为等价由测试覆盖 | PASS |
 | TASK-2 | `compiler/src/interop/src/process_custom_component.ts` 镜像 + 挂载行 | 同文件：同 4 函数 :2093-2167 + 挂载 :1591；主/镜像新增块 `diff` 逐行 IDENTICAL（本审查复核） | `单 commit（Change-Id Ieca81b2）` | 无 | PASS |
 | TASK-3 | 2 fixture 新建 + pathConfig/transform_ut_error.json 修改 + interop 用例新建 | 与计划一致：2 fixture（V1 正例+5 反例 / V2 正例+反例）、pathConfig :312-313 注册、JSON 追加 2 WARN 条目（274 页 valid）、interop 用例 2 it | `单 commit（Change-Id Ieca81b2）` | interop 用例复用 test.js 轻量驱动而非全管线 mock——已登记偏差表（ark_compiler_ut 无全管线先例，grep 证实；契约要求全部满足） | PASS |
+| TASK-4 | v1.8 类型级触发扩展：主/镜像触发条件类型级替换 + 新判定 helper `isTypeDefinitelyIncludingUndefined` + Extension fixture 2 页 + 注册/期望/interop 用例（明细见下方 v1.8 增补段） | 主链 helper :2087-2097 + 触发 :2147-2148（+14/-2）；镜像 :2103-2113/:2163-2164（+14/-2，新增块 diff IDENTICAL）；2 fixture 新建；pathConfig +2；`transform_ut_error.json` +20/-0 纯追加；interop 测试 +35/-0 纯追加 | `单 commit（Change-Id Ia0e5e0a，2026-10-31）`（代码+文档同 commit，追溯同 TASK-1 口径） | 无（净 diff 与 Files 表 7 项一致） | PASS |
 
 ## Findings
 
@@ -58,3 +59,27 @@
 阻塞问题：无。Minor 2 项（测试 env 恢复惯例、design ADR-2 附注措辞）均不阻塞，已登记开放问题。
 
 建议：提交时以单 commit 交付 7 个文件（4 修改 + 3 新增），保持主/镜像改动在同一 commit 内原子同步。
+
+---
+
+## v1.8 增补段（TASK-4，2026-10-31）
+
+> 前置：`spec-compliance.md` v1.8 增补段 Approved（2026-10-31），本段有效。审查范围：TASK-4 净改动——`compiler/src/process_custom_component.ts`（+14/-2）、`compiler/src/interop/src/process_custom_component.ts`（+14/-2，同构）；测试资产 5 项（2 Extension fixture 新建、pathConfig +2、`transform_ut_error.json` +20/-0 纯追加、interop 测试 +35/-0 纯追加）。
+
+### v1.8 Plan Scope vs Actual Code Scope
+
+| Task | Planned | Actual | Commit | Deviation | Result |
+|------|---------|--------|--------|-----------|--------|
+| TASK-4 | 主/镜像触发条件类型级替换 + `isTypeDefinitelyIncludingUndefined` helper + Extension 2 fixture + 注册/期望/interop 用例 | 与计划一致：主链 helper :2087-2097（含 2 行方向语义注释）+ 触发 :2147-2148；镜像 helper :2103-2113 + 触发 :2163-2164（偏移 +16，HELPER-REGION-IDENTICAL + FUNC-REGION-IDENTICAL 复核）；fixture/注册/期望/interop 用例均纯追加，既有页与既有条目 diff = 0 | `单 commit（Change-Id Ia0e5e0a）` | 无（净 diff 与 Files 表 7 项一致） | PASS |
+
+### v1.8 Findings
+
+无新增 Blocker/Major/Minor finding。
+
+- helper 与声明侧 `isTypeIncludingUndefined` 旁并列、句式同源；Any/Unknown 方向相反（→false）系 ADR-4 传入值侧保守口径，函数头 2 行注释已显式说明方向语义，非复制偏差。
+- 触发条件原位替换保持单点结构（`isPropertyAssignment && isIdentifier(item.name)` 前缀、`declaredType` 声明侧判定门、WARN 推送结构均不动）；无新 import。
+- 只读 eslint：全文件 103 error 均预存（主 50/镜像 53，行号均在编辑区外），新增区间 0 命中；max-lines 为预存违规仅计数增长。
+
+### v1.8 Conclusion
+
+**Approved（维持）。** 插入面极小（2 文件各 +14/-2 完全对称）、镜像逐行 IDENTICAL、零新 import、既有期望零漂移；提交策略沿 v1.5 周期先例由 owner 决策时执行。

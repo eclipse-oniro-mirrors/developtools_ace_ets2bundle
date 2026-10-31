@@ -60,6 +60,12 @@ interface TransformLogInfo {
   code?: string;
 }
 
+interface RequireUndefinedWarnExpectation {
+  paramName: string;
+  declaredType: string;
+  actualType: string;
+}
+
 mocha.describe('process custom component require param undefined type interop tests', function() {
   this.timeout(60000);
 
@@ -109,6 +115,19 @@ mocha.describe('process custom component require param undefined type interop te
     expect(warnInfos[0].message).to.equal(requireUndefinedWarnMessage(paramName, declaredType, actualType));
   }
 
+  function expectRequireUndefinedWarns(logs: TransformLogInfo[],
+    expectations: RequireUndefinedWarnExpectation[]): void {
+    const warnInfos: TransformLogInfo[] = logs.filter((log: TransformLogInfo) => log.type === 'WARN');
+    const errorInfos: TransformLogInfo[] = logs.filter((log: TransformLogInfo) => log.type === 'ERROR');
+    expect(errorInfos).to.have.lengthOf(0);
+    expect(warnInfos).to.have.lengthOf(expectations.length);
+    expectations.forEach((expectation: RequireUndefinedWarnExpectation) => {
+      const message: string = requireUndefinedWarnMessage(
+        expectation.paramName, expectation.declaredType, expectation.actualType);
+      expect(warnInfos.some((warn: TransformLogInfo) => warn.message === message)).to.be.true;
+    });
+  }
+
   mocha.it('warns once when a @Require regular param is initialized with undefined', function() {
     const logs: TransformLogInfo[] = transformPage('validateRequireParamUndefinedType');
     expectSingleRequireUndefinedWarn(logs, 'require_value', 'number', 'undefined');
@@ -117,5 +136,21 @@ mocha.describe('process custom component require param undefined type interop te
   mocha.it('warns once when a @Require @Param is initialized with undefined in V2', function() {
     const logs: TransformLogInfo[] = transformPage('validateRequireParamUndefinedTypeV2');
     expectSingleRequireUndefinedWarn(logs, 'require_param_value', 'string', 'undefined');
+  });
+
+  mocha.it('warns once per field for void expression and union variable in V1 extension', function() {
+    const logs: TransformLogInfo[] = transformPage('validateRequireParamUndefinedTypeExtension');
+    expectRequireUndefinedWarns(logs, [
+      { paramName: 'void_value', declaredType: 'number', actualType: 'undefined' },
+      { paramName: 'union_variable_value', declaredType: 'number', actualType: 'number | undefined' }
+    ]);
+  });
+
+  mocha.it('warns once per field for void expression and union variable in V2 extension', function() {
+    const logs: TransformLogInfo[] = transformPage('validateRequireParamUndefinedTypeExtensionV2');
+    expectRequireUndefinedWarns(logs, [
+      { paramName: 'void_param_value', declaredType: 'string', actualType: 'undefined' },
+      { paramName: 'union_param_value', declaredType: 'string', actualType: 'string | undefined' }
+    ]);
   });
 });

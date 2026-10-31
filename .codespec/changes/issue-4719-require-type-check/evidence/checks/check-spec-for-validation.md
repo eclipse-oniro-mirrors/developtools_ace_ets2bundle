@@ -1,7 +1,7 @@
 # Spec for Validation 检查
 
 - 结论: PASS
-- 时间: 2026-10-30T03:35:31+00:00
+- 时间: 2026-10-31T04:38:44+00:00
 
 | 检查项 | 结论 | 证据/问题 |
 |---|---|---|
@@ -12,7 +12,7 @@
 | 交付件类型 | PASS | frontmatter.artifact 必须为 spec-for-validation |
 | Spec 来源一致 | PASS | source_spec_hash 与当前 spec.md 不一致 |
 | Design 来源一致 | PASS | source_design_hash 与当前 design.md 不一致 |
-| AC 集合一致 | PASS | spec=['AC-1', 'AC-1.1', 'AC-1.2', 'AC-1.3', 'AC-1.4', 'AC-1.5', 'AC-1.6', 'AC-6'], spec-for-validation=['AC-1', 'AC-1.1', 'AC-1.2', 'AC-1.3', 'AC-1.4', 'AC-1.5', 'AC-1.6', 'AC-6'] |
+| AC 集合一致 | PASS | spec=['AC-1', 'AC-1.1', 'AC-1.2', 'AC-1.3', 'AC-1.4', 'AC-1.5', 'AC-1.6'], spec-for-validation=['AC-1', 'AC-1.1', 'AC-1.2', 'AC-1.3', 'AC-1.4', 'AC-1.5', 'AC-1.6'] |
 | Spec for Validation 无内部实现信息 | PASS | 满足 |
 | Spec for Validation 用户故事完整 | PASS | 满足 |
 | Spec for Validation 来源规格投影未改写 | PASS | 满足 |

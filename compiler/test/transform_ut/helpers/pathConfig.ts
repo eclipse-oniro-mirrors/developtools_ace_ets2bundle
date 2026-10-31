@@ -311,6 +311,8 @@ export const UT_VALIDATE_PAGES: string[] = [
   'Decorators/process_custom_component/validateReusableV2InRepeat',
   'Decorators/process_custom_component/validateRequireParamUndefinedType',
   'Decorators/process_custom_component/validateRequireParamUndefinedTypeV2',
+  'Decorators/process_custom_component/validateRequireParamUndefinedTypeExtension',
+  'Decorators/process_custom_component/validateRequireParamUndefinedTypeExtensionV2',
 
   'Decorators/process_struct_componentV2/param_require_once_check',
   'Decorators/process_struct_componentV2/v2Component_member_type_check',
