@@ -5137,120 +5137,120 @@
     ],
     "builder_decorator_d1_struct": [
         {
-            "message": "The '@Builder' decorator can only pass arguments when decorating a global function",
+            "message": "Only global functions decorated with @Builder support parameter passing.",
             "type": "ERROR",
             "code": "10905131"
         }
     ],
     "builder_decorator_d2_non_literal": [
         {
-            "message": "The '@Builder' decorator only supports passing a single object literal",
+            "message": "The @Builder decorator supports passing only object literals.",
             "type": "ERROR",
             "code": "10905132"
         },
         {
-            "message": "The '@Builder' decorator only supports passing a single object literal",
+            "message": "The @Builder decorator supports passing only object literals.",
             "type": "ERROR",
             "code": "10905132"
         },
         {
-            "message": "The '@Builder' decorator only supports passing a single object literal",
+            "message": "The @Builder decorator supports passing only object literals.",
             "type": "ERROR",
             "code": "10905132"
         },
         {
-            "message": "The '@Builder' decorator only supports passing a single object literal",
+            "message": "The @Builder decorator supports passing only object literals.",
             "type": "ERROR",
             "code": "10905132"
         },
         {
-            "message": "The '@Builder' decorator only supports passing a single object literal",
+            "message": "The @Builder decorator supports passing only object literals.",
             "type": "ERROR",
             "code": "10905132"
         }
     ],
     "builder_decorator_d4_has_param": [
         {
-            "message": "The '@Builder' function cannot have parameters when it serves as a placeholder",
+            "message": "An @Builder function with placeholder capabilities does not support parameter passing.",
             "type": "ERROR",
             "code": "10905134"
         }
     ],
     "builder_decorator_multi_violation": [
         {
-            "message": "The '@Builder' decorator can only pass arguments when decorating a global function",
+            "message": "Only global functions decorated with @Builder support parameter passing.",
             "type": "ERROR",
             "code": "10905131"
         },
         {
-            "message": "The '@Builder' decorator only supports passing a single object literal",
+            "message": "The @Builder decorator supports passing only object literals.",
             "type": "ERROR",
             "code": "10905132"
         },
         {
-            "message": "The '@Builder' function cannot have parameters when it serves as a placeholder",
+            "message": "An @Builder function with placeholder capabilities does not support parameter passing.",
             "type": "ERROR",
             "code": "10905134"
         }
     ],
     "builder_decorator_d3_strict_literal": [
         {
-            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
+            "message": "The 'isPlaceholder' option of the @Builder decorator only supports passing boolean literal.",
             "type": "ERROR",
             "code": "10905133"
         },
         {
-            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
+            "message": "The 'isPlaceholder' option of the @Builder decorator only supports passing boolean literal.",
             "type": "ERROR",
             "code": "10905133"
         },
         {
-            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
+            "message": "The 'isPlaceholder' option of the @Builder decorator only supports passing boolean literal.",
             "type": "ERROR",
             "code": "10905133"
         },
         {
-            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
+            "message": "The 'isPlaceholder' option of the @Builder decorator only supports passing boolean literal.",
             "type": "ERROR",
             "code": "10905133"
         },
         {
-            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
+            "message": "The 'isPlaceholder' option of the @Builder decorator only supports passing boolean literal.",
             "type": "ERROR",
             "code": "10905133"
         },
         {
-            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
+            "message": "The 'isPlaceholder' option of the @Builder decorator only supports passing boolean literal.",
             "type": "ERROR",
             "code": "10905133"
         },
         {
-            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
+            "message": "The 'isPlaceholder' option of the @Builder decorator only supports passing boolean literal.",
             "type": "ERROR",
             "code": "10905133"
         },
         {
-            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
+            "message": "The 'isPlaceholder' option of the @Builder decorator only supports passing boolean literal.",
             "type": "ERROR",
             "code": "10905133"
         },
         {
-            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
+            "message": "The 'isPlaceholder' option of the @Builder decorator only supports passing boolean literal.",
             "type": "ERROR",
             "code": "10905133"
         },
         {
-            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
+            "message": "The 'isPlaceholder' option of the @Builder decorator only supports passing boolean literal.",
             "type": "ERROR",
             "code": "10905133"
         },
         {
-            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
+            "message": "The 'isPlaceholder' option of the @Builder decorator only supports passing boolean literal.",
             "type": "ERROR",
             "code": "10905133"
         },
         {
-            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
+            "message": "The 'isPlaceholder' option of the @Builder decorator only supports passing boolean literal.",
             "type": "ERROR",
             "code": "10905133"
         }
