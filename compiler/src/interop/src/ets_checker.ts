@@ -121,7 +121,9 @@ import {
 } from './fast_build/ark_compiler/interop/process_arkts_evolution';
 import {
   FileManager,
-  isMixCompile
+  isMixCompile,
+  getOverrideDeclPath,
+  redirectToOverrideDeclFile
 } from './fast_build/ark_compiler/interop/interop_manager';
 import {
   ARKTS_1_1,
@@ -1620,7 +1622,7 @@ export function resolveModuleNames(moduleNames: string[], containingFile: string
           } else {
             // query sourceFilePath first time
             let queryResult = queryDeclFileForInterop(sourceFilePath, moduleName, languageVersion, result.resolvedModule, interopDeclNotFoundModules);
-            moduleItem = queryResult;
+            moduleItem = redirectToOverrideDeclFile(queryResult);
             declFilesCache.set(sourceFilePath, {
               module: moduleItem,
               cnt: 1
@@ -1711,7 +1713,9 @@ export function resolveModuleNames(moduleNames: string[], containingFile: string
             resolvedModules.push(getResolveModule(DETSModulePath, '.d.ets'));
           } else if (isMixCompile() && arktsEvoDeclFilePath && ts.sys.fileExists(arktsEvoDeclFilePath)) {
             const evoExt = arktsEvoDeclFilePath.endsWith(EXTNAME_D_ETS) ? EXTNAME_D_ETS : '.ets';
-            resolvedModules.push(getResolveModule(arktsEvoDeclFilePath, evoExt));
+            const targetDeclPath: string =
+              evoExt === EXTNAME_D_ETS ? getOverrideDeclPath(arktsEvoDeclFilePath) : arktsEvoDeclFilePath;
+            resolvedModules.push(getResolveModule(targetDeclPath, evoExt));
           } else {
             const srcIndex: number = projectConfig.projectPath.indexOf('src' + path.sep + 'main');
             let DETSModulePathFromModule: string;

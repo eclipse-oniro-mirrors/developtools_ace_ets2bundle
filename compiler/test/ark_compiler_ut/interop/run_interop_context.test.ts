@@ -15,6 +15,8 @@
 
 import { expect } from 'chai';
 import mocha from 'mocha';
+import fs from 'fs';
+import os from 'os';
 import path from 'path';
 
 import { InteropContext, run } from '../../../lib/fast_build/ark_compiler/interop/run_interop_context';
@@ -186,6 +188,176 @@ mocha.describe('InteropContext', () => {
         expect(config.files[expectedProjectFilePath].ohmUrl === expectedOhmUrl).to.be.true;
         expect(config.files[expectedProjectFilePath].declPath === expectedDeclPath).to.be.true;
     });
+    mocha.it('2-1: declPath points to override file when override exists', () => {
+        const tempDir: string = fs.mkdtempSync(path.join(os.tmpdir(), 'interop-override-decl-test-'));
+        try {
+            const modulePath: string = path.join(tempDir, 'har');
+            const sourceDir: string = path.join(modulePath, 'src/main/ets');
+            fs.mkdirSync(sourceDir, { recursive: true });
+            const sourceFilePath: string = path.join(sourceDir, 'a.ets');
+            fs.writeFileSync(sourceFilePath, 'export const a: number = 1;\n', 'utf-8');
+
+            const declgenV2OutPath: string = path.join(tempDir, 'har/build/declgenV2');
+            const declDir: string = path.join(declgenV2OutPath, 'src/main/ets');
+            fs.mkdirSync(declDir, { recursive: true });
+            const overrideDeclPath: string = path.join(declDir, 'a.override.d.ets');
+            fs.writeFileSync(overrideDeclPath, 'export declare const a: number;\n', 'utf-8');
+
+            const moduleInfo: ArkTSEvolutionModule = {
+                language: '1.1',
+                packageName: 'harOverride',
+                moduleName: 'harOverride',
+                modulePath: modulePath,
+                declgenV1OutPath: path.join(tempDir, 'har/build/declgenV1'),
+                declgenV2OutPath: declgenV2OutPath,
+                dynamicFiles: [sourceFilePath],
+                staticFiles: [],
+                cachePath: path.join(tempDir, 'har/build/cache'),
+                byteCodeHarInfo: [],
+                packageVersion: '1.0.0',
+                moduleType: 'har'
+            };
+            FileManager.arkTSModuleMap.set('harOverride', moduleInfo);
+
+            interopContext.addDeclFilesConfig(sourceFilePath, moduleInfo);
+
+            const expectedProjectFilePath = 'src/main/ets/a';
+            const config = interopContext['pkgDeclFilesConfig'][moduleInfo.packageName];
+            expect(config.files[expectedProjectFilePath].declPath === toUnixPath(overrideDeclPath)).to.be.true;
+            expect(config.files[expectedProjectFilePath].filePath === toUnixPath(sourceFilePath)).to.be.true;
+        } finally {
+            FileManager.arkTSModuleMap.delete('harOverride');
+            fs.rmSync(tempDir, { recursive: true, force: true });
+        }
+    });
+
+    mocha.it('2-2: declPath points to override file even when the original declaration file is missing', () => {
+        const tempDir: string = fs.mkdtempSync(path.join(os.tmpdir(), 'interop-override-only-decl-test-'));
+        try {
+            const modulePath: string = path.join(tempDir, 'har');
+            const sourceDir: string = path.join(modulePath, 'src/main/ets');
+            fs.mkdirSync(sourceDir, { recursive: true });
+            const sourceFilePath: string = path.join(sourceDir, 'c.ets');
+            fs.writeFileSync(sourceFilePath, 'export const c: number = 1;\n', 'utf-8');
+
+            const declgenV2OutPath: string = path.join(tempDir, 'har/build/declgenV2');
+            const declDir: string = path.join(declgenV2OutPath, 'src/main/ets');
+            fs.mkdirSync(declDir, { recursive: true });
+            // Only the override declaration exists; the generated c.d.ets is absent.
+            const overrideDeclPath: string = path.join(declDir, 'c.override.d.ets');
+            fs.writeFileSync(overrideDeclPath, 'export declare const c: number;\n', 'utf-8');
+
+            const moduleInfo: ArkTSEvolutionModule = {
+                language: '1.1',
+                packageName: 'harOverrideOnly',
+                moduleName: 'harOverrideOnly',
+                modulePath: modulePath,
+                declgenV1OutPath: path.join(tempDir, 'har/build/declgenV1'),
+                declgenV2OutPath: declgenV2OutPath,
+                dynamicFiles: [sourceFilePath],
+                staticFiles: [],
+                cachePath: path.join(tempDir, 'har/build/cache'),
+                byteCodeHarInfo: [],
+                packageVersion: '1.0.0',
+                moduleType: 'har'
+            };
+            FileManager.arkTSModuleMap.set('harOverrideOnly', moduleInfo);
+
+            interopContext.addDeclFilesConfig(sourceFilePath, moduleInfo);
+
+            const expectedProjectFilePath = 'src/main/ets/c';
+            const config = interopContext['pkgDeclFilesConfig'][moduleInfo.packageName];
+            expect(config.files[expectedProjectFilePath].declPath === toUnixPath(overrideDeclPath)).to.be.true;
+            expect(config.files[expectedProjectFilePath].filePath === toUnixPath(sourceFilePath)).to.be.true;
+        } finally {
+            FileManager.arkTSModuleMap.delete('harOverrideOnly');
+            fs.rmSync(tempDir, { recursive: true, force: true });
+        }
+    });
+
+    mocha.it('2-3: declPath only replaces the trailing .d.ets of the generated declaration', () => {
+        const tempDir: string = fs.mkdtempSync(path.join(os.tmpdir(), 'interop-override-trailing-test-'));
+        try {
+            const modulePath: string = path.join(tempDir, 'har');
+            const sourceDir: string = path.join(modulePath, 'src/main/ets');
+            fs.mkdirSync(sourceDir, { recursive: true });
+            const sourceFilePath: string = path.join(sourceDir, 'd.ets');
+            fs.writeFileSync(sourceFilePath, 'export const d: number = 1;\n', 'utf-8');
+
+            // The declgen output directory itself contains a .d.ets segment; only the
+            // trailing .d.ets of the generated declaration may be replaced.
+            const declgenV2OutPath: string = path.join(tempDir, 'har.d.ets/build/declgenV2');
+            const declDir: string = path.join(declgenV2OutPath, 'src/main/ets');
+            fs.mkdirSync(declDir, { recursive: true });
+            const overrideDeclPath: string = path.join(declDir, 'd.override.d.ets');
+            fs.writeFileSync(overrideDeclPath, 'export declare const d: number;\n', 'utf-8');
+
+            const moduleInfo: ArkTSEvolutionModule = {
+                language: '1.1',
+                packageName: 'harTrailingOverride',
+                moduleName: 'harTrailingOverride',
+                modulePath: modulePath,
+                declgenV1OutPath: path.join(tempDir, 'har/build/declgenV1'),
+                declgenV2OutPath: declgenV2OutPath,
+                dynamicFiles: [sourceFilePath],
+                staticFiles: [],
+                cachePath: path.join(tempDir, 'har/build/cache'),
+                byteCodeHarInfo: [],
+                packageVersion: '1.0.0',
+                moduleType: 'har'
+            };
+            FileManager.arkTSModuleMap.set('harTrailingOverride', moduleInfo);
+
+            interopContext.addDeclFilesConfig(sourceFilePath, moduleInfo);
+
+            const expectedProjectFilePath = 'src/main/ets/d';
+            const config = interopContext['pkgDeclFilesConfig'][moduleInfo.packageName];
+            expect(config.files[expectedProjectFilePath].declPath === toUnixPath(overrideDeclPath)).to.be.true;
+        } finally {
+            FileManager.arkTSModuleMap.delete('harTrailingOverride');
+            fs.rmSync(tempDir, { recursive: true, force: true });
+        }
+    });
+
+    mocha.it('2-4: declPath keeps original declaration path when override file does not exist', () => {
+        const tempDir: string = fs.mkdtempSync(path.join(os.tmpdir(), 'interop-no-override-decl-test-'));
+        try {
+            const modulePath: string = path.join(tempDir, 'har');
+            const sourceDir: string = path.join(modulePath, 'src/main/ets');
+            fs.mkdirSync(sourceDir, { recursive: true });
+            const sourceFilePath: string = path.join(sourceDir, 'b.ets');
+            fs.writeFileSync(sourceFilePath, 'export const b: number = 1;\n', 'utf-8');
+
+            const declgenV2OutPath: string = path.join(tempDir, 'har/build/declgenV2');
+            const moduleInfo: ArkTSEvolutionModule = {
+                language: '1.1',
+                packageName: 'harNoOverride',
+                moduleName: 'harNoOverride',
+                modulePath: modulePath,
+                declgenV1OutPath: path.join(tempDir, 'har/build/declgenV1'),
+                declgenV2OutPath: declgenV2OutPath,
+                dynamicFiles: [sourceFilePath],
+                staticFiles: [],
+                cachePath: path.join(tempDir, 'har/build/cache'),
+                byteCodeHarInfo: [],
+                packageVersion: '1.0.0',
+                moduleType: 'har'
+            };
+            FileManager.arkTSModuleMap.set('harNoOverride', moduleInfo);
+
+            interopContext.addDeclFilesConfig(sourceFilePath, moduleInfo);
+
+            const expectedProjectFilePath = 'src/main/ets/b';
+            const expectedDeclPath = toUnixPath(path.join(declgenV2OutPath, expectedProjectFilePath + '.d.ets'));
+            const config = interopContext['pkgDeclFilesConfig'][moduleInfo.packageName];
+            expect(config.files[expectedProjectFilePath].declPath === expectedDeclPath).to.be.true;
+            expect(config.files[expectedProjectFilePath].filePath === toUnixPath(sourceFilePath)).to.be.true;
+        } finally {
+            FileManager.arkTSModuleMap.delete('harNoOverride');
+            fs.rmSync(tempDir, { recursive: true, force: true });
+        }
+    });
+
     mocha.after(() => {
         FileManager.cleanFileManagerObject();
     });
