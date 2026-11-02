@@ -309,6 +309,36 @@ export function findBuilderDecorator(decorators: readonly ts.Decorator[]): ts.De
 }
 
 /**
+ * Evaluates a constant boolean expression: boolean keywords combined via '&&', '||', '!'
+ * and parentheses. Returns undefined for anything not compile-time evaluable.
+ */
+function evaluateConstantBoolean(node: ts.Expression): boolean | undefined {
+  if (node.kind === ts.SyntaxKind.TrueKeyword) {
+    return true;
+  }
+  if (node.kind === ts.SyntaxKind.FalseKeyword) {
+    return false;
+  }
+  if (ts.isParenthesizedExpression(node)) {
+    return evaluateConstantBoolean(node.expression);
+  }
+  if (ts.isPrefixUnaryExpression(node) && node.operator === ts.SyntaxKind.ExclamationToken) {
+    const operand: boolean | undefined = evaluateConstantBoolean(node.operand);
+    return operand === undefined ? undefined : !operand;
+  }
+  if (ts.isBinaryExpression(node) && (node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken ||
+    node.operatorToken.kind === ts.SyntaxKind.BarBarToken)) {
+    const left: boolean | undefined = evaluateConstantBoolean(node.left);
+    const right: boolean | undefined = evaluateConstantBoolean(node.right);
+    if (left === undefined || right === undefined) {
+      return undefined;
+    }
+    return node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken ? left && right : left || right;
+  }
+  return undefined;
+}
+
+/**
  * Parses the options of an @Builder decorator (shared by validate and transform).
  */
 export function parseBuilderDecoratorOptions(decorators: readonly ts.Decorator[]):
@@ -334,18 +364,20 @@ export function parseBuilderDecoratorOptions(decorators: readonly ts.Decorator[]
       !isDecoratorOptionKey(property.name, BUILDER_DECORATOR_OPTION_IS_PLACEHOLDER)) {
       continue;
     }
-    if (property.initializer.kind === ts.SyntaxKind.TrueKeyword ||
-      property.initializer.kind === ts.SyntaxKind.FalseKeyword) {
+    // constant boolean expressions (e.g. 'true && false') fold per the static
+    // front-end's constant-folding semantics
+    const evaluated: boolean | undefined = evaluateConstantBoolean(property.initializer);
+    if (evaluated !== undefined) {
       if (placeholderValue === undefined) {
-        placeholderValue = property.initializer.kind === ts.SyntaxKind.TrueKeyword;
+        placeholderValue = evaluated;
       }
     } else {
       hasInvalidPlaceholder = true;
     }
   }
   if (hasInvalidPlaceholder) {
-    // non-empty literal with an isPlaceholder whose value is not a boolean literal:
-    // variables, enums, numbers, strings etc. are rejected (D-3)
+    // non-boolean, non-constant isPlaceholder (variables, enums, numbers, strings etc.)
+    // is rejected (D-3)
     return { present: false, isPlaceholder: false, valueInvalid: true };
   }
   if (placeholderValue !== undefined) {

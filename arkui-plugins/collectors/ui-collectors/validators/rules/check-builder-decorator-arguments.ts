@@ -30,9 +30,9 @@ import {
 import { getAnnotationUsageByName } from '../utils';
 import { getPerfName, performanceLog } from '../../../../common/debug';
 
-export const checkBuilderPlaceholderNoParam = performanceLog(
-    _checkBuilderPlaceholderNoParam,
-    getPerfName([0, 0, 0, 0, 0], 'checkBuilderPlaceholderNoParam')
+export const checkBuilderPlaceholderOptions = performanceLog(
+    _checkBuilderPlaceholderOptions,
+    getPerfName([0, 0, 0, 0, 0], 'checkBuilderPlaceholderOptions')
 );
 
 export const checkBuilderMethodDecoratorArguments = performanceLog(
@@ -46,37 +46,60 @@ export const checkBuilderFieldDecoratorArguments = performanceLog(
 );
 
 const BUILDER_DECORATOR_ARGUMENTS_MESSAGE: string =
-    `The '@Builder' decorator can only pass arguments when decorating a global function`;
+    `Only global functions decorated with @Builder support parameter passing.`;
 const BUILDER_PLACEHOLDER_NO_PARAM_MESSAGE: string =
-    `The '@Builder' function cannot have parameters when it serves as a placeholder`;
+    `An @Builder function with placeholder capabilities does not support parameter passing.`;
+const BUILDER_PLACEHOLDER_BOOL_ONLY_MESSAGE: string =
+    `The 'isPlaceholder' option of the @Builder decorator only supports passing boolean literal.`;
 
 /**
- * Read the `isPlaceholder` option of a `Builder` annotation usage. Only an explicit boolean
- * literal counts; any other form yields undefined (invalid forms are rejected by the
- * front-end/checker via the typed `@interface Builder` declaration).
+ * Single-pass parse of a Builder annotation's isPlaceholder option: only an explicit
+ * boolean literal counts; other forms are rejected by the front-end via the typed
+ * `@interface Builder` declaration.
  */
-export function getIsPlaceholderOption(annotation: arkts.AnnotationUsage): boolean | undefined {
+interface BuilderPlaceholderParseResult {
+    /** Value of the first explicit boolean-literal `isPlaceholder` property. */
+    placeholderValue: boolean | undefined;
+    /** An `isPlaceholder` key exists whose value is not a boolean literal. */
+    hasInvalidPlaceholder: boolean;
+}
+
+function parseBuilderPlaceholderOptions(
+    annotation: arkts.AnnotationUsage
+): BuilderPlaceholderParseResult {
+    const result: BuilderPlaceholderParseResult = {
+        placeholderValue: undefined,
+        hasInvalidPlaceholder: false,
+    };
     for (const property of annotation.properties) {
         if (
-            arkts.isClassProperty(property) &&
-            property.key &&
-            arkts.isIdentifier(property.key) &&
-            property.key.name === BUILDER_DECORATOR_OPTION_IS_PLACEHOLDER &&
-            property.value &&
-            arkts.isBooleanLiteral(property.value)
+            !arkts.isClassProperty(property) ||
+            !property.key ||
+            !arkts.isIdentifier(property.key) ||
+            property.key.name !== BUILDER_DECORATOR_OPTION_IS_PLACEHOLDER
         ) {
-            return property.value.value;
+            continue;
+        }
+        if (property.value && arkts.isBooleanLiteral(property.value)) {
+            if (result.placeholderValue === undefined) {
+                result.placeholderValue = property.value.value;
+            }
+        } else {
+            result.hasInvalidPlaceholder = true;
         }
     }
-    return undefined;
+    return result;
 }
 
 /**
- * 校验规则（D-4）：全局 `@Builder({ isPlaceholder: true })` 函数不可声明参数。
- *
- * 校验等级：error
+ * Rules D-3 + D-4 for global @Builder functions: one annotation lookup and one property
+ * pass for both.
+ * - D-3: a passed options object must carry an explicit boolean isPlaceholder. Checker
+ *   folds constants and the front-end rejects dirty forms, so this is defense-in-depth.
+ *   Bare '@Builder'/'@Builder()'/'@Builder({})' stay lenient, same as the dynamic side.
+ * - D-4: explicit true plus declared parameters.
  */
-function _checkBuilderPlaceholderNoParam(
+function _checkBuilderPlaceholderOptions(
     this: BaseValidator<arkts.MethodDefinition, FunctionInfo>,
     node: arkts.MethodDefinition
 ): void {
@@ -84,10 +107,23 @@ function _checkBuilderPlaceholderNoParam(
     if (!builderAnnotation) {
         return;
     }
-    if (getIsPlaceholderOption(builderAnnotation) !== true) {
+    const properties = builderAnnotation.properties;
+    if (!properties || properties.length === 0) {
+        // bare '@Builder' / '@Builder()' / '@Builder({})': lenient, same as the dynamic side
         return;
     }
-    if (node.function && node.function.params.length > 0) {
+    const parsed = parseBuilderPlaceholderOptions(builderAnnotation);
+    if (parsed.hasInvalidPlaceholder || parsed.placeholderValue === undefined) {
+        // D-3 (defense-in-depth): non-empty literal without an explicit boolean isPlaceholder
+        this.report({
+            node: builderAnnotation,
+            level: LogType.ERROR,
+            message: BUILDER_PLACEHOLDER_BOOL_ONLY_MESSAGE,
+        });
+        return;
+    }
+    if (parsed.placeholderValue === true && node.function && node.function.params.length > 0) {
+        // D-4: placeholder builder declaring parameters
         this.report({
             node: builderAnnotation,
             level: LogType.ERROR,
@@ -97,10 +133,8 @@ function _checkBuilderPlaceholderNoParam(
 }
 
 /**
- * 校验规则（D-1）：struct/普通 class 成员方法的 `@Builder` 装饰器不可携带实参（任意形态，
- * 含单值合成键）；裸 `@Builder` 与 `@Builder()` 不受影响。
- *
- * 校验等级：error
+ * Rule D-1: struct/normal-class member method @Builder must not carry arguments;
+ * bare '@Builder' and '@Builder()' stay legal.
  */
 function _checkBuilderMethodDecoratorArguments(
     this: BaseValidator<arkts.MethodDefinition, StructMethodInfo | NormalClassMethodInfo>,
@@ -120,10 +154,8 @@ function _checkBuilderMethodDecoratorArguments(
 }
 
 /**
- * 校验规则（D-1）：struct/普通 class 成员属性（class field）的 `@Builder` 装饰器同样不可
- * 携带实参——占位 Builder 契约仅覆盖全局函数，字段位置声明装饰器参数即误用。
- *
- * 校验等级：error
+ * Rule D-1: struct/normal-class member property @Builder must not carry arguments either
+ * (the placeholder contract covers global functions only).
  */
 function _checkBuilderFieldDecoratorArguments(
     this: BaseValidator<arkts.ClassProperty, StructPropertyInfo | NormalClassPropertyInfo>,

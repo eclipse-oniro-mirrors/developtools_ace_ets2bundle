@@ -1091,7 +1091,7 @@ function validateMemberBuilderDecoratorArguments(node: ts.MethodDeclaration,
   if (builderDecorator && ts.isCallExpression(builderDecorator.expression) &&
     builderDecorator.expression.arguments.length) {
     addLog(LogType.ERROR,
-      'The \'@Builder\' decorator can only pass arguments when decorating a global function',
+      'Only global functions decorated with @Builder support parameter passing.',
       builderDecorator.getStart(), log, sourceFileNode,
       { code: ERROR_CODE_BUILDER_DECORATOR_ONLY_GLOBAL });
   }
@@ -1111,7 +1111,7 @@ function validateGlobalBuilderDecoratorArguments(node: ts.FunctionDeclaration,
     // undefined has exactly one meaning here: the decorator passes arguments that
     // are not a single options object literal
     addLog(LogType.ERROR,
-      'The \'@Builder\' decorator only supports passing a single object literal',
+      'The @Builder decorator supports passing only object literals.',
       pos, log, sourceFileNode, { code: ERROR_CODE_BUILDER_DECORATOR_LITERAL_ONLY });
     return;
   }
@@ -1119,13 +1119,13 @@ function validateGlobalBuilderDecoratorArguments(node: ts.FunctionDeclaration,
     // non-empty literal carries no explicit boolean isPlaceholder: key missing,
     // misspelled, or value not a boolean literal
     addLog(LogType.ERROR,
-      'The \'isPlaceholder\' option of the \'@Builder\' decorator only supports passing true/false',
+      'The \'isPlaceholder\' option of the @Builder decorator only supports passing boolean literal.',
       pos, log, sourceFileNode, { code: ERROR_CODE_BUILDER_PLACEHOLDER_BOOL_ONLY });
     return;
   }
   if (options.isPlaceholder && node.parameters.length) {
     addLog(LogType.ERROR,
-      'The \'@Builder\' function cannot have parameters when it serves as a placeholder',
+      'An @Builder function with placeholder capabilities does not support parameter passing.',
       pos, log, sourceFileNode, { code: ERROR_CODE_BUILDER_PLACEHOLDER_NO_PARAM });
   }
 }
