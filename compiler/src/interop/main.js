@@ -223,6 +223,10 @@ function loadEntryObj(projectConfig) {
         pages.forEach((element) => {
           const sourcePath = element.replace(/^\.\/ets\//, '');
           const fileName = path.resolve(projectConfig.projectPath, sourcePath + '.ets');
+          const atsFileName = path.resolve(projectConfig.projectPath, sourcePath + '.ats');
+          if (fs.existsSync(atsFileName)) {
+            return;
+          }
           if (fs.existsSync(fileName)) {
             projectConfig.entryObj['./' + sourcePath] = fileName + '?entry';
             // Collect the file paths in main_pages.json

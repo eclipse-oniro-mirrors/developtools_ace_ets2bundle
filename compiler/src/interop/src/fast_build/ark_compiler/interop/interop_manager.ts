@@ -60,7 +60,8 @@ import {
   ARKTS_HYBRID
 } from './pre_define';
 import { EXTNAME_D_ETS } from '../common/ark_define';
-import { readFirstLineSync } from './utils';
+import { EXTNAME_D_ATS } from '../../../pre_define';
+import { isStaticSourceFile } from './utils';
 
 export const entryFileLanguageInfo = new Map();
 export let workerFile = null;
@@ -457,8 +458,7 @@ export class FileManager {
       return moduleMatch;
     }
 
-    const firstLine = readFirstLineSync(filePath);
-    if (firstLine.includes('use static')) {
+    if (isStaticSourceFile(filePath)) {
       return {
         languageVersion: ARKTS_1_2,
         pkgName: ''
@@ -760,7 +760,7 @@ export function processAbilityPagesFullPath(abilityPagesFullPath: Set<string>): 
     return;
   }
 
-  const extensions = ['.ts', '.ets'];
+  const extensions = ['.ts', '.ets', '.ats'];
 
   for (const filePath of Array.from(abilityPagesFullPath)) {
     let realPath: string | null = null;
@@ -777,8 +777,7 @@ export function processAbilityPagesFullPath(abilityPagesFullPath: Set<string>): 
       continue;
     }
 
-    const firstLine = readFirstLineSync(realPath);
-    if (firstLine.includes('use static')) {
+    if (isStaticSourceFile(realPath)) {
       abilityPagesFullPath.delete(filePath);
     }
   }
@@ -1189,6 +1188,17 @@ export function destroyInterop(): void {
 }
 
 const OVERRIDE_DECL_SUFFIX: string = '.override';
+
+/** Selects a declgenV2 declaration, preferring overrides and ATS suffixes. */
+export function getDeclgenV2DeclPath(declBasePath: string): string {
+  const candidates: string[] = [
+    OVERRIDE_DECL_SUFFIX + EXTNAME_D_ATS,
+    OVERRIDE_DECL_SUFFIX + EXTNAME_D_ETS,
+    EXTNAME_D_ATS,
+    EXTNAME_D_ETS
+  ].map(suffix => declBasePath + suffix);
+  return candidates.find(candidate => fs.existsSync(candidate)) || declBasePath + EXTNAME_D_ETS;
+}
 
 /**
  * When the user provides an override declaration file next to the generated interop
