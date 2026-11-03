@@ -5,7 +5,7 @@ status: Approved
 source_spec: spec.md
 source_spec_hash: 2188bc41b4e0fe56cfc112a52073dadf9a0a925179eeda5aa362fc891a7260be
 source_design: design.md
-source_design_hash: a416f7352dc3fb173b980ed8ae0eea0ba0d0458cb694dc9d6398994cb11dbcc9
+source_design_hash: 103d131c760afde6f5c0c11754fa6cdd43a42aee07e989e0729759b69df5b4fb
 source_consistency: current
 profile: arkui
 subprofiles: []
@@ -34,10 +34,10 @@ generated_at: 2026-10-31T07:09:54+00:00
 | 目标版本 | OpenHarmony-7.1-Release（引用 proposal.target_release） |
 | SIG归属 | 无（单仓编译工具链变更） |
 | 来源规格状态 | Approved |
-| 产物状态 | Approved（v1.9 修订稿经 owner 批准——2026-10-31 对 PR #1747（design-docs 归档）10 条评审意见逐项拍板后指示修订，行为契约与代码零变更；v1.8 已批准——owner 指示「根据新的规格，更新代码实现」；v1.5/v1.7 历史版本已批准，见第十一章追认记录） |
+| 产物状态 | Approved（v1.10 修订稿经 owner 批准——2026-11-03 指示将 interop 专属单测从交付 MR 剔除并同步修订测试范围声明（仅业务仓），行为契约与代码零变更；v1.9 修订稿经 owner 批准——2026-10-31 对 PR #1747（design-docs 归档）10 条评审意见逐项拍板后指示修订，行为契约与代码零变更；v1.8 已批准——owner 指示「根据新的规格，更新代码实现」；v1.5/v1.7 历史版本已批准，见第十一章追认记录） |
 | 复杂度 | 简单 |
 | 创建日期 | 2026-10-29 |
-| 最后更新 | 2026-10-31 |
+| 最后更新 | 2026-11-03 |
 
 ---
 
@@ -191,7 +191,7 @@ N/A：不变更、不废弃任何 API。
 | 跨平台验证项 | 内容 | 关联 AC | 测试侧验证方式 |
 |---|---|---|---|
 | ArkUI-X 工程（iOS & Android）端到端构建 | ArkUI-X 工程中向 `@Require` 修饰且声明类型不含 `undefined` 的字段显式传入 `undefined` 或解析类型含 `undefined` 的值（`void 0`、联合类型变量），构建输出与本仓同契约的 WARNING（消息模板/级别/定位一致） | AC-1.1、AC-1.2、AC-1.6 | 后续验证项（本轮不闭环）：待本特性合入 OpenHarmony 主干且 ArkUI-X 工具链同步后执行——Android 目标可在 Linux/Windows 构建环境验证，iOS 目标需 macOS + Xcode 环境 |
-| interop 镜像一致性（仓内架构铁律，非跨平台实测） | 主链路告警逻辑同步实现于 interop 镜像（仓内架构铁律，非 AC 验收项）；AC-1.1/AC-1.2/AC-1.6 场景（含 v1.8 类型级触发场景）在 interop 链路下行为与主链路一致 | —（非 AC） | 既有 interop 回归测试保留为附加覆盖（v1.8 起新增类型级触发用例）：`cd compiler && npm run interopArkTest`（不设 AC 验证点） |
+| interop 镜像一致性（仓内架构铁律，非跨平台实测） | 主链路告警逻辑同步实现于 interop 镜像（仓内架构铁律，非 AC 验收项）；AC-1.1/AC-1.2/AC-1.6 场景（含 v1.8 类型级触发场景）在 interop 链路下行为与主链路一致 | —（非 AC） | 既有 interop 回归套件保留为常规回归（本特性专属 interop 用例已随 v1.10 从交付 MR 剔除——镜像一致性由仓内镜像同步纪律承载，本特性在 interop 链路无 MR 内行为级断言，见第十一章 v1.10 修订记录）：`cd compiler && npm run interopArkTest`（不设 AC 验证点） |
 
 ---
 
@@ -423,7 +423,7 @@ N/A：本特性为编译期静态诊断，无运行时非功能指标（依据 p
 | 文档 | 路径 | 状态/Hash |
 |---|---|---|
 | spec.md | `spec.md` | Approved / `2188bc41b4e0fe56cfc112a52073dadf9a0a925179eeda5aa362fc891a7260be` |
-| design.md | `design.md` | Approved / `a416f7352dc3fb173b980ed8ae0eea0ba0d0458cb694dc9d6398994cb11dbcc9` |
+| design.md | `design.md` | Approved / `103d131c760afde6f5c0c11754fa6cdd43a42aee07e989e0729759b69df5b4fb` |
 | Profile playbook | `analysis/arkui/spec-for-validation.md` | Active |
 
 ## 十一、来源与审批
@@ -431,7 +431,7 @@ N/A：本特性为编译期静态诊断，无运行时非功能指标（依据 p
 | 项 | 内容 |
 |---|---|
 | Spec 来源 | `spec.md` / `2188bc41b4e0fe56cfc112a52073dadf9a0a925179eeda5aa362fc891a7260be` |
-| Design 来源 | `design.md` / `a416f7352dc3fb173b980ed8ae0eea0ba0d0458cb694dc9d6398994cb11dbcc9` |
+| Design 来源 | `design.md` / `103d131c760afde6f5c0c11754fa6cdd43a42aee07e989e0729759b69df5b4fb` |
 | 开发/Spec Owner 结论 | Approved |
 | 测试 Owner 结论 | Approved |
 
@@ -446,6 +446,8 @@ N/A：本特性为编译期静态诊断，无运行时非功能指标（依据 p
 > v1.8 批准与交付追认记录（2026-10-31，@youzhi92 同 owner 双角色签署）：owner 批准 v1.8 文档链（「批准，文档链先行（推荐）」）后于同日指示「根据新的规格，更新代码实现」（= execution-plan v1.8 修订获批 + TASK-4 执行授权），本文档随文档链获批置 Approved。TASK-4 已交付并经 Red→Green 闭合：etsTest 359 passing / 2 failing、interopArkTest 1124 passing / 19 failing（fresh，三态失败集对照零漂移），验证点7/8 测试输入已由 Extension fixture（`validateRequireParamUndefinedTypeExtension.ets`/`...ExtensionV2.ets`）承载；执行侧回填见 execution-plan.md（AC 追溯/范围映射/Verification）与 evidence/reviews/ 三份 v1.8 增补段；证据 `evidence/checks/task4-red-green/`。Commit 已落地：单 commit（Change-Id Ia0e5e0a，代码+文档同 commit，2026-10-31 owner 指令上传并触发门禁）。
 >
 > v1.9 修订记录（2026-10-31，@youzhi92 逐项拍板 PR #1747 评审意见处置、同 owner 双角色签署）：按 design-docs 归档 PR #1747 评审意见（TerryTsao/caojin 10 条，owner 逐项拍板「1. 是，2. B，3. 不做，4. 不关闭，5. 我已手动回复，不用处理。」并补充「跨平台改成是」）修订测试输入——第一至四章经 `refresh` 同步 spec.md v1.9（用户故事角色措辞「鸿蒙应用开发者」、AC-1.1 THEN 内嵌消息模板、AC-1.2/AC-1.6 改引用该模板、AC-1.1/AC-1.5 补数组/集合口径、R-5 触发条件与边界列补数组/集合字面量元素示例、类型判定矩阵后新增数组/集合两维度注记）；5.3 跨平台定性修正——跨平台指 ArkUI-X 工程（iOS & Android），本告警产生于平台打包前的 ArkTS 编译阶段，ArkUI-X 工具链与本仓同源（ets_loader 派生、arkoala-plugin 为接入点），ArkUI-X 端到端构建登记为后续验证项（待本特性合入且 ArkUI-X 工具链同步后执行；Android 目标可在 Linux/Windows 环境验证，iOS 目标需 macOS），interop 降格为「仓内镜像铁律」表述（原「interop=跨平台」定性为 2026-10-29 修复追认记录的历史表述，历史记录不改写）；5.5 错误信息列消息文本加反引号并补数组/集合场景括注；5.12 不涉及理由补强（自解释型诊断文案内含字段名/期望类型/实际类型与定位，存量行为说明由版本发布说明承载）；6.1 补编译性能影响分析（挂既有构造传参校验遍历、O(命中字段数) 有界、既有实测无可感知漂移）；八章 AC-1.5 验证点补数组/集合元素级反例；术语表 interop 定义去跨平台化；source_spec_hash 同步回填（design 未变更，hash 不动）。行为契约（触发条件/级别/文案模板/定位/反例边界）与代码零变更，本修订随 owner 逐项拍板即生效。CLI check 15/15 PASS；validate --level all 46 checks / 0 broken / 0 warn PASS。
+>
+> v1.10 修订记录（2026-11-03，@youzhi92 指示剔除、同 owner 双角色签署）：按 owner 会话指示（MR #7243 剔除 interop 专属单测文件 `compiler/test/ark_compiler_ut/interop/process_custom_component.test.ts`——commit 60eff618，Change-Id Ibe0dab28；且仅修订业务仓 .codespec，design-docs PR #1747 不动）同步修订测试范围声明——5.3 interop 行测试侧验证方式改述（专属用例已剔除、镜像链路无 MR 内行为级断言、`interopArkTest` 回归套件保留为常规回归）、附录术语表 interop 行同步、元信息产物状态与最后更新；范围包含项7（proposal）由「主链路+interop 双路径」调整为主链路端到端断言承载（design/execution-plan 范围声明同步注记）。AC 验证点（VM-1～VM-5、VM-7～VM-8）全部由主链路 transform_ut fixture 端到端断言承载，不受影响；行为契约（触发条件/级别/文案模板/定位/反例边界）与代码实现零变更。source_design_hash 同步回填（design.md 范围声明注记）；source_spec_hash 不变（spec.md 无变更）。CLI check 15/15 PASS；validate --level all 46 checks / 0 broken / 0 warn PASS。
 
 ## 附录：术语表
 
@@ -453,7 +455,7 @@ N/A：本特性为编译期静态诊断，无运行时非功能指标（依据 p
 |---|---|
 | 2D | 能力特征维度分析 |
 | 2C | 功能体验维度分析 |
-| interop 编译模式 | 本仓工具链的仓内镜像构建链路：`compiler/src/interop/src/` 自包含镜像工具链 + `fast_build/ets_ui` 插件集（含 `arkoala-plugin.ts`），主链路改动须同步镜像副本（仓内架构铁律）；行为一致性由既有 interop 回归测试附加承载（非 AC 验收项）。注（v1.9 修订）：interop 为仓内镜像机制，不等于跨平台构建本身——跨平台指 ArkUI-X 工程（iOS & Android 目标），见 5.3 |
+| interop 编译模式 | 本仓工具链的仓内镜像构建链路：`compiler/src/interop/src/` 自包含镜像工具链 + `fast_build/ets_ui` 插件集（含 `arkoala-plugin.ts`），主链路改动须同步镜像副本（仓内架构铁律）；行为一致性由仓内镜像同步纪律承载，`interopArkTest` 回归套件保留为常规回归（非 AC 验收项；本特性专属 interop 用例已随 v1.10 从交付 MR 剔除）。注（v1.9 修订）：interop 为仓内镜像机制，不等于跨平台构建本身——跨平台指 ArkUI-X 工程（iOS & Android 目标），见 5.3 |
 | non-null 字段 | 声明类型不含 `undefined` 成员的字段（类型别名经解析后判定，见第二章类型判定口径表） |
 | 消息模板 | WARN 诊断的固定英文文案模板（R-1/R-2 统一，`${paramName}` 为字段名占位） |
 | Red 条件 | TDD 红灯信号：实现前运行验证命令应观察到的断言失败（spec.md 验证映射表列） |

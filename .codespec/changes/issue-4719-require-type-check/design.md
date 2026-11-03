@@ -65,7 +65,7 @@
 | 组件校验层 | src/process_custom_component.ts / validateCustomComponentPrams | 构造传参合法性校验（本变更落点） | 修改 |
 | 类型判定 | 同文件新增私有校验函数 + CurrentProcessFile.getChecker | @Require 字段声明类型解析与 undefined 成员判定 | 新增 |
 | interop 镜像 | src/interop/src/process_custom_component.ts | 与主链路行为一致的镜像校验 | 修改（同步副本） |
-| 测试层 | test/transform_ut/… + test/ark_compiler_ut/interop/ | fixture + 期望日志断言 | 新增用例 |
+| 测试层 | test/transform_ut/… + test/ark_compiler_ut/interop/（interop 专属单测 v1.10 已从交付 MR 剔除） | fixture + 期望日志断言 | 新增用例 |
 
 **检查项：** 调用链每层已覆盖（构建编排→检查→变换→校验→镜像→测试）；每层职责边界清晰，无跨层违规（校验仅消费既有 Program，不新增跨层调用）；每层修改类型明确。
 
@@ -90,7 +90,7 @@
 | 显式 undefined 标识符判定 | compiler/src/fast_build/system_api/api_validator/api_validate_node.ts:168 | — | ts.isIdentifier(node) && node.text === 'undefined' | v1.5 直接复用；v1.8 演进为类型级判定（解析类型含 `undefined` 成员，`any`/`unknown` 排除），语法级判定被替换 | owner 2026-10-31 确认语法级可绕过（`void 0`/联合变量） | TASK-4 |
 | 类型别名解析助手 | compiler/src/utils.ts:1583（getOriginPropertyType） | — | visitedTypes 环保护递归；仅处理 aliasSymbol 场景 | 按需复用（checker 原生解析已覆盖常规场景） | 无 | TASK-1 |
 | interop 镜像同步 | compiler/src/interop/src/process_custom_component.ts:1558（平行副本） | 仓内规则（镜像同步） | 逐行镜像改动 + 目录内相对导入，不共享模块 | 直接复用（同一改动复制至镜像文件） | 无 | TASK-2 |
-| fixture+期望日志测试 | compiler/test/transform_ut/ut_validate.test.ts:88（ERROR_COLLECTION_PATH）+ compiler/test/transform_ut_error.json:2 + compiler/test/transform_ut/helpers/pathConfig.ts:248（UT_VALIDATE_PAGES） | 仓内规则 | UT_VALIDATE_PAGES 注册 fixture 页；期望 WARN/ERROR 条目登记 JSON；mocha 断言计数与文案 | 扩展（新 fixture 页 + 期望条目 + interop 用例） | 无 | TASK-3 |
+| fixture+期望日志测试 | compiler/test/transform_ut/ut_validate.test.ts:88（ERROR_COLLECTION_PATH）+ compiler/test/transform_ut_error.json:2 + compiler/test/transform_ut/helpers/pathConfig.ts:248（UT_VALIDATE_PAGES） | 仓内规则 | UT_VALIDATE_PAGES 注册 fixture 页；期望 WARN/ERROR 条目登记 JSON；mocha 断言计数与文案 | 扩展（新 fixture 页 + 期望条目 + interop 用例——该用例 v1.10 已从交付 MR 剔除） | 无 | TASK-3 |
 
 ## 不涉及项承接
 
@@ -110,7 +110,7 @@
 | ADR-2 | 校验逻辑插入点 | 新增独立函数（暂名 validateRequireParamUndefinedType），在 validateCustomComponentPrams 中与既有三个 validate* 并列调用 | ① 内联进 :1552 properties.forEach 循环：循环已承载多项职责，混入类型判定增加耦合，放弃；② 扩展 validateInitDecorator：其语义是"必传缺失"（ERROR），混入"传值类型"（WARN）模糊两类行为边界，放弃 | 与既有校验函数族同构；V1/V2 经同一入口天然覆盖（AC-1.1/1.2）；@Builder 内同文件使用点同样进入校验并告警（探针实证，属 R-1 字面范围） | 主链路单点修改；AC-1.1/1.2 |
 | ADR-3 | @Require 成员判定来源 | V1：decoratorVariable 同源集合（5 个 Initialization 并集，与 10905359 同源）；V2：paramDecoratorMap.hasRequire（与 10905321 同源） | 直接扫描 struct 成员装饰器文本：独立实现第二套 @Require 识别，可能与既有集合语义漂移（如跨文件 storedFileInfo 合并），放弃 | 与既有必传校验完全同源，行为一致由构造保证 | AC-1.1/1.2/1.4 |
 | ADR-4 | 传入值 undefined 判定（v1.8 升级为类型级） | 顶层 PropertyAssignment.initializer 的解析类型含 `undefined` 成员即命中：`undefined` 标识符、`void` 表达式（如 `void 0`）、类型含 `undefined` 的变量/表达式；空值守卫（`!== undefined`）收窄后解析类型不含 `undefined` 不命中；`any`/`unknown`（类型不明）排除。声明类型判定门（含 `undefined`/`any`/`unknown`/不可解析→跳过）保持在前 | ① 语法级判定（isIdentifier && text === 'undefined'，v1.5 方案）：`void 0`（VoidExpression）与联合类型变量可绕过，owner 2026-10-31 确认缺口，放弃；② getText() 字符串比较：受格式/注释影响，放弃；③ 递归检查嵌套对象属性内部：违背 AC-1.5/R-5（仅顶层），放弃 | 探针实证（fork linter checker）：收窄豁免成立（流分析生效）、typeToString 渲染即 got 段（`undefined`/联合文本）、`any` 排除守住零误报（与声明侧 R-6 同向保守）；Shorthand/Spread/Method 等非 PropertyAssignment 形态自然排除 | AC-1.6 正例 + AC-1.5 零误报；VM-7/VM-8 |
-| ADR-5 | 诊断输出契约 | log.push({ type: LogType.WARN, message: spec 固定英文模板（paramName 插值）, pos: item.getStart() })，无 code 字段 | 锚定整个 CallExpression（10905359 风格）：spec R-1 已固定为传参属性节点锚点（`字段名: undefined` 行），放弃 | O-3 无码决策 + spec 消息模板为固定契约；属性级锚点定位更精确 | VM-1～VM-5、VM-7～VM-8 的文案/计数断言（interop 用例附加覆盖） |
+| ADR-5 | 诊断输出契约 | log.push({ type: LogType.WARN, message: spec 固定英文模板（paramName 插值）, pos: item.getStart() })，无 code 字段 | 锚定整个 CallExpression（10905359 风格）：spec R-1 已固定为传参属性节点锚点（`字段名: undefined` 行），放弃 | O-3 无码决策 + spec 消息模板为固定契约；属性级锚点定位更精确 | VM-1～VM-5、VM-7～VM-8 的文案/计数断言（interop 用例附加覆盖——该用例 v1.10 已从交付 MR 剔除，断言全部由主链路用例承载） |
 | ADR-6 | 判定失败的回退方向 | checker 不可用 / 符号不可解析 / 成员找不到 / 类型不可判定（含 v1.8 传入值类型不明即 `any`/`unknown`） → 一律不告警并正常返回 | ① 此时仍告警：违背 R-6 零误报约束，放弃；② 输出内部错误/断言：将工具链内部不确定性暴露为用户可见错误，不可取 | 保守方向与 spec R-6/R-3（any/unknown/不可判定不告警）及 R-7 传入值侧边界一致 | 极端构建模式下静默；正例路径由 VM 用例证明可用性 |
 
 ## 设计骨架
@@ -132,8 +132,8 @@
 |---------|------|------------|------|
 | TASK-1 | 主链路实现：新增校验函数（@Require 成员判定 + 显式 undefined 判定 + checker 类型判定 + WARN 推送）并挂入 validateCustomComponentPrams | compiler/src/process_custom_component.ts（必要时 compiler/src/utils.ts 增加判定助手） | design.md + spec.md Approved |
 | TASK-2 | interop 镜像同步：同一改动复制到镜像副本并保持行为一致 | compiler/src/interop/src/process_custom_component.ts（必要时 interop/src/utils.ts） | TASK-1 完成 |
-| TASK-3 | 测试落地：fixture 页（V1/V2/反例矩阵）+ pathConfig 注册 + transform_ut_error.json 期望 + interop 用例；运行 etsTest/interopArkTest 回归 | compiler/test/transform_ut/application/.../utForValidate/Decorators/process_custom_component/（新 fixture）、compiler/test/transform_ut/helpers/pathConfig.ts、compiler/test/transform_ut_error.json、compiler/test/ark_compiler_ut/interop/（新用例） | TASK-1/TASK-2 完成 |
-| TASK-4 | v1.8 类型级触发扩展：主链与镜像触发条件替换（语法级→类型级，新增传入值 undefined 判定助手、`any`/`unknown` 排除、收窄豁免）+ Extension fixture 2 页（V1 含收窄/any 反例、V2 同正例集）+ pathConfig/transform_ut_error.json 登记 + interop 新增 2 用例（多 WARN 精确断言）；Red→Green 回归，既有 2 页零改动 | compiler/src/process_custom_component.ts、compiler/src/interop/src/process_custom_component.ts、compiler/test/transform_ut/application/.../process_custom_component/（新 2 fixture）、compiler/test/transform_ut/helpers/pathConfig.ts、compiler/test/transform_ut_error.json、compiler/test/ark_compiler_ut/interop/process_custom_component.test.ts | TASK-1/TASK-2/TASK-3 完成 + v1.8 基线（proposal/spec）Approved |
+| TASK-3 | 测试落地：fixture 页（V1/V2/反例矩阵）+ pathConfig 注册 + transform_ut_error.json 期望 + interop 用例；运行 etsTest/interopArkTest 回归 | compiler/test/transform_ut/application/.../utForValidate/Decorators/process_custom_component/（新 fixture）、compiler/test/transform_ut/helpers/pathConfig.ts、compiler/test/transform_ut_error.json、compiler/test/ark_compiler_ut/interop/（新用例；v1.10 已从交付 MR 剔除） | TASK-1/TASK-2 完成 |
+| TASK-4 | v1.8 类型级触发扩展：主链与镜像触发条件替换（语法级→类型级，新增传入值 undefined 判定助手、`any`/`unknown` 排除、收窄豁免）+ Extension fixture 2 页（V1 含收窄/any 反例、V2 同正例集）+ pathConfig/transform_ut_error.json 登记 + interop 新增 2 用例（多 WARN 精确断言）；Red→Green 回归，既有 2 页零改动 | compiler/src/process_custom_component.ts、compiler/src/interop/src/process_custom_component.ts、compiler/test/transform_ut/application/.../process_custom_component/（新 2 fixture）、compiler/test/transform_ut/helpers/pathConfig.ts、compiler/test/transform_ut_error.json、compiler/test/ark_compiler_ut/interop/process_custom_component.test.ts（v1.10 已从交付 MR 剔除） | TASK-1/TASK-2/TASK-3 完成 + v1.8 基线（proposal/spec）Approved |
 
 ## API 签名、Kit 与权限
 
@@ -194,7 +194,7 @@ N/A：不变更、不废弃任何 API。
 | 测试层级 | 测试目标 | Mock 策略 | 验证方式 |
 |----------|----------|-----------|----------|
 | 单元测试（transform 校验回归） | AC-1.1～AC-1.6：V1/V2 既有正例页各输出恰 1 条 WARN、v1.8 Extension 页各恰 2 条 WARN，文案逐字符匹配；反例（含 undefined 类型/any 声明、无 @Require、非 undefined 标识符/嵌套对象/类型不含 undefined 的变量、收窄后联合变量、`any` 动态值）0 条 | 无 Mock：真实 etsChecker+etsTransform 插件链（RollUpPluginMock），期望日志登记 transform_ut_error.json | `cd compiler && npm run etsTest`（Red：实现前正例期望 1 条 vs 实际 0 条，mocha 断言失败；v1.8 Extension 页：期望 2 条 vs 实际 0 条） |
-| 单元测试（interop 变体，附加覆盖） | interop 镜像输出与主链路一致的同文案 WARN（仓内架构铁律，非 AC 验收项） | 无 Mock：interopBuild 先编译 src/interop/src 入 lib/ | `cd compiler && npm run interopArkTest`（Red：镜像无此告警逻辑，断言失败） |
+| 单元测试（interop 变体，附加覆盖——v1.10 已从交付 MR 剔除该专属用例） | interop 镜像输出与主链路一致的同文案 WARN（仓内架构铁律，非 AC 验收项）；镜像一致性由 TASK-2 逐行同步纪律承载，不随 MR 携带行为级断言 | 无 Mock：interopBuild 先编译 src/interop/src 入 lib/ | `cd compiler && npm run interopArkTest`（既有回归套件保留为常规回归；专属用例 Red 条件见交付时点证据） |
 | 回归 | 既有诊断不变（10905xxx ERROR 计数、问号规则、@BuilderParam 等） | 同上 | 同上两命令的整体通过（期望计数不含本告警之外的漂移） |
 
 ## 风险和开放问题
@@ -204,7 +204,7 @@ N/A：不变更、不废弃任何 API。
 | 跨文件子组件符号解析在个别构建模式（旧 webpack 链路）下 checker 可用性未逐一验证 | 技术 | 中 | ADR-6 保守回退（不告警）；VM 用例覆盖 rollup esmodule 主链路与 interop；若实测存在大规模回退再评估收集期方案（ADR-1 备选①） | 用户（本会话需求方） |
 | fork checker（getLinterTypeChecker）对 struct PropertyDeclaration 的类型返回行为需实现期实证 | 技术 | 低 | v1.8 已探针实证（`void 0`/联合/收窄/any 的解析与渲染）；TASK-4 fixture 复证；异常时回退 getOriginPropertyType/类型节点路径（ADR-1 已记录备选） | 用户（本会话需求方） |
 | 存量工程新增告警的用户感知 | 兼容 | 低 | WARNING 非阻断（proposal 已识别，v1.8 扩展含 `void 0`/联合变量场景）；诊断文案含修正指引；发布说明同步 | 用户（本会话需求方） |
-| interop 镜像与主链路漂移 | 技术 | 低 | TASK-2 强制同步（仓内架构铁律）+ interop 回归用例锁定行为一致（附加覆盖） | 用户（本会话需求方） |
+| interop 镜像与主链路漂移 | 技术 | 低 | TASK-2 强制同步（仓内架构铁律）承载行为一致性（原 interop 回归用例已随 v1.10 从交付 MR 剔除） | 用户（本会话需求方） |
 | v1.8 类型级触发对既有 fixture 的漂移面 | 技术 | 低 | 已四轮源码排查（`void 0` 在 fixture 源码零使用；联合/可选类型变量不流入 @Require 构造参数）；TASK-4 Green 全量 etsTest 精确期望断言兜底 | 用户（本会话需求方） |
 
 ## 设计审批

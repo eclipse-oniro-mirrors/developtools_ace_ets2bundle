@@ -10,7 +10,7 @@ status: done
 owner: "@youzhi92"
 source_issue: "https://gitcode.com/openharmony/developtools_ace_ets2bundle/issues/4719"
 created_at: 2026-08-11
-updated_at: 2026-10-31
+updated_at: 2026-11-03
 related: []
 related_tasks: []
 related_decisions: []
@@ -20,7 +20,7 @@ design_path: ".codespec/changes/issue-4719-require-type-check/design.md"
 plan_path: ".codespec/changes/issue-4719-require-type-check/execution-plan.md"
 long_term_spec_path: "N/A（长期 specs/ 回灌为 ohos-sdd 工具链后续 batch 能力，archive 命令明示 P5；FuncID 09-01-01 已分配，回灌时使用）"
 long_term_design_path: "N/A（同上）"
-spectest_feature_path: "N/A（编译期诊断特性，无 SpecTest Host Preview 用例；验证经 VM-1～VM-5 mocha 单测承载，interop 用例为附加覆盖）"
+spectest_feature_path: "N/A（编译期诊断特性，无 SpecTest Host Preview 用例；验证经 VM-1～VM-5 mocha 单测承载——interop 专属用例已随 v1.10 从交付 MR 剔除）"
 subprofiles: []
 profile_source: owner
 code_refs:
@@ -82,6 +82,15 @@ commits: []
 - review.md：GA v1.9 括注 + 最终决策 v1.9 增补句（文档修订零代码变更，GA/GB/GC Approved 维持；spec-compliance.md v1.8 增补段所录 spec md5 为当时审查基准的历史记录，不复改）。
 - 验证：`ohos-sdd spec-for-validation check` 15/15 PASS；`ohos-sdd validate --level all` 46 checks / 0 broken / 0 warn PASS。
 - 后续（待 owner 放行）：commit → push fork（PR #7243 随动）→ 同步 PR #1747 分支（10 文件 + PR 侧独有 feature.md/metadata_tracking.yaml）→ 逐条回复 TerryTsao（③跳过）→ 按配额评论 start build（#1655 未关，门禁仍会被封锁——届时与 owner 确认）。
+
+## v1.10 交付 MR 测试资产剔除（2026-11-03）
+
+- 背景：owner 会话指示（2026-11-03，方案 A）将 interop 专属单测文件 `compiler/test/ark_compiler_ut/interop/process_custom_component.test.ts` 从交付 MR #7243 剔除，且仅修订业务仓 .codespec（design-docs PR #1747 不动）。该文件为 MR 新增（v1.5 创建 2 用例 + v1.8 追加类型级用例与 helper，共 +156 行），以新 commit 删除、不改历史：`60eff618`（Change-Id Ibe0dab28，test: drop interop ark_compiler_ut unit test from @Require warning MR），已推送 fork（PR #7243 随动，47→46 文件，head `60eff6182e0ac777dcfde46e814a1db8adb237eb`）。
+- 剔除安全性：`run:interopArkTest` 为纯通配发现（`mocha "arkTest_build/ark_compiler_ut/**/*.test.js"`），无 BUILD.gn/JSON 显式注册；主链 `run:arkTest` 本就排除 interop 目录；既有 interop 回归套件与主链 etsTest/transform_ut 断言不受影响。
+- 范围口径：范围包含项7（proposal）由「主链路+interop 双路径」调整为主链路端到端断言承载；interop 镜像代码同步实现保留（仓内架构铁律），本特性在镜像链路无 MR 内行为级断言——镜像一致性由 TASK-2 逐行同步纪律承载；AC/行为契约/需求语义/其余范围无变更。
+- 文档链注记（活范围声明；历史执行记录保持交付时点事实，evidence/ 为历史快照不回改）：proposal（包含项7/基线版本/frontmatter evidence 三处 v1.10 记录，baseline_digest 复算回填 `94263fe0…9c09`）、design（调用链测试层、既有模式复用、ADR-5 影响、TASK-3/4 拆分、测试性设计 interop 行、风险表 interop 行共 7 处注记，source_design_hash 回填 `103d131c…4fb`）、execution-plan（Plan 状态行、受影响文件全量清单测试层行、Task 列表 TASK-3/4 文件范围与 AC 映射括注、TASK-3 Produces、代码范围映射 TASK-3/4 实际列）、sfv（5.3 interop 行验证方式、术语表 interop 行、元信息产物状态/最后更新、十一章 v1.10 修订记录）、review（最终决策 v1.10 增补）、manifest（本节 + spectest_feature_path）。spec.md 零引用无变更（source_spec_hash 保持 `2188bc41…260be`）。
+- 验证：`ohos-sdd spec-for-validation check` 15/15 PASS；`ohos-sdd validate --level all` 46 checks / 0 broken / 0 warn PASS。
+- 后续（待 owner 指令）：PR #7243 门禁重触发（11-02 通过后因新 commit 推送重置，11-03 当日配额 0/3）；PR #1747（design-docs）刻意不同步——owner 拍板仅改业务仓，PR 侧文件保持 v1.9 内容，与业务仓 v1.10 暂时 divergent。
 
 ## spec-for-validation refresh 后恢复清单（2026-10-29 固化）
 
