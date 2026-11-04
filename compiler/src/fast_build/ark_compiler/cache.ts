@@ -24,20 +24,32 @@ import {
   TRANSFORMED_MOCK_CONFIG,
   USER_DEFINE_MOCK_CONFIG
 } from '../../pre_define';
+import {
+  CompileEvent,
+  createAndStartEvent,
+  stopEvent
+} from '../../performance';
 
 let disableCache: boolean = false;
-export function checkArkCompilerCacheInfo(rollupObject: Object): void {
+export function checkArkCompilerCacheInfo(rollupObject: Object, parentEvent?: CompileEvent): void {
+  const eventCheckArkCompilerCacheInfo = createAndStartEvent(parentEvent, 'checkArkCompilerCacheInfo');
   disableCache = false;
-  const metaInfo: string = getMetaInfo(rollupObject.share.projectConfig, rollupObject.share.arkProjectConfig);
+  const metaInfo: string = getMetaInfo(
+    rollupObject.share.projectConfig, rollupObject.share.arkProjectConfig, eventCheckArkCompilerCacheInfo);
   const lastMetaInfo: string = rollupObject.cache.get(ARK_COMPILER_META_INFO);
-  if (!lastMetaInfo || metaInfo !== lastMetaInfo || isMockConfigModified(rollupObject)) {
+  if (!lastMetaInfo || metaInfo !== lastMetaInfo || isMockConfigModified(rollupObject, eventCheckArkCompilerCacheInfo)) {
     rollupObject.cache.set(IS_CACHE_INVALID, true);
     disableCache = true;
   }
   rollupObject.cache.set(ARK_COMPILER_META_INFO, metaInfo);
+  const eventCacheResult = createAndStartEvent(
+    eventCheckArkCompilerCacheInfo, disableCache ? 'cache miss' : 'cache hit');
+  stopEvent(eventCacheResult);
+  stopEvent(eventCheckArkCompilerCacheInfo);
 }
 
-function getMetaInfo(projectConfig: Object, arkProjectConfig: Object): string {
+function getMetaInfo(projectConfig: Object, arkProjectConfig: Object, parentEvent?: CompileEvent): string {
+  const eventGetMetaInfo = createAndStartEvent(parentEvent, 'getMetaInfo');
   let metaInfoArr: string[] = [];
   // user selects the compiled API version information
   const compileSdkVersion: string = projectConfig.compileSdkVersion ?
@@ -72,16 +84,21 @@ function getMetaInfo(projectConfig: Object, arkProjectConfig: Object): string {
     metaInfoArr.push(bundleName, allModuleNameHash, aotCompileMode, apPath);
   }
 
-  return metaInfoArr.join(':');
+  const metaInfo: string = metaInfoArr.join(':');
+  stopEvent(eventGetMetaInfo);
+  return metaInfo;
 }
 
-function isMockConfigModified(rollupObject): boolean {
+function isMockConfigModified(rollupObject: Object, parentEvent?: CompileEvent): boolean {
+  const eventIsMockConfigModified = createAndStartEvent(parentEvent, 'isMockConfigModified');
   // mock is only enabled in the following two modes
   if (!rollupObject.share.projectConfig.isPreview && !rollupObject.share.projectConfig.isOhosTest) {
+    stopEvent(eventIsMockConfigModified);
     return false;
   }
 
   if (!rollupObject.share.projectConfig.mockParams || !rollupObject.share.projectConfig.mockParams.mockConfigPath) {
+    stopEvent(eventIsMockConfigModified);
     return false;
   }
 
@@ -90,6 +107,7 @@ function isMockConfigModified(rollupObject): boolean {
   const transformedMockConfigCache: string =
     path.resolve(rollupObject.share.projectConfig.cachePath, `./${TRANSFORMED_MOCK_CONFIG}`);
   if (!fs.existsSync(userDefinedMockConfigCache) || !fs.existsSync(transformedMockConfigCache)) {
+    stopEvent(eventIsMockConfigModified);
     return true;
   }
 
@@ -97,7 +115,9 @@ function isMockConfigModified(rollupObject): boolean {
     require('json5').parse(fs.readFileSync(rollupObject.share.projectConfig.mockParams.mockConfigPath, 'utf-8'));
   const cachedMockConfigInfo: Object =
     require('json5').parse(fs.readFileSync(userDefinedMockConfigCache, 'utf-8'));
-  return JSON.stringify(mockConfigInfo) !== JSON.stringify(cachedMockConfigInfo);
+  const isModified: boolean = JSON.stringify(mockConfigInfo) !== JSON.stringify(cachedMockConfigInfo);
+  stopEvent(eventIsMockConfigModified);
+  return isModified;
 }
 
 /**
