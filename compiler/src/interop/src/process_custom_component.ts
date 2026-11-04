@@ -1588,6 +1588,7 @@ function validateCustomComponentPrams(node: ts.CallExpression, name: string,
   validateInitDecorator(node, name, curChildProps, log);
   validateMandatoryToInitViaParam(node, name, curChildProps, log, parentStructInfo);
   validateInitParam(name, curChildProps, node, log, parentStructInfo);
+  validateRequireParamUndefinedType(node, name, log);
 }
 
 function getCustomComponentNode(node: ts.ExpressionStatement): ts.CallExpression {
@@ -2086,6 +2087,99 @@ function validateInitDecorator(node: ts.CallExpression, customComponentName: str
         pos: node.getStart()
       });
     }
+  });
+}
+
+function isTypeIncludingUndefined(type: ts.Type): boolean {
+  if (type.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) {
+    return true;
+  }
+  if (type.types && type.types.length) {
+    return type.types.some((item: ts.Type) => !!(item.flags & ts.TypeFlags.Undefined));
+  }
+  return !!(type.flags & ts.TypeFlags.Undefined);
+}
+
+// Strict actual-value-side counterpart of isTypeIncludingUndefined: any and unknown are
+// inconclusive rather than undefined-including, so they never trigger the warning.
+function isTypeDefinitelyIncludingUndefined(type: ts.Type): boolean {
+  if (type.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) {
+    return false;
+  }
+  if (type.types && type.types.length) {
+    return type.types.some((item: ts.Type) => !!(item.flags & ts.TypeFlags.Undefined));
+  }
+  return !!(type.flags & ts.TypeFlags.Undefined);
+}
+
+function getStructDeclarationFromComponentUseSite(checker: ts.TypeChecker, node: ts.CallExpression): ts.Node {
+  const componentSymbol: ts.Symbol = checker.getSymbolAtLocation(node.expression);
+  if (!componentSymbol) {
+    return undefined;
+  }
+  const realSymbol: ts.Symbol = componentSymbol.flags & ts.SymbolFlags.Alias ?
+    checker.getAliasedSymbol(componentSymbol) : componentSymbol;
+  const structDeclaration: ts.Node = realSymbol?.declarations?.[0];
+  if (!structDeclaration || !ts.isStructDeclaration(structDeclaration)) {
+    return undefined;
+  }
+  return structDeclaration;
+}
+
+function getRequireParamTypeExcludingUndefined(checker: ts.TypeChecker, structDeclaration: ts.Node,
+  paramName: string): string {
+  const propertyDeclaration: ts.ClassElement = structDeclaration.members.find(
+    (member: ts.ClassElement) => ts.isPropertyDeclaration(member) && member.name.getText() === paramName);
+  if (!propertyDeclaration) {
+    return undefined;
+  }
+  const propertyType: ts.Type = checker.getTypeAtLocation(propertyDeclaration);
+  if (!propertyType || isTypeIncludingUndefined(propertyType)) {
+    return undefined;
+  }
+  return checker.typeToString(propertyType);
+}
+
+function validateRequireParamUndefinedType(node: ts.CallExpression, name: string, log: LogInfo[]): void {
+  const nodeArguments: ts.NodeArray<ts.Expression> = node.arguments;
+  if (!(nodeArguments && nodeArguments.length >= 1 && ts.isObjectLiteralExpression(nodeArguments[0]))) {
+    return;
+  }
+  const checker: ts.TypeChecker | undefined = CurrentProcessFile.getChecker();
+  const structDeclaration: ts.Node = checker ? getStructDeclarationFromComponentUseSite(checker, node) : undefined;
+  if (!checker || !structDeclaration) {
+    return;
+  }
+  const childStructInfo: StructInfo = processStructComponentV2.getAliasStructInfo(node) ||
+    processStructComponentV2.getOrCreateStructInfo(name);
+  const decoratorVariable: Set<string> = new Set([
+    ...(builderParamInitialization.get(name) || []),
+    ...(propInitialization.get(name) || []),
+    ...(regularInitialization.get(name) || []),
+    ...(stateInitialization.get(name) || []),
+    ...(provideInitialization.get(name) || [])
+  ]);
+  (nodeArguments[0] as ts.ObjectLiteralExpression).properties.forEach((item: ts.ObjectLiteralElementLike) => {
+    if (!(ts.isPropertyAssignment(item) && ts.isIdentifier(item.name) &&
+      isTypeDefinitelyIncludingUndefined(checker.getTypeAtLocation(item.initializer)))) {
+      return;
+    }
+    const paramName: string = item.name.escapedText.toString();
+    const paramDecoratorInfo: ParamDecoratorInfo = childStructInfo.paramDecoratorMap.get(paramName);
+    if (!(paramDecoratorInfo?.hasRequire || decoratorVariable.has(paramName))) {
+      return;
+    }
+    const declaredType: string = getRequireParamTypeExcludingUndefined(checker, structDeclaration, paramName);
+    if (!declaredType) {
+      return;
+    }
+    const actualType: string = checker.typeToString(checker.getTypeAtLocation(item.initializer));
+    log.push({
+      type: LogType.WARN,
+      message: `'@Require' decorated '${paramName}' expects type '${declaredType}' ` +
+        `but got '${actualType}' through the component constructor.`,
+      pos: item.getStart()
+    });
   });
 }
 
