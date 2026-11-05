@@ -3157,7 +3157,9 @@ function addComponentAttr(temp, node: ts.Identifier, lastStatement,
   } else if (GLOBAL_STYLE_FUNCTION.has(propName) || INNER_STYLE_FUNCTION.has(propName)) {
     const styleBlock: ts.Block =
         INNER_STYLE_FUNCTION.get(propName) || GLOBAL_STYLE_FUNCTION.get(propName);
-    const sdkApiVersions: ISdkApiValues | undefined = INNER_STYLE_VERSION.get(propName) || GLOBAL_STYLE_VERSION.get(propName);
+    const isInnerStyles: boolean = INNER_STYLE_FUNCTION.has(propName);
+    const sdkApiVersions: ISdkApiValues | undefined = isInnerStyles ? INNER_STYLE_VERSION.get(propName) :
+      GLOBAL_STYLE_VERSION.get(propName);
     if (styleBlock.statements.length > 0 && !!sdkApiVersions) {
       const tempStatements: ts.Statement[] = [];
       bindComponentAttr(styleBlock.statements[0] as ts.ExpressionStatement, identifierNode,
@@ -3491,20 +3493,39 @@ function traverseStateStylesAttr(temp, statements: ts.Statement[],
       item.initializer.expression.getText() === THIS &&
       INNER_STYLE_FUNCTION.get(item.initializer.name.getText())) {
       const name: string = item.initializer.name.getText();
-      bindComponentAttr(INNER_STYLE_FUNCTION.get(name).statements[0] as ts.ExpressionStatement,
-        identifierNode, statements, log, false, true, newImmutableStatements);
-      if (isRecycleComponent || (hasInitialRenderCondition() && permitInitialRender)) {
+      const sdkApiVersions: ISdkApiValues | undefined = INNER_STYLE_VERSION.get(name);
+      if (sdkApiVersions) {
+        const tempStatements: ts.Statement[] = [];
         bindComponentAttr(INNER_STYLE_FUNCTION.get(name).statements[0] as ts.ExpressionStatement,
-          identifierNode, updateStatements, log, false, true, newImmutableStatements);
+          identifierNode, tempStatements, log, true, true);
+        const ifVersionStatement: ts.IfStatement | undefined = updateStylesStatementsWithSdkVersions(tempStatements, sdkApiVersions);
+        ifVersionStatement && (statements.push(ifVersionStatement)) && (storedFileInfo.hasAttributeExtension = true);
+      } else {
+        bindComponentAttr(INNER_STYLE_FUNCTION.get(name).statements[0] as ts.ExpressionStatement,
+          identifierNode, statements, log, false, true, newImmutableStatements);
+        if (isRecycleComponent || (hasInitialRenderCondition() && permitInitialRender)) {
+          bindComponentAttr(INNER_STYLE_FUNCTION.get(name).statements[0] as ts.ExpressionStatement,
+            identifierNode, updateStatements, log, false, true, newImmutableStatements);
+        }
       }
     } else if (ts.isIdentifier(item.initializer) &&
       GLOBAL_STYLE_FUNCTION.get(item.initializer.getText())) {
       const name: string = item.initializer.getText();
-      bindComponentAttr(GLOBAL_STYLE_FUNCTION.get(name).statements[0] as ts.ExpressionStatement,
-        identifierNode, statements, log, false, true, newImmutableStatements);
-      if (isRecycleComponent || (hasInitialRenderCondition() && permitInitialRender)) {
+      const sdkApiVersions: ISdkApiValues | undefined = GLOBAL_STYLE_VERSION.get(name);
+      if (sdkApiVersions) {
+        const tempStatements: ts.Statement[] = [];
         bindComponentAttr(GLOBAL_STYLE_FUNCTION.get(name).statements[0] as ts.ExpressionStatement,
-          identifierNode, updateStatements, log, false, true, newImmutableStatements);
+          identifierNode, tempStatements, log, true, true);
+        const ifVersionStatement: ts.IfStatement | undefined = updateStylesStatementsWithSdkVersions(tempStatements, sdkApiVersions);
+        ifVersionStatement && (statements.push(ifVersionStatement)) && (storedFileInfo.hasAttributeExtension = true);
+      }
+      else {
+        bindComponentAttr(GLOBAL_STYLE_FUNCTION.get(name).statements[0] as ts.ExpressionStatement,
+          identifierNode, statements, log, false, true, newImmutableStatements);
+        if (isRecycleComponent || (hasInitialRenderCondition() && permitInitialRender)) {
+          bindComponentAttr(GLOBAL_STYLE_FUNCTION.get(name).statements[0] as ts.ExpressionStatement,
+            identifierNode, updateStatements, log, false, true, newImmutableStatements);
+        }
       }
     } else if (ts.isObjectLiteralExpression(item.initializer) &&
       item.initializer.properties.length === 1 &&
