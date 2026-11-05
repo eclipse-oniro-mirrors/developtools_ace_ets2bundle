@@ -70,6 +70,7 @@ import {
 } from '../common/ob_config_resolver';
 import {
   changeFileExtension,
+  getEffectiveTargetApiVersion,
   getEs2abcFileThreadNumber,
   isCommonJsPluginVirtualFile,
   isCurrentProjectFiles,
@@ -614,7 +615,7 @@ export class ModuleMode extends CommonMode {
     this.cmdArgs.push('--file-threads');
     this.cmdArgs.push(`"${fileThreads}"`);
     this.cmdArgs.push('--merge-abc');
-    this.cmdArgs.push(`"--target-api-version=${this.projectConfig.compatibleSdkVersion}"`);
+    this.cmdArgs.push(`"--target-api-version=${getEffectiveTargetApiVersion(this.projectConfig)}"`);
     if (this.projectConfig.compatibleSdkVersionStage) {
       this.cmdArgs.push(`"--target-api-sub-version=${this.projectConfig.compatibleSdkVersionStage}"`);
     }

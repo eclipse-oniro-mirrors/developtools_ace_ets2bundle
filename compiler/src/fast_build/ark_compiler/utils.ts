@@ -267,6 +267,18 @@ export function getEs2abcFileThreadNumber(): number {
   return fileThreads;
 }
 
+const MIN_DOTTED_API_VERSION: number = 26;
+
+export function getEffectiveTargetApiVersion(projectConfig: Object): string {
+  const apiMeta: Object = projectConfig.compatibleApiMeta;
+  if (apiMeta && typeof apiMeta === 'object' && typeof apiMeta.api === 'string' &&
+    /^\d+\.\d+\.\d+$/.test(apiMeta.api) &&
+    Number(projectConfig.compatibleSdkVersion) >= MIN_DOTTED_API_VERSION) {
+    return apiMeta.api;
+  }
+  return `${projectConfig.compatibleSdkVersion}`;
+}
+
 export function isCommonJsPluginVirtualFile(filePath: string): boolean {
   // rollup uses commonjs plugin to handle commonjs files,
   // which will automatic generate files like 'jsfile.js?commonjs-exports'

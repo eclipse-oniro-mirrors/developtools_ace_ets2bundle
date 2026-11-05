@@ -71,6 +71,7 @@ import {
 } from '../common/ob_config_resolver';
 import {
   changeFileExtension,
+  getEffectiveTargetApiVersion,
   getEs2abcFileThreadNumber,
   isCommonJsPluginVirtualFile,
   isCurrentProjectFiles,
@@ -656,7 +657,7 @@ export class ModuleMode extends CommonMode {
   }
 
   private appendApiVersionArgs(): void {
-    this.cmdArgs.push(`"--target-api-version=${this.projectConfig.compatibleSdkVersion}"`);
+    this.cmdArgs.push(`"--target-api-version=${getEffectiveTargetApiVersion(this.projectConfig)}"`);
     if (this.projectConfig.compatibleSdkVersionStage) {
       this.cmdArgs.push(`"--target-api-sub-version=${this.projectConfig.compatibleSdkVersionStage}"`);
     }

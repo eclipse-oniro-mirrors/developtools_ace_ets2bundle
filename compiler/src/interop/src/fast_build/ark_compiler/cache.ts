@@ -24,6 +24,7 @@ import {
   TRANSFORMED_MOCK_CONFIG,
   USER_DEFINE_MOCK_CONFIG
 } from '../../pre_define';
+import { getEffectiveTargetApiVersion } from './utils';
 import {
   CompileEvent,
   createAndStartEvent,
@@ -69,6 +70,11 @@ function getMetaInfo(projectConfig: Object, arkProjectConfig: Object, parentEven
     projectConfig.etsLoaderReleaseType : 'null_sdkReleaseType';
   metaInfoArr.push(
     compileSdkVersion, compatibleSdkVersion, compatibleSdkVersionStage, runtimeOS, sdkPath, sdkVersion, sdkReleaseType);
+
+  const effectiveTargetApiVersion: string = getEffectiveTargetApiVersion(projectConfig);
+  if (effectiveTargetApiVersion !== `${projectConfig.compatibleSdkVersion}`) {
+    metaInfoArr.push(effectiveTargetApiVersion);
+  }
 
   if (projectConfig.compileHar) {
     const useTsHar: string = arkProjectConfig.useTsHar;

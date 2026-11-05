@@ -641,4 +641,83 @@ mocha.describe('test bundle_mode file api', function () {
   
     expect(sourceFile === path.join(relativePath, 'test.js')).to.be.true;
   });
+
+  mocha.it('10-1: test target api version arg of generateEs2AbcCmd with valid compatibleApiMeta', function () {
+    this.rollup.build();
+    const rollupBundleFileSet: Object = {
+      'test.js': {
+        'type': 'asset',
+        'source': 'test'
+      }
+    };
+    this.rollup.share.projectConfig.compatibleSdkVersion = 26;
+    this.rollup.share.projectConfig.compatibleApiMeta = { api: '26.0.1', version: 26, type: 1 };
+    const bundleMode = new BundleMode(this.rollup, rollupBundleFileSet);
+    bundleMode['generateEs2AbcCmd']('/cache/filesInfo.txt');
+    expect(bundleMode.cmdArgs.includes(`"--target-api-version=26.0.1"`)).to.be.true;
+  });
+
+  mocha.it('10-2: test target api version arg of generateEs2AbcCmd with invalid compatibleApiMeta', function () {
+    this.rollup.build();
+    const rollupBundleFileSet: Object = {
+      'test.js': {
+        'type': 'asset',
+        'source': 'test'
+      }
+    };
+    this.rollup.share.projectConfig.compatibleApiMeta = { api: 'invalid', version: 26, type: 1 };
+    const bundleMode = new BundleMode(this.rollup, rollupBundleFileSet);
+    bundleMode['generateEs2AbcCmd']('/cache/filesInfo.txt');
+    const compatibleSdkVersion: string = `${this.rollup.share.projectConfig.compatibleSdkVersion}`;
+    expect(bundleMode.cmdArgs.includes(`"--target-api-version=${compatibleSdkVersion}"`)).to.be.true;
+    expect(bundleMode.cmdArgs.includes(`"--target-api-version=26.0.1"`)).to.be.false;
+  });
+
+  mocha.it('10-3: test target api version arg with release version api falls back', function () {
+    this.rollup.build();
+    const rollupBundleFileSet: Object = {
+      'test.js': {
+        'type': 'asset',
+        'source': 'test'
+      }
+    };
+    this.rollup.share.projectConfig.compatibleSdkVersion = 21;
+    this.rollup.share.projectConfig.compatibleApiMeta = { api: '6.0.1', version: 21, type: 1 };
+    const bundleMode = new BundleMode(this.rollup, rollupBundleFileSet);
+    bundleMode['generateEs2AbcCmd']('/cache/filesInfo.txt');
+    expect(bundleMode.cmdArgs.includes(`"--target-api-version=21"`)).to.be.true;
+    expect(bundleMode.cmdArgs.includes(`"--target-api-version=6.0.1"`)).to.be.false;
+  });
+
+  mocha.it('10-4: test target api version arg with non three segment api falls back', function () {
+    this.rollup.build();
+    const rollupBundleFileSet: Object = {
+      'test.js': {
+        'type': 'asset',
+        'source': 'test'
+      }
+    };
+    this.rollup.share.projectConfig.compatibleSdkVersion = 26;
+    this.rollup.share.projectConfig.compatibleApiMeta = { api: '26.0', version: 26, type: 1 };
+    const bundleMode = new BundleMode(this.rollup, rollupBundleFileSet);
+    bundleMode['generateEs2AbcCmd']('/cache/filesInfo.txt');
+    expect(bundleMode.cmdArgs.includes(`"--target-api-version=26"`)).to.be.true;
+    expect(bundleMode.cmdArgs.includes(`"--target-api-version=26.0"`)).to.be.false;
+  });
+
+  mocha.it('10-5: test target api version arg with api below min dotted api version falls back', function () {
+    this.rollup.build();
+    const rollupBundleFileSet: Object = {
+      'test.js': {
+        'type': 'asset',
+        'source': 'test'
+      }
+    };
+    this.rollup.share.projectConfig.compatibleSdkVersion = 21;
+    this.rollup.share.projectConfig.compatibleApiMeta = { api: '21.0.0', version: 21, type: 1 };
+    const bundleMode = new BundleMode(this.rollup, rollupBundleFileSet);
+    bundleMode['generateEs2AbcCmd']('/cache/filesInfo.txt');
+    expect(bundleMode.cmdArgs.includes(`"--target-api-version=21"`)).to.be.true;
+    expect(bundleMode.cmdArgs.includes(`"--target-api-version=21.0.0"`)).to.be.false;
+  });
 });

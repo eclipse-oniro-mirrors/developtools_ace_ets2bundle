@@ -115,4 +115,46 @@ mocha.describe('test module_hotfix_mode file api', function () {
     moduleMode.generateEs2AbcCmdForHotfix();
     expect(moduleMode.cmdArgs.includes('--enable-callable-name')).to.be.false;
   });
+
+  mocha.it('1-7: test generateEs2AbcCmdForHotfix with valid compatibleApiMeta', function () {
+    this.rollup.build();
+    this.rollup.share.projectConfig.compatibleSdkVersion = 26;
+    this.rollup.share.projectConfig.compatibleApiMeta = { api: '26.0.1', version: 26, type: 1 };
+    const moduleMode = new ModuleHotfixMode(this.rollup);
+    moduleMode.generateEs2AbcCmdForHotfix();
+    const targetApiVersion = `${TARGET_API_VERSION}26.0.1`;
+    expect(moduleMode.cmdArgs[0].indexOf(ES2ABC_PATH) > 0).to.be.true;
+    moduleMode.cmdArgs.shift();
+    expect(moduleMode.cmdArgs[0] === DEBUG_INFO).to.be.true;
+    moduleMode.cmdArgs.shift();
+    checkCmdArgs(moduleMode.cmdArgs, targetApiVersion);
+  });
+
+  mocha.it('1-8: test generateEs2AbcCmdForHotfix with invalid compatibleApiMeta falls back', function () {
+    this.rollup.build();
+    this.rollup.share.projectConfig.compatibleApiMeta = { api: 'invalid', version: 26, type: 1 };
+    const moduleMode = new ModuleHotfixMode(this.rollup);
+    moduleMode.generateEs2AbcCmdForHotfix();
+    const compatibleSdkVersion = `${TARGET_API_VERSION}${this.rollup.share.projectConfig.compatibleSdkVersion}`;
+    expect(moduleMode.cmdArgs[0].indexOf(ES2ABC_PATH) > 0).to.be.true;
+    moduleMode.cmdArgs.shift();
+    expect(moduleMode.cmdArgs[0] === DEBUG_INFO).to.be.true;
+    moduleMode.cmdArgs.shift();
+    checkCmdArgs(moduleMode.cmdArgs, compatibleSdkVersion);
+  });
+
+  mocha.it('1-9: test generateEs2AbcCmdForHotfix with release version api falls back', function () {
+    this.rollup.build();
+    this.rollup.share.projectConfig.compatibleSdkVersion = 21;
+    this.rollup.share.projectConfig.compatibleApiMeta = { api: '6.0.1', version: 21, type: 1 };
+    const moduleMode = new ModuleHotfixMode(this.rollup);
+    moduleMode.generateEs2AbcCmdForHotfix();
+    const compatibleSdkVersion = `${TARGET_API_VERSION}${this.rollup.share.projectConfig.compatibleSdkVersion}`;
+    expect(moduleMode.cmdArgs[0].indexOf(ES2ABC_PATH) > 0).to.be.true;
+    moduleMode.cmdArgs.shift();
+    expect(moduleMode.cmdArgs[0] === DEBUG_INFO).to.be.true;
+    moduleMode.cmdArgs.shift();
+    checkCmdArgs(moduleMode.cmdArgs, compatibleSdkVersion);
+    expect(moduleMode.cmdArgs.includes(`${TARGET_API_VERSION}6.0.1`)).to.be.false;
+  });
 });
