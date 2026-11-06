@@ -19,7 +19,7 @@
 
 | 文档 | 路径 | 状态 |
 |------|------|------|
-| Requirement | `proposal.md`（issue-4719-require-type-check，基线 v1.9） | Approved |
+| Requirement | `proposal.md`（issue-4719-require-type-check，基线 v1.11） | Approved |
 
 > AC 对应关系：proposal 以 AC-1 为首的 6 条 AC ↔ 本文档 AC-1.1～AC-1.6（顺序一一对应）。其中本文档 AC-1.6 为 v1.8 新增类型级触发正例，与 v1.7 移除的 interop 维度 AC-1.6 无关（编号复用，v1.8 基线记录注记）。需求基线、不涉及项、影响范围详见 proposal.md，本文档不重复摘录。
 
@@ -106,17 +106,17 @@
 
 ## 验证映射
 
-| 编号 | 对应规格项 | 测试入口 | 验证方式 | Red 条件（实现前失败信号） | 通过标准 |
+| 编号 | 对应规格项 | 验证入口 | 验证方式 | 实现前失败信号 | 通过标准 |
 |------|------------|----------|----------|---------------------------|----------|
-| VM-1 | R-1 / AC-1.1 | `compiler/test/transform_ut/ut_validate.test.ts`（新增 V1 fixture 于 `test/transform_ut/application/entry/src/main/ets/pages/utForValidate/Decorators/process_custom_component/`，页面注册于 `test/transform_ut/helpers/pathConfig.ts`，期望日志登记于 `test/transform_ut_error.json`），命令 `cd compiler && npm run etsTest` | 应用工程构建输出断言（transform_ut 完整编译管线 fixture：应用工程页面经真实插件链编译，mocha 断言 WARN 计数与文案） | 实现前运行 `npm run etsTest`：该 fixture 产生 0 条本告警，`ut_validate.test.ts` 断言 `warnInfos.length === expectWarnInfos.length` 失败（0 ≠ 期望 1），mocha 用例失败 | WARN 恰好 1 条且文案与消息模板逐字符一致；ERROR 计数与期望一致；transform 正常完成（编译不失败） |
-| VM-2 | R-2 / AC-1.2 | 同 VM-1 测试套件（新增 V2 fixture：`@ComponentV2` + `@Require @Param` + 显式 `undefined`，参照既有 `v2_component_decorator/param/` fixture 模式），命令 `cd compiler && npm run etsTest` | 应用工程构建输出断言（同 VM-1 管线，V2 场景） | 实现前 V2 场景同样 0 条 vs 期望 1 条，断言计数不符，mocha 用例失败 | WARN 恰好 1 条且与 VM-1 文案一致；编译不失败 |
-| VM-3 | R-3、R-6 / AC-1.3 | 同 VM-1 测试套件（fixture 含反例字段：`number \| undefined`、`any` 等类型 + 显式 `undefined`），命令 `cd compiler && npm run etsTest` | 应用工程构建输出断言（零误报回归：反例字段断言 0 条本告警） | 反例与 VM-1 正例置于同一 fixture/用例：实现前因正例字段期望 WARN 缺失（0 ≠ 1）整个用例失败，同时该用例承载反例字段 0 误报断言 | 正例字段输出 1 条；反例字段（含 `undefined` 类型、不可判定类型）输出 0 条本告警 |
-| VM-4 | R-4 / AC-1.4 | 同 VM-1 测试套件（fixture 含无 `@Require` 字段 + 显式 `undefined`），命令 `cd compiler && npm run etsTest` | 应用工程构建输出断言（零误报回归） | 同 VM-3：组合用例实现前因正例缺失失败，反例断言由同一用例承载 | 无 `@Require` 字段 0 条本告警；正例字段行为不变 |
-| VM-5 | R-5 / AC-1.5 | 同 VM-1 测试套件（fixture 含嵌套对象内部 `undefined`、解析类型不含 `undefined` 的变量传值等非 `undefined` 标识符场景），命令 `cd compiler && npm run etsTest` | 应用工程构建输出断言（零误报回归） | 同 VM-3：组合用例实现前因正例缺失失败 | 解析类型不含 `undefined` 的非标识符场景 0 条本告警；正例字段行为不变 |
-| VM-7 | R-7 / AC-1.6 | 同 VM-1 测试套件（v1.8 新增 Extension fixture 2 页：`validateRequireParamUndefinedTypeExtension`（V1：`void 0` 与联合类型变量正例）与 `validateRequireParamUndefinedTypeExtensionV2`（V2：同正例集），页面注册于 `test/transform_ut/helpers/pathConfig.ts`、期望日志登记于 `test/transform_ut_error.json`，方式同 VM-1），命令 `cd compiler && npm run etsTest` | 应用工程构建输出断言（transform_ut 完整编译管线：v1.8 类型级触发正例） | 实现前运行 `npm run etsTest`：新 fixture 正例字段产生 0 条本告警 vs 期望每页 2 条，断言计数不符，mocha 用例失败 | 每页 WARN 恰好 2 条且文案与消息模板逐字符一致（got 段分别为 `undefined` 与联合类型文本如 `number \| undefined`/`string \| undefined`）；ERROR 0；transform 正常完成（编译不失败） |
-| VM-8 | R-5 / AC-1.5 | 同 VM-1 测试套件（V1 Extension fixture 内嵌 v1.8 扩展反例：联合类型变量经 `!== undefined` 空值守卫收窄后传值、`any` 动态类型变量传值），命令 `cd compiler && npm run etsTest` | 应用工程构建输出断言（零误报回归：v1.8 扩展反例边界） | 与 VM-7 同一 fixture/用例组合承载：实现前因正例缺失（0 ≠ 2）失败，反例断言由同一用例承载 | 收窄守卫与动态类型反例字段 0 条本告警；VM-5 既有反例行为不变 |
+| VM-1 | R-1 / AC-1.1 | `compiler/test/` 下主链端到端验证（新增 V1 验证示例页面于验证页面目录，页面注册于页面注册表，期望诊断登记于期望诊断登记文件），经既有全量验证入口运行 | 应用工程构建输出断言（主链完整编译管线验证示例页面：应用工程页面经真实插件链编译，验证入口断言 WARN 计数与文案） | 实现前经既有全量验证入口运行：该验证示例页面产生 0 条本告警，验证入口断言「实际告警计数与期望计数一致」失败（0 ≠ 期望 1），验证用例失败 | WARN 恰好 1 条且文案与消息模板逐字符一致；ERROR 计数与期望一致；transform 正常完成（编译不失败） |
+| VM-2 | R-2 / AC-1.2 | 同 VM-1 验证入口（新增 V2 验证示例页面：`@ComponentV2` + `@Require @Param` + 显式 `undefined`，参照既有 V2 装饰器验证页面模式），经既有全量验证入口运行 | 应用工程构建输出断言（同 VM-1 管线，V2 场景） | 实现前 V2 场景同样 0 条 vs 期望 1 条，断言计数不符，验证用例失败 | WARN 恰好 1 条且与 VM-1 文案一致；编译不失败 |
+| VM-3 | R-3、R-6 / AC-1.3 | 同 VM-1 验证入口（验证示例页面含反例字段：`number \| undefined`、`any` 等类型 + 显式 `undefined`），经既有全量验证入口运行 | 应用工程构建输出断言（零误报回归：反例字段断言 0 条本告警） | 反例与 VM-1 正例置于同一验证页面/用例：实现前因正例字段期望 WARN 缺失（0 ≠ 1）整个用例失败，同时该用例承载反例字段 0 误报断言 | 正例字段输出 1 条；反例字段（含 `undefined` 类型、不可判定类型）输出 0 条本告警 |
+| VM-4 | R-4 / AC-1.4 | 同 VM-1 验证入口（验证示例页面含无 `@Require` 字段 + 显式 `undefined`），经既有全量验证入口运行 | 应用工程构建输出断言（零误报回归） | 同 VM-3：组合用例实现前因正例缺失失败，反例断言由同一用例承载 | 无 `@Require` 字段 0 条本告警；正例字段行为不变 |
+| VM-5 | R-5 / AC-1.5 | 同 VM-1 验证入口（验证示例页面含嵌套对象内部 `undefined`、解析类型不含 `undefined` 的变量传值等非 `undefined` 标识符场景），经既有全量验证入口运行 | 应用工程构建输出断言（零误报回归） | 同 VM-3：组合用例实现前因正例缺失失败 | 解析类型不含 `undefined` 的非标识符场景 0 条本告警；正例字段行为不变 |
+| VM-7 | R-7 / AC-1.6 | 同 VM-1 验证入口（v1.8 新增扩展验证示例页面 2 页：validateRequireParamUndefinedTypeExtension（V1：`void 0` 与联合类型变量正例）与 validateRequireParamUndefinedTypeExtensionV2（V2：同正例集），页面注册于页面注册表、期望诊断登记于期望诊断登记文件，方式同 VM-1），经既有全量验证入口运行 | 应用工程构建输出断言（主链完整编译管线：v1.8 类型级触发正例） | 实现前经既有全量验证入口运行：新验证示例页面正例字段产生 0 条本告警 vs 期望每页 2 条，断言计数不符，验证用例失败 | 每页 WARN 恰好 2 条且文案与消息模板逐字符一致（got 段分别为 `undefined` 与联合类型文本如 `number \| undefined`/`string \| undefined`）；ERROR 0；transform 正常完成（编译不失败） |
+| VM-8 | R-5 / AC-1.5 | 同 VM-1 验证入口（V1 扩展验证示例页面内嵌 v1.8 扩展反例：联合类型变量经 `!== undefined` 空值守卫收窄后传值、`any` 动态类型变量传值），经既有全量验证入口运行 | 应用工程构建输出断言（零误报回归：v1.8 扩展反例边界） | 与 VM-7 同一验证页面/用例组合承载：实现前因正例缺失（0 ≠ 2）失败，反例断言由同一用例承载 | 收窄守卫与动态类型反例字段 0 条本告警；VM-5 既有反例行为不变 |
 
-> **验证口径说明：** VM-1～VM-5、VM-7～VM-8 均为端到端构建输出断言——fixture 为完整应用工程页面（`test/transform_ut/application/entry/src/main/ets/pages/...`），经真实插件链（etsChecker→visualTransform→etsTransform→…）编译后对诊断输出断言，非函数级单测；「测试入口」列即触发入口（fixture 页面注册 + 构建命令）。VM-6 编号已随 v1.7 interop 维度移除，不复用。独立验收场景（构建 ArkTS 应用工程核对构建输出、比对工具链升级前后差异）由 spec-for-validation.md 八章（AC 验证点追溯）与 5.2（应用兼容性）承载。
+> **验证口径说明：** VM-1～VM-5、VM-7～VM-8 均为端到端构建输出断言——验证示例页面为完整应用工程页面（位于 `compiler/test/` 下验证页面目录），经真实插件链（etsChecker→visualTransform→etsTransform→…）编译后对诊断输出断言，非函数级验证；「验证入口」列即触发入口（验证示例页面注册 + 全量验证入口）。VM-6 编号已随 v1.7 interop 维度移除，不复用。独立验收场景（构建 ArkTS 应用工程核对构建输出、比对工具链升级前后差异）由 spec-for-validation.md 八章（AC 验证点追溯）与 5.2（应用兼容性）承载。v1.11 注记：验证映射表验证描述改为实现中立表述（验证入口措辞），VM 编号、AC 对应关系与验证语义不变。
 
 ## API 变更分析
 
@@ -179,11 +179,11 @@ context-queries:
   - repo: "openharmony/developtools_ace_ets2bundle"
     query: "构造传参校验入口 validateCustomComponentPrams 与既有 @Require 必传校验（10905316/10905321/10905359）在 compiler/src/process_custom_component.ts 的实现位置与告警锚点"
   - repo: "openharmony/developtools_ace_ets2bundle"
-    query: "compiler/src/interop/src/ 镜像工具链的同名校验副本与 fast_build/ets_ui 插件集（interopBuild/interopArkTest 构建链）"
+    query: "compiler/src/interop/src/ 镜像工具链的同名校验副本与 fast_build/ets_ui 插件集（interopBuild 构建链与镜像回归入口）"
   - repo: "openharmony/developtools_ace_ets2bundle"
     query: "V1 @Require 合法搭配（process_component_member.ts SUPPORT_REQUIRE_DECORATOR/mandatoryToInitViaParamDecorators）与 V2 @Require+@Param 限制（process_struct_componentV2.ts）"
   - repo: "openharmony/developtools_ace_ets2bundle"
-    query: "ut_validate.test.ts + transform_ut_error.json + helpers/pathConfig.ts 的 fixture 断言机制与 etsTest/interopArkTest 测试命令"
+    query: "compiler/test/ 下验证页面目录、页面注册表与期望诊断登记文件的验证断言机制与既有全量验证入口/镜像回归入口的运行方式"
 ```
 
-**关键文档：** `proposal.md`（issue-4719-require-type-check，Approved v1.9）；GitCode Issue https://gitcode.com/openharmony/developtools_ace_ets2bundle/issues/4719；知识库 `docs/specs/02-校验规则/02-05 @Require.md`（既有 `@Require` 规则先例）。
+**关键文档：** `proposal.md`（issue-4719-require-type-check，Approved v1.11）；GitCode Issue https://gitcode.com/openharmony/developtools_ace_ets2bundle/issues/4719；知识库 `docs/specs/02-校验规则/02-05 @Require.md`（既有 `@Require` 规则先例）。
