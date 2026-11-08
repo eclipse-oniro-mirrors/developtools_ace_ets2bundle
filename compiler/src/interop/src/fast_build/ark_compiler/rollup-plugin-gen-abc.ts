@@ -29,6 +29,8 @@ import { cleanUpFilesList } from './utils';
 import { CommonLogger } from './logger';
 import {
   getHookEventFactory,
+  createAndStartEvent,
+  stopEvent,
   cleanUpAsyncEvents,
   CompileEvent
 } from '../../performance';
@@ -44,13 +46,17 @@ export function genAbc() {
   return {
     name: 'genAbc',
     buildStart() {
+      const hookEventFactory: CompileEvent | undefined =
+        getHookEventFactory(this.share, 'genAbc', 'buildStart');
+      const eventGenAbcBuildStart = createAndStartEvent(hookEventFactory, 'genAbcBuildStart');
       this.share.arkProjectConfig = initArkProjectConfig(this.share);
-      checkArkCompilerCacheInfo(this);
+      checkArkCompilerCacheInfo(this, eventGenAbcBuildStart);
       //Because calling the method of SourceMapGenerator may not retrieve the rollupObject
       //it is necessary to assign the rollupObject to SourceMapGenerator in the early stages of build
       SourceMapGenerator.init(this);
       // Check proload path exist or not, initialize preloadBack path
       PreloadFileModules.initialize(this);
+      stopEvent(eventGenAbcBuildStart);
     },
     shouldInvalidCache: shouldInvalidCache,
     transform: transformForModule,
