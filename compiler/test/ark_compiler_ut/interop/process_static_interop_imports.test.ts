@@ -58,7 +58,12 @@ mocha.describe('process static interop imports tests', function() {
         },
         [customFilePath.replace(/\\/g, '/')]: {
           root: {
-            default: { kind: 'function', name: 'default', runtimeName: 'Lentry/src/main/ets/pages/custom/ETSGLOBAL;' }
+            default: {
+              kind: 'function',
+              name: 'default',
+              localName: 'value',
+              runtimeName: 'Lentry/src/main/ets/pages/custom/ETSGLOBAL;'
+            }
           }
         }
       }
@@ -142,6 +147,8 @@ mocha.describe('process static interop imports tests', function() {
     expect(result).not.to.include('import { test } from "./teststatic";');
     expect(result).to.include('function __createLazy__<T>(loader: () => T, label?: string): T');
     expect(result).to.include('Panda.getFunction(\'Lentry/src/main/ets/pages/teststatic/ETSGLOBAL;\'');
+    expect(result).to.include(
+      'Panda.getClass(\'Lentry/src/main/ets/pages/teststatic/ETSGLOBAL;\')[\'message\']');
     expect(result).to.include('function __createUnsupportedObject__(reason: unknown, label = \'object\'): any');
     expect(result).to.include('export const aa = __createLazy__(');
     expect(result).to.include('export const message = __createLazy__(');
@@ -155,6 +162,12 @@ mocha.describe('process static interop imports tests', function() {
     expect(result).to.include('function __createLazy__<T>');
     expect(result).to.include('custom/ETSGLOBAL');
     expect(result).to.include('value();');
+  });
+
+  mocha.it('uses the localName for the runtime lookup when localName is present', function() {
+    const result: string = transform('import value from "./custom.ets";\nvalue();\n');
+    expect(result).to.include("Panda.getFunction('Lentry/src/main/ets/pages/custom/ETSGLOBAL;', 'value')");
+    expect(result).not.to.include("Panda.getFunction('Lentry/src/main/ets/pages/custom/ETSGLOBAL;', 'default')");
   });
 
   mocha.it('does not match text outside an import declaration', function() {

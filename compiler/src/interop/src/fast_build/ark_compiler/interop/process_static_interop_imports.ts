@@ -550,7 +550,7 @@ function createStaticInteropReplacementSource(symbols: BoundStaticInteropSymbol[
 
 /**
  * Recursively emits one declaration using the metadata kind:
- * class -> Panda.getClass, function -> Panda.getFunction, property -> getClass(...).name,
+ * class -> Panda.getClass, function -> Panda.getFunction, property -> getClass(...)[name],
  * namespace -> an exported declaration for every processable entry in its children map.
  */
 function createStaticInteropDeclaration(symbol: StaticInteropSymbol, declarationName: string,
@@ -583,7 +583,7 @@ function createStaticInteropDeclaration(symbol: StaticInteropSymbol, declaration
       expression = `(globalThis as any).Panda.getFunction(${runtimeName}, ${JSON.stringify(localName)})`;
       break;
     case 'property':
-      expression = `(globalThis as any).Panda.getClass(${runtimeName}).${localName}`;
+      expression = `(globalThis as any).Panda.getClass(${runtimeName})[${JSON.stringify(localName)}]`;
       break;
     case 'class':
       expression = `(globalThis as any).Panda.getClass(${runtimeName})`;
