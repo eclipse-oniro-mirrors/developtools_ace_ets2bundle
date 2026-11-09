@@ -439,6 +439,7 @@ export const DATE: string = 'date';
 export const GRID_ITEM: string = 'GridItem';
 export const LIST_ITEM: string = 'ListItem';
 export const GRID: string = 'Grid';
+export const WATERFLOW: string = 'WaterFlow';
 export const LIST: string = 'List';
 export const ENABLE_EDIT_MODE: string = 'enableEditMode';
 export const UPDATE_FUNC_BY_ELMT_ID: string = 'updateFuncByElmtId';

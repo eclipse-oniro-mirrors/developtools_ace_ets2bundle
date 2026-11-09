@@ -136,6 +136,7 @@ import {
   staticInteropTransformLog
 } from '../ark_compiler/interop/process_static_interop_imports';
 import { ARKTS_1_2 } from '../ark_compiler/interop/pre_define';
+import { clearExtendBlockCache } from '../../scroll_container_size_check';
 
 let switchTsAst: boolean = true;
 
@@ -762,6 +763,7 @@ function resetCollection() {
   propertyCollection.clear();
   linkCollection.clear();
   EXTEND_ATTRIBUTE.clear();
+  clearExtendBlockCache();
   storedFileInfo.getCurrentArkTsFile().reuseComponentsV2.clear();
   resetComponentCollection();
   storedFileInfo.hasLocalBuilderInFile = false;
