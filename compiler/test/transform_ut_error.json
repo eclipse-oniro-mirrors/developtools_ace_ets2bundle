@@ -5353,33 +5353,33 @@
     ],
     "validateRequireParamUndefinedType": [
         {
-            "message": "'@Require' decorated 'require_value' expects type 'number' but got 'undefined' through the component constructor.",
+            "message": "The type of property 'require_value' decorated with '@Require' is expected to be 'number', but is actually 'undefined' in the component constructor.",
             "type": "WARN"
         }
     ],
     "validateRequireParamUndefinedTypeV2": [
         {
-            "message": "'@Require' decorated 'require_param_value' expects type 'string' but got 'undefined' through the component constructor.",
+            "message": "The type of property 'require_param_value' decorated with '@Require' is expected to be 'string', but is actually 'undefined' in the component constructor.",
             "type": "WARN"
         }
     ],
     "validateRequireParamUndefinedTypeExtension": [
         {
-            "message": "'@Require' decorated 'void_value' expects type 'number' but got 'undefined' through the component constructor.",
+            "message": "The type of property 'void_value' decorated with '@Require' is expected to be 'number', but is actually 'undefined' in the component constructor.",
             "type": "WARN"
         },
         {
-            "message": "'@Require' decorated 'union_variable_value' expects type 'number' but got 'number | undefined' through the component constructor.",
+            "message": "The type of property 'union_variable_value' decorated with '@Require' is expected to be 'number', but is actually 'number | undefined' in the component constructor.",
             "type": "WARN"
         }
     ],
     "validateRequireParamUndefinedTypeExtensionV2": [
         {
-            "message": "'@Require' decorated 'void_param_value' expects type 'string' but got 'undefined' through the component constructor.",
+            "message": "The type of property 'void_param_value' decorated with '@Require' is expected to be 'string', but is actually 'undefined' in the component constructor.",
             "type": "WARN"
         },
         {
-            "message": "'@Require' decorated 'union_param_value' expects type 'string' but got 'string | undefined' through the component constructor.",
+            "message": "The type of property 'union_param_value' decorated with '@Require' is expected to be 'string', but is actually 'string | undefined' in the component constructor.",
             "type": "WARN"
         }
     ]

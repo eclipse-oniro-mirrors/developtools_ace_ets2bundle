@@ -21,6 +21,11 @@
 - [ ] Needs Changes
 - [ ] Blocked
 
+| Field | Value |
+|-------|-------|
+| Approver | @youzhi92（owner；2026-11-10 会话双批准：v1.12 文档链 + TASK-5 执行授权） |
+| Evidence | evidence/checks/task5-red-green/（v1.12 成对验证 6 份日志）+ 本文件 v1.12 增补段 + review.md v1.12 括注 |
+
 ## Plan Scope vs Actual Code Scope
 
 | Task | Planned Files/Symbols | Actual Files/Symbols | Commit | Deviation | Result |
@@ -29,6 +34,7 @@
 | TASK-2 | `compiler/src/interop/src/process_custom_component.ts` 镜像 + 挂载行 | 同文件：同 4 函数 :2093-2167 + 挂载 :1591；主/镜像新增块 `diff` 逐行 IDENTICAL（本审查复核） | `单 commit（Change-Id Ieca81b2）` | 无 | PASS |
 | TASK-3 | 2 fixture 新建 + pathConfig/transform_ut_error.json 修改 + interop 用例新建 | 与计划一致：2 fixture（V1 正例+5 反例 / V2 正例+反例）、pathConfig :312-313 注册、JSON 追加 2 WARN 条目（274 页 valid）、interop 用例 2 it | `单 commit（Change-Id Ieca81b2）` | interop 用例复用 test.js 轻量驱动而非全管线 mock——已登记偏差表（ark_compiler_ut 无全管线先例，grep 证实；契约要求全部满足） | PASS |
 | TASK-4 | v1.8 类型级触发扩展：主/镜像触发条件类型级替换 + 新判定 helper `isTypeDefinitelyIncludingUndefined` + Extension fixture 2 页 + 注册/期望/interop 用例（明细见下方 v1.8 增补段） | 主链 helper :2087-2097 + 触发 :2147-2148（+14/-2）；镜像 :2103-2113/:2163-2164（+14/-2，新增块 diff IDENTICAL）；2 fixture 新建；pathConfig +2；`transform_ut_error.json` +20/-0 纯追加；interop 测试 +35/-0 纯追加 | `单 commit（Change-Id Ia0e5e0a，2026-10-31）`（代码+文档同 commit，追溯同 TASK-1 口径） | 无（净 diff 与 Files 表 7 项一致） | PASS |
+| TASK-5 | v1.12 消息模板改写：主/镜像 message 字符串模板整体替换 + 期望登记 6 条消息文本（明细见下方 v1.12 增补段） | 主链 :2163-2164 message 两行（+2/-2）；镜像 :2179-2180 同构（+2/-2，message 区块 diff IDENTICAL、偏移 +16 保持）；`transform_ut_error.json` 6 条 message 文本替换（4 键、条目数不变、276 顶层键 JSON valid）；6 fixture 页与 pathConfig diff = 0；变量名与 log.push 结构零改动 | `单 commit（代码+文档同 commit，2026-11-10 owner 授权 TASK-5，随 PR #7259 追加）` | 无（净 diff 与 Files 表 3 项一致） | PASS |
 
 ## Findings
 
@@ -83,3 +89,26 @@
 ### v1.8 Conclusion
 
 **Approved（维持）。** 插入面极小（2 文件各 +14/-2 完全对称）、镜像逐行 IDENTICAL、零新 import、既有期望零漂移；提交策略沿 v1.5 周期先例由 owner 决策时执行。
+
+## v1.12 增补段（TASK-5 消息模板改写，2026-11-10）
+
+> 本段为 execution-plan v1.12 修订新增 TASK-5 交付后的增补审查记录；上文 v1.5/v1.8 周期审查内容为历史基线，不改写。审查基准：工作区态（HEAD 81cdef38c + TASK-5 净 diff 3 文件）；owner 2026-11-10 会话双批准。
+
+### v1.12 Plan Scope vs Actual Code Scope
+
+| Task | Planned Files/Symbols | Actual Files/Symbols | Commit | Deviation | Result |
+|------|-----------------------|----------------------|--------|-----------|--------|
+| TASK-5 | 主链 `process_custom_component.ts`（message 字符串模板替换）；镜像 `interop/src/process_custom_component.ts`（同步）；`transform_ut_error.json`（6 条期望消息文本） | 与计划一致：主链 :2163-2164（+2/-2）、镜像 :2179-2180（+2/-2，message 区块 diff IDENTICAL、偏移 +16 保持）、JSON 6 条 message 文本（4 键、条目数不变、276 顶层键 JSON valid）；6 fixture 页与 pathConfig diff = 0；变量名 paramName/declaredType/actualType 与 log.push 结构零改动 | `单 commit（代码+文档同 commit，2026-11-10 owner 授权 TASK-5，随 PR #7259 追加）` | 无（净 diff 与 Files 表 3 项一致） | PASS |
+
+### v1.12 Quality Dimensions
+
+| Dimension | Finding | Evidence | Result |
+|-----------|---------|----------|--------|
+| Diff 最小性 | 恰 message 字符串与期望文本，无格式化夹带（模板保持两行拼接结构，第一行 `'${declaredType}', ` 结尾） | `git diff`（2 src 各 +2/-2） | PASS |
+| 镜像同步铁律 | 主/镜像 message 区块（:2155-2170 vs :2171-2186）diff IDENTICAL | 区段 diff 复核（本审查） | PASS |
+| 命名/结构零改动 | 变量名 paramName/declaredType/actualType 未改（spec 占位符名与实现变量名对应关系由 design ADR-5 注记承载）；log.push 结构（type/message/pos、无 code）未动 | `git diff` 逐行核对 | PASS |
+| 静态检查 | 只读 eslint message 替换区间 0 命中（103 error 全预存：主 50/镜像 53，行号均在编辑区外） | `green-eslint.txt` | PASS |
+
+### v1.12 Conclusion
+
+**Approved（维持）。** 最小 diff、镜像 IDENTICAL、零命名漂移、无新 finding。Approver：@youzhi92（owner 2026-11-10 会话批准）；Evidence：`evidence/checks/task5-red-green/green-eslint.txt` + 工作区 diff 复核。

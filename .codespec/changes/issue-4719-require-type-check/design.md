@@ -7,7 +7,7 @@
 | 字段 | 内容 |
 |------|------|
 | Design ID | DESIGN-require-type-check-001 |
-| 关联需求 | `proposal.md`（issue-4719-require-type-check，基线 v1.11，Approved） |
+| 关联需求 | `proposal.md`（issue-4719-require-type-check，基线 v1.12，Approved） |
 | 关联 Epic | 无（独立特性） |
 | 目标 Feature | REQ-09-01-01-01（沿用 proposal 需求ID / spec 特性编号） |
 | 复杂度 | 简单 |
@@ -108,7 +108,7 @@
 | ADR-2 | 校验逻辑插入点 | 新增独立函数（暂名 validateRequireParamUndefinedType），在 validateCustomComponentPrams 中与既有三个 validate* 并列调用 | ① 内联进 :1552 properties.forEach 循环：循环已承载多项职责，混入类型判定增加耦合，放弃；② 扩展 validateInitDecorator：其语义是"必传缺失"（ERROR），混入"传值类型"（WARN）模糊两类行为边界，放弃 | 与既有校验函数族同构；V1/V2 经同一入口天然覆盖（AC-1.1/1.2）；@Builder 内同文件使用点同样进入校验并告警（探针实证，属 R-1 字面范围） | 主链路单点修改；AC-1.1/1.2 |
 | ADR-3 | @Require 成员判定来源 | V1：decoratorVariable 同源集合（5 个 Initialization 并集，与 10905359 同源）；V2：paramDecoratorMap.hasRequire（与 10905321 同源） | 直接扫描 struct 成员装饰器文本：独立实现第二套 @Require 识别，可能与既有集合语义漂移（如跨文件 storedFileInfo 合并），放弃 | 与既有必传校验完全同源，行为一致由构造保证 | AC-1.1/1.2/1.4 |
 | ADR-4 | 传入值 undefined 判定（v1.8 升级为类型级） | 顶层 PropertyAssignment.initializer 的解析类型含 `undefined` 成员即命中：`undefined` 标识符、`void` 表达式（如 `void 0`）、类型含 `undefined` 的变量/表达式；空值守卫（`!== undefined`）收窄后解析类型不含 `undefined` 不命中；`any`/`unknown`（类型不明）排除。声明类型判定门（含 `undefined`/`any`/`unknown`/不可解析→跳过）保持在前 | ① 语法级判定（isIdentifier && text === 'undefined'，v1.5 方案）：`void 0`（VoidExpression）与联合类型变量可绕过，owner 2026-10-31 确认缺口，放弃；② getText() 字符串比较：受格式/注释影响，放弃；③ 递归检查嵌套对象属性内部：违背 AC-1.5/R-5（仅顶层），放弃 | 探针实证（fork linter checker）：收窄豁免成立（流分析生效）、typeToString 渲染即 got 段（`undefined`/联合文本）、`any` 排除守住零误报（与声明侧 R-6 同向保守）；Shorthand/Spread/Method 等非 PropertyAssignment 形态自然排除 | AC-1.6 正例 + AC-1.5 零误报；VM-7/VM-8 |
-| ADR-5 | 诊断输出契约 | log.push({ type: LogType.WARN, message: spec 固定英文模板（paramName 插值）, pos: item.getStart() })，无 code 字段 | 锚定整个 CallExpression（10905359 风格）：spec R-1 已固定为传参属性节点锚点（`字段名: undefined` 行），放弃 | O-3 无码决策 + spec 消息模板为固定契约；属性级锚点定位更精确 | VM-1～VM-5、VM-7～VM-8 的文案/计数断言 |
+| ADR-5 | 诊断输出契约 | log.push({ type: LogType.WARN, message: spec 固定英文模板（propName 插值，v1.12 占位符名；实现侧变量名沿用 paramName）, pos: item.getStart() })，无 code 字段 | 锚定整个 CallExpression（10905359 风格）：spec R-1 已固定为传参属性节点锚点（`字段名: undefined` 行），放弃 | O-3 无码决策 + spec 消息模板为固定契约；属性级锚点定位更精确 | VM-1～VM-5、VM-7～VM-8 的文案/计数断言 |
 | ADR-6 | 判定失败的回退方向 | checker 不可用 / 符号不可解析 / 成员找不到 / 类型不可判定（含 v1.8 传入值类型不明即 `any`/`unknown`） → 一律不告警并正常返回 | ① 此时仍告警：违背 R-6 零误报约束，放弃；② 输出内部错误/断言：将工具链内部不确定性暴露为用户可见错误，不可取 | 保守方向与 spec R-6/R-3（any/unknown/不可判定不告警）及 R-7 传入值侧边界一致 | 极端构建模式下静默；正例路径由 VM 用例证明可用性 |
 
 ## 设计骨架
@@ -122,7 +122,7 @@
 
 ### 骨架 Spec 拆分
 
-简单复杂度：不设独立骨架 Task，骨架随 TASK-1/TASK-3（v1.8 扩展随 TASK-4）一并落地；成对验证（实现前失败→实现后通过）由 VM-1～VM-5 与 VM-7～VM-8 的实现前失败信号（实现前 0 告警 vs 期望条数 → 验证入口断言失败）承载。
+简单复杂度：不设独立骨架 Task，骨架随 TASK-1/TASK-3（v1.8 扩展随 TASK-4；v1.12 消息模板改写随 TASK-5，仅 message 字符串无骨架面）一并落地；成对验证（实现前失败→实现后通过）由 VM-1～VM-5 与 VM-7～VM-8 的实现前失败信号（实现前 0 告警 vs 期望条数 → 验证入口断言失败）承载。
 
 ## 后续 Task 拆分
 
@@ -132,6 +132,7 @@
 | TASK-2 | interop 镜像同步：同一改动复制到镜像副本并保持行为一致 | compiler/src/interop/src/process_custom_component.ts（必要时 interop/src/utils.ts） | TASK-1 完成 |
 | TASK-3 | 验证落地：验证示例页面（V1/V2/反例矩阵）+ 页面注册表登记 + 期望诊断登记；运行既有全量验证入口与镜像回归入口回归 | compiler/test/ 下验证页面目录（新验证示例页面）、页面注册表文件、期望诊断登记文件 | TASK-1/TASK-2 完成 |
 | TASK-4 | v1.8 类型级触发扩展：主链与镜像触发条件替换（语法级→类型级，新增传入值 undefined 判定助手、`any`/`unknown` 排除、收窄豁免）+ 扩展验证示例页面 2 页（V1 含收窄/any 反例、V2 同正例集）+ 页面注册表与期望诊断登记；成对验证回归（实现前失败→实现后通过），既有 2 页零改动 | compiler/src/process_custom_component.ts、compiler/src/interop/src/process_custom_component.ts、compiler/test/ 下验证页面目录（新 2 页）、页面注册表文件、期望诊断登记文件 | TASK-1/TASK-2/TASK-3 完成 + v1.8 基线（proposal/spec）Approved |
+| TASK-5 | v1.12 消息模板改写：主链与镜像 message 字符串模板整体替换（spec v1.12 新模板，占位符名 propName/expectType/actualType；实现侧变量名沿用 paramName/declaredType/actualType 不变）+ 期望诊断登记 6 条期望消息文本同步；成对验证（改代码后先跑既有全量验证入口 6 条消息断言失败=Red→镜像逐行同步→更新期望后全量通过），触发判定/级别/无码/锚点/验证页面/页面注册表零改动 | compiler/src/process_custom_component.ts、compiler/src/interop/src/process_custom_component.ts、期望诊断登记文件 | TASK-1～TASK-4 完成 + v1.12 基线（proposal/spec）Approved |
 
 ## API 签名、Kit 与权限
 
@@ -162,7 +163,7 @@ N/A：不变更、不废弃任何 API。
 
 | AC | 可观察表面 | 测试侧验证方式 | 环境/设备限制 | 不可自动化项 |
 |---|---|---|---|---|
-| AC-1.1 | 应用工程构建输出中的 1 条 WARNING 级别诊断：无数字错误码，文案为 spec 消息模板固定英文文案（`${paramName}` 为被传字段名），行列定位在构造传参对象中该字段的传值属性行（`字段名: undefined` 所在行）；编译继续完成、无新增 ERROR | 构建（编译）包含 V1 组件（`@Component`）构造传参对象的 ArkTS 应用工程：对象中向 `@Require` 修饰（单独或与 `@Prop`、`@State`、`@Provide`、`@BuilderParam` 组合，有无默认值不限）且声明类型不含 `undefined` 的字段显式传入 `undefined` 标识符；检查构建输出：该字段输出恰 1 条 WARNING，级别/文案/定位逐项核对，且编译不失败 | 需可运行的 ArkTS 应用工程与配套编译工具链（IDE 或命令行构建均可）；无需真机/模拟器（纯构建期行为） | 无 |
+| AC-1.1 | 应用工程构建输出中的 1 条 WARNING 级别诊断：无数字错误码，文案为 spec 消息模板固定英文文案（`${propName}` 为被传字段名），行列定位在构造传参对象中该字段的传值属性行（`字段名: undefined` 所在行）；编译继续完成、无新增 ERROR | 构建（编译）包含 V1 组件（`@Component`）构造传参对象的 ArkTS 应用工程：对象中向 `@Require` 修饰（单独或与 `@Prop`、`@State`、`@Provide`、`@BuilderParam` 组合，有无默认值不限）且声明类型不含 `undefined` 的字段显式传入 `undefined` 标识符；检查构建输出：该字段输出恰 1 条 WARNING，级别/文案/定位逐项核对，且编译不失败 | 需可运行的 ArkTS 应用工程与配套编译工具链（IDE 或命令行构建均可）；无需真机/模拟器（纯构建期行为） | 无 |
 | AC-1.2 | 同 AC-1.1 的 WARNING（级别、文案、定位规则一致），场景为 V2 组件（`@ComponentV2`） | 构建（编译）包含 V2 组件构造传参对象的 ArkTS 应用工程：对象中向 `@Require` 与 `@Param` 共同修饰且声明类型不含 `undefined` 的字段显式传入 `undefined`；检查构建输出：恰 1 条与 AC-1.1 同级别、同文案的 WARNING，且编译不失败 | 同 AC-1.1 | 无 |
 | AC-1.3 | 构建输出不出现本特性告警（既有行为不变） | 构建（编译）含以下 `@Require` 字段场景的 ArkTS 应用工程并检查输出不含本特性告警：① 声明类型含 `undefined`（`number` 与 `undefined` 的联合类型、可选属性等价形式）；② 类型为 `any` 或 `unknown`；均显式传入 `undefined` | 同 AC-1.1 | 无 |
 | AC-1.4 | 构建输出不出现本特性告警 | 构建（编译）含"无 `@Require` 修饰的字段显式传入 `undefined`"场景的 ArkTS 应用工程；检查构建输出不含本特性告警 | 同 AC-1.1 | 无 |
@@ -206,7 +207,7 @@ N/A：不变更、不废弃任何 API。
 
 ## 设计审批
 
-- [x] 需求基线已确认，设计覆盖 P0/P1 AC（本特性 P1；AC-1.1～AC-1.6 全覆盖：ADR-1/2→AC-1.1/1.2，ADR-3→AC-1.4，ADR-4→AC-1.5/AC-1.6（v1.8 类型级触发），类型判定口径→AC-1.3；interop 镜像同步为仓内架构铁律，由 TASK-2 承载非 AC 项；v1.8 扩展由 TASK-4 承载）
+- [x] 需求基线已确认，设计覆盖 P0/P1 AC（本特性 P1；AC-1.1～AC-1.6 全覆盖：ADR-1/2→AC-1.1/1.2，ADR-3→AC-1.4，ADR-4→AC-1.5/AC-1.6（v1.8 类型级触发），类型判定口径→AC-1.3；interop 镜像同步为仓内架构铁律，由 TASK-2 承载非 AC 项；v1.8 扩展由 TASK-4 承载；v1.12 消息模板改写由 TASK-5 承载）
 - [x] 不涉及项已承接，N/A 和展开项都有结论（仅兼容性涉及，设计侧结论见「不涉及项承接」）
 - [x] 涉及仓和模块职责清楚（单仓两文件族+配套验证，见「涉及仓和模块」）
 - [x] 调用链层级分析完整，每层覆盖到位（构建编排→检查→变换→校验→镜像→验证）
@@ -223,4 +224,4 @@ N/A：不变更、不废弃任何 API。
 - [x] 关键设计决策有理由和影响说明（ADR-1～ADR-6，均含备选与取舍）
 - [x] 风险和开放问题有 Owner（4 项，均指定 Owner）
 
-**结论:** 通过（用户于 2026-10-29 批准 Design；审批记录见 evidence/checks/check-design.md 一致性结论。v1.8 修订（2026-10-31）：ADR-4 升级为类型级触发、新增 TASK-4 与 VM-7/VM-8 测试输入、代码事实基线补 2 项，经 owner 会话批准 v1.8 方案与文档链先行后同步。v1.11 修订（2026-11-06）：验证描述实现中立化（剥离验证技术载体字样），验证语义与设计契约无变更，经 owner 会话指示执行）
+**结论:** 通过（用户于 2026-10-29 批准 Design；审批记录见 evidence/checks/check-design.md 一致性结论。v1.8 修订（2026-10-31）：ADR-4 升级为类型级触发、新增 TASK-4 与 VM-7/VM-8 测试输入、代码事实基线补 2 项，经 owner 会话批准 v1.8 方案与文档链先行后同步。v1.11 修订（2026-11-06）：验证描述实现中立化（剥离验证技术载体字样），验证语义与设计契约无变更，经 owner 会话指示执行。v1.12 修订（2026-11-10）：owner 指示告警消息模板整体改写（占位符名 paramName→propName、paramType→expectType，actualType 不变，插值语义不变），ADR-5 插值说明与 AC-1.1 验证点占位符名同步，新增 TASK-5 承载代码与期望登记的模板改写（实现侧变量名沿用 paramName/declaredType，仅 message 字符串模板变更，触发/级别/锚点契约不变），待 owner 批准 v1.12 基线后实施）

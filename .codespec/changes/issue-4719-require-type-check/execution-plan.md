@@ -10,15 +10,15 @@
 | 关联 Feature/Bug | REQ-09-01-01-01（沿用 proposal 需求ID）；GitCode Issue 4719（issue-4719-require-type-check） |
 | 关联文档 | proposal.md / design.md / spec.md / spec-for-validation.md（Profile 旁路件） |
 | 复杂度 | 简单 |
-| 状态 | Approved（TASK-1～TASK-4 已交付：TASK-4 为 v1.8 修订新增，经 owner 2026-10-31 批准执行，代码与成对验证证据落地、本 Plan 已回填；已提交单 commit（Change-Id Ia0e5e0a，2026-10-31 owner 指令上传）；v1.11 修订（2026-11-06）：验证描述实现中立化（剥离验证技术载体字样），验证语义、Task 边界与追溯结构不变） |
+| 状态 | Approved（TASK-1～TASK-4 已交付：TASK-4 为 v1.8 修订新增，经 owner 2026-10-31 批准执行，代码与成对验证证据落地、本 Plan 已回填；已提交单 commit（Change-Id Ia0e5e0a，2026-10-31 owner 指令上传）；v1.11 修订（2026-11-06）：验证描述实现中立化（剥离验证技术载体字样），验证语义、Task 边界与追溯结构不变；v1.12 修订（2026-11-10）：owner 指示告警消息模板整体改写为「The type of property '{propName}' decorated with '@Require' is expected to be '{expectType}', but is actually '{actualType}' in the component constructor.」（占位符名 paramName→propName、paramType→expectType，actualType 不变，插值语义不变），新增 TASK-5 承载代码与期望登记的模板改写（待 owner 批准 v1.12 基线后执行），触发/级别/定位/反例口径与既有 Task 边界不变） |
 | Owner | 用户（本会话需求方） |
 
 ## 输入状态
 
 | 输入 | 路径 | 要求状态 |
 |------|------|----------|
-| Requirement | `proposal.md`（基线 v1.11，approval.baseline_digest 6e17643e…） | Approved |
-| Design | `design.md`（DESIGN-require-type-check-001；ADR-1～ADR-6；TASK-1～TASK-4） | Approved |
+| Requirement | `proposal.md`（基线 v1.12，approval.baseline_digest 6e17643e…） | Approved |
+| Design | `design.md`（DESIGN-require-type-check-001；ADR-1～ADR-6；TASK-1～TASK-5） | Approved |
 | Spec | `spec.md`（AC-1.1～AC-1.6；R-1～R-7；VM-1～VM-5 与 VM-7～VM-8；VM-6 已随 v1.7 移除不复用） | Approved |
 
 > spec-for-validation.md 为测试输入旁路件（ReadyForReview，双 Owner 签署中，不阻塞主流程）；其约束已回流 design.md「测试输入约束」章节，本 Plan 的 TASK-3 与 TASK-4 与之对齐（TASK-4 对应 v1.8 新增验证点7/8 的测试输入）。
@@ -60,18 +60,20 @@
 
 | AC | 来源 | Task | 计划代码范围 | 实际 Code Ref | Commit | Review Evidence | 验证状态 |
 |----|------|------|--------------|-----------------|--------|-----------------|----------|
-| AC-1 | proposal.md（对应 spec AC-1.1） | TASK-1, TASK-3 | `compiler/src/process_custom_component.ts:validateRequireParamUndefinedType`（V1 判定与挂载） | `compiler/src/process_custom_component.ts:2112-2151`（主函数）+ `:2077-2110`（3 个 helper）+ `:1575`（挂载行） | `单 commit（Change-Id Ieca81b2）` | Review Approved（2026-10-29）：`evidence/reviews/spec-compliance.md` + `code-quality.md` + `verification.md`（汇总 `review.md`）；实施验证证据 `evidence/checks/task3-red-green/README.md` | pass |
-| AC-1.1 | spec.md | TASK-1, TASK-3 | `compiler/src/process_custom_component.ts:validateRequireParamUndefinedType`（V1 @Require 集合同源判定 + 显式 undefined 判定 + WARN 推送） | 同 AC-1（V1 decoratorVariable 五集合并集 :2124-2130；顶层 undefined 判定 :2131-2135；WARN 推送 :2144-2149）；验证示例页面断言 validateRequireParamUndefinedType（正例 require_value 恰 1 WARN） | `单 commit（Change-Id Ieca81b2）` | 同上 | pass |
-| AC-1.2 | spec.md | TASK-1, TASK-3 | `compiler/src/process_custom_component.ts:validateRequireParamUndefinedType`（V2 paramDecoratorMap.hasRequire 分支） | 同 AC-1（:2122-2123 childStructInfo 派生 + :2137-2139 hasRequire 判定）；验证示例页面断言 validateRequireParamUndefinedTypeV2（@Require @Param 正例恰 1 WARN） | `单 commit（Change-Id Ieca81b2）` | 同上 | pass |
+| AC-1 | proposal.md（对应 spec AC-1.1） | TASK-1, TASK-3, TASK-5（v1.12 文案） | `compiler/src/process_custom_component.ts:validateRequireParamUndefinedType`（V1 判定与挂载） | `compiler/src/process_custom_component.ts:2112-2151`（主函数）+ `:2077-2110`（3 个 helper）+ `:1575`（挂载行）；v1.12 文案已闭合（2026-11-10，TASK-5）：message 模板替换 :2163-2165（渲染与 spec v1.12 逐字符），断言经主链全量验证入口 6 条消息 Red→Green | v1.5：`单 commit（Change-Id Ieca81b2）`；v1.12：单 commit（代码+文档同 commit，2026-11-10 owner 授权，随 PR #7259 追加） | v1.5：Review Approved（2026-10-29）：`evidence/reviews/spec-compliance.md` + `code-quality.md` + `verification.md`（汇总 `review.md`）；v1.12：三份 v1.12 增补段（2026-11-10）；实施验证证据 `evidence/checks/task3-red-green/README.md` + `evidence/checks/task5-red-green/` | pass |
+| AC-1.1 | spec.md | TASK-1, TASK-3, TASK-5（v1.12 文案） | `compiler/src/process_custom_component.ts:validateRequireParamUndefinedType`（V1 @Require 集合同源判定 + 显式 undefined 判定 + WARN 推送） | 同 AC-1（V1 decoratorVariable 五集合并集 :2124-2130；顶层 undefined 判定 :2131-2135；WARN 推送 :2144-2149）；验证示例页面断言 validateRequireParamUndefinedType（正例 require_value 恰 1 WARN）；v1.12 文案已闭合（2026-11-10，TASK-5）：message 模板替换 :2163-2165，页面 1-60 断言红转绿（新模板 vs 新期望逐字符） | 同 AC-1（v1.5：Change-Id Ieca81b2；v1.12：单 commit 随 PR #7259 追加） | 同 AC-1 | pass |
+| AC-1.2 | spec.md | TASK-1, TASK-3, TASK-5（v1.12 文案） | `compiler/src/process_custom_component.ts:validateRequireParamUndefinedType`（V2 paramDecoratorMap.hasRequire 分支） | 同 AC-1（:2122-2123 childStructInfo 派生 + :2137-2139 hasRequire 判定）；验证示例页面断言 validateRequireParamUndefinedTypeV2（@Require @Param 正例恰 1 WARN）；v1.12 文案已闭合（2026-11-10，TASK-5）：message 模板替换同主链单点，页面 1-61 断言红转绿 | 同 AC-1（v1.5：Change-Id Ieca81b2；v1.12：单 commit 随 PR #7259 追加） | 同 AC-1 | pass |
 | AC-1.3 | spec.md | TASK-1, TASK-3 | `compiler/src/process_custom_component.ts:validateRequireParamUndefinedType`（类型含 undefined、any、unknown、不可解析 → 不告警回退） | 同 AC-1（`isTypeIncludingUndefined` :2077-2085 含 any/unknown/undefined 联合回退；`:2087-2099` 符号链不可解析回退）；验证示例页面反例 union_value/any_value 0 告警 | `单 commit（Change-Id Ieca81b2）` | 同上 | pass |
 | AC-1.4 | spec.md | TASK-1, TASK-3 | `compiler/src/process_custom_component.ts:validateRequireParamUndefinedType`（无 @Require 字段排除） | 同 AC-1（:2147-2149 无 hasRequire 且不在 decoratorVariable → 跳过）；验证示例页面反例 no_require_value/V2 plain_param_value 0 告警 | `单 commit（Change-Id Ieca81b2）` | 同上 | pass |
 | AC-1.5 | spec.md | TASK-1, TASK-3, TASK-4 | v1.8 重写边界：仅顶层 PropertyAssignment.initializer 进入判定；解析类型不含 `undefined` 的变量/表达式（含联合类型变量收窄后）与 `any`/`unknown` 动态值不告警 | v1.5 口径已闭合（2026-10-29）：同 AC-1（:2132-2134 语法级判定）+ 验证示例页面反例 variable_value（this.numValue）/nested_value（对象字面量内部 undefined）0 告警；v1.8 扩展反例已闭合（2026-10-31，TASK-4）：扩展验证示例页面独立反例 child `narrowed_value`（`!== undefined` 守卫内收窄传值）与 `any_var_value`（ESObject 动态值）类型级触发下 0 告警（既有全量验证入口计数+消息断言通过） | v1.5：`单 commit（Change-Id Ieca81b2）`；v1.8：`单 commit（Change-Id Ia0e5e0a）` | v1.5：同上（evidence/reviews/ 三份，2026-10-29 Approved）；v1.8：evidence/reviews/ 三份 v1.8 增补段（2026-10-31）+ `evidence/checks/task4-red-green/README.md` | pass |
-| AC-6 | proposal.md（对应 spec AC-1.6） | TASK-4 | 主链+镜像传入值判定升级（语法级→类型级）+ 扩展验证示例页面 2 页正例断言（每页恰 2 WARN） | 主链 `isTypeDefinitelyIncludingUndefined`（:2087-2097；Any/Unknown→false 与声明侧方向相反、同保守）+ 触发条件类型级替换（:2147-2148）+ 镜像同构（helper :2103-2113/触发 :2163-2164，新增块 diff IDENTICAL）；验证示例页面 validateRequireParamUndefinedTypeExtension/...ExtensionV2 每页恰 2 WARN（既有全量验证入口断言通过） | `单 commit（Change-Id Ia0e5e0a）` | evidence/reviews/ 三份 v1.8 增补段（2026-10-31 Approved）+ `evidence/checks/task4-red-green/README.md` | pass |
-| AC-1.6 | spec.md | TASK-4 | `compiler/src/process_custom_component.ts:validateRequireParamUndefinedType`（触发条件替换为传入值解析类型含 `undefined`，新判定 helper `isTypeDefinitelyIncludingUndefined`）+ `compiler/src/interop/src/process_custom_component.ts` 镜像同步 + 扩展验证示例页面 validateRequireParamUndefinedTypeExtension/...ExtensionV2（新建，V1/V2 各恰 2 WARN） | 同 AC-6（主链 helper :2087-2097 + 触发 :2147-2148、镜像 :2103-2113/:2163-2164；期望消息逐字符——got 段 V1 `'undefined'` 与 number/undefined 联合文本、V2 `'undefined'` 与 string/undefined 联合文本，逐字符全文锚定 spec.md 验证映射 VM-7/VM-8 与 `evidence/checks/task4-red-green/README.md`） | `单 commit（Change-Id Ia0e5e0a）` | 同 AC-6（evidence/reviews/ 三份 v1.8 增补段 + task4-red-green README） | pass |
+| AC-6 | proposal.md（对应 spec AC-1.6） | TASK-4, TASK-5（v1.12 文案） | 主链+镜像传入值判定升级（语法级→类型级）+ 扩展验证示例页面 2 页正例断言（每页恰 2 WARN） | 主链 `isTypeDefinitelyIncludingUndefined`（:2087-2097；Any/Unknown→false 与声明侧方向相反、同保守）+ 触发条件类型级替换（:2147-2148）+ 镜像同构（helper :2103-2113/触发 :2163-2164，新增块 diff IDENTICAL）；验证示例页面 validateRequireParamUndefinedTypeExtension/...ExtensionV2 每页恰 2 WARN（既有全量验证入口断言通过）；v1.12 文案已闭合（2026-11-10，TASK-5）：消息模板随 AC-1 同一模板刷新（AC-6 引用 AC-1 文案，无独立实现），页面 1-62/1-63 断言红转绿 | v1.8：`单 commit（Change-Id Ia0e5e0a）`；v1.12：单 commit（随 PR #7259 追加） | evidence/reviews/ 三份 v1.8 增补段（2026-10-31 Approved）+ 三份 v1.12 增补段（2026-11-10）+ `evidence/checks/task4-red-green/README.md` + `evidence/checks/task5-red-green/` | pass |
+| AC-1.6 | spec.md | TASK-4, TASK-5（v1.12 文案） | `compiler/src/process_custom_component.ts:validateRequireParamUndefinedType`（触发条件替换为传入值解析类型含 `undefined`，新判定 helper `isTypeDefinitelyIncludingUndefined`）+ `compiler/src/interop/src/process_custom_component.ts` 镜像同步 + 扩展验证示例页面 validateRequireParamUndefinedTypeExtension/...ExtensionV2（新建，V1/V2 各恰 2 WARN） | 同 AC-6（主链 helper :2087-2097 + 触发 :2147-2148、镜像 :2103-2113/:2163-2164；期望消息逐字符——actual 段 V1 `'undefined'` 与 number/undefined 联合文本、V2 `'undefined'` 与 string/undefined 联合文本，逐字符全文锚定 spec.md 验证映射 VM-7/VM-8 与 `evidence/checks/task4-red-green/README.md`）；v1.12 文案已闭合（2026-11-10，TASK-5）：message 模板替换（主 :2163-2165/镜像 :2179-2181，actual 段渲染口径不变），期望登记 4 条消息红→绿逐字符 | 同 AC-6（v1.8：Change-Id Ia0e5e0a；v1.12：单 commit 随 PR #7259 追加） | 同 AC-6（evidence/reviews/ 三份 v1.8 增补段 + v1.12 增补段 + task4/task5-red-green README） | pass |
 
 > **附加覆盖注记（v1.7，2026-10-31 owner 指示移除 interop 验收维度）：** 原 AC-1.6/AC-6 追溯行（interop 镜像一致性）不再作为 AC 验收项——TASK-2 镜像同步依仓内架构铁律保留（主链路改动必须同步 `compiler/src/interop/src/` 镜像）。原行证据存档：镜像 `compiler/src/interop/src/process_custom_component.ts:2093-2167`（同 4 函数，与主链路逐行等价偏移 +16）+ `:1591` 挂载行；主/镜像新增块 diff 逐行 IDENTICAL；Commit `单 commit（Change-Id Ieca81b2）`；Review 同 evidence/reviews/ 三份（2026-10-29 Approved）。
 
 > **编号复用注记（v1.8，2026-10-31）：** 上表新增的 AC-6/AC-1.6 行为 v1.8 类型级触发正例（proposal US-2/AC-6 ↔ spec AC-1.6），与 v1.7 移除的 interop 维度 AC-6/AC-1.6 编号相同、语义无关——AC 编号随 proposal/spec v1.8 基线顺延复用（spec.md 输入文档对应关系已注记），VM-6 编号则不复用（v1.8 新增验证维度顺延为 VM-7/VM-8）。TASK-4 执行前，AC-6/AC-1.6 行与 AC-1.5 行 v1.8 部分的实际 Code Ref/Commit/Review Evidence 为待回填状态。
+
+> **v1.12 回填注记（2026-11-10）：** TASK-5 已交付（owner 双批准：v1.12 文档链 + TASK-5 执行授权）——AC-1/AC-1.1/AC-1.2/AC-1.6/AC-6 行的「TASK-5（v1.12 文案）」部分已按成对验证证据回填（主链三态 359/2 → 355/6 → 359/2 零漂移、镜像回归预存 19 例不变、message 区块主/镜像 IDENTICAL、eslint 替换区间 0 新增）；既有 v1.5/v1.8 交付证据对触发/级别/定位/反例契约持续有效。证据 `evidence/checks/task5-red-green/`。
 
 ## 首批实现边界
 
@@ -87,6 +89,7 @@
 | Phase-1 | 主链路与镜像诊断实现 | TASK-1, TASK-2 | `npm run build`、`npm run lint`、`npm run interopBuild` 全通过；src 改动仅限两份 `process_custom_component.ts`（主链路 + 镜像） | `cd compiler && npm run build && npm run lint && npm run interopBuild` |
 | Phase-2 | 验证锁定与回归（v1.5 周期，已交付） | TASK-3 | 既有全量验证入口与镜像回归入口全量通过；成对验证证据已存档；AC 追溯表回填完成 | 经既有全量验证入口与镜像回归入口运行 |
 | Phase-3 | v1.8 类型级触发扩展与回归（成对验证） | TASK-4 | `npm run build` 通过；既有全量验证入口新增页实现前失败→实现后通过且既有用例零漂移（含既有 2 页 v1.5 期望零漂移、镜像回归入口既有回归零漂移）；成对验证证据存档 `evidence/checks/`；AC-1.5（v1.8 部分）/AC-6/AC-1.6 追溯行回填 | `cd compiler && npm run build` 后经既有全量验证入口与镜像回归入口运行 |
+| Phase-4 | v1.12 消息模板改写与回归（成对验证） | TASK-5 | `npm run build` 通过；既有全量验证入口 6 条消息断言先失败（Red）→镜像同步→更新期望后全量通过且预存基线不变（主链 2 例/镜像 19 例）；镜像回归入口零漂移；成对验证证据存档 `evidence/checks/`；AC-1/AC-1.1/AC-1.2/AC-1.6/AC-6 行 v1.12 部分回填 | `cd compiler && npm run build` 后经既有全量验证入口与镜像回归入口运行 |
 
 ## Task 粒度原则
 
@@ -116,6 +119,7 @@
 | TASK-2 | interop 镜像同步同一改动 | `compiler/src/interop/src/process_custom_component.ts` | —（镜像铁律，非 AC） | TASK-1 | `npm run interopBuild` 与 `npm run lint` 通过；镜像改动与主链路逐行等价 | `cd compiler && npm run interopBuild && npm run lint` | Done |
 | TASK-3 | 验证落地：验证示例页面 + 注册 + 期望诊断登记，成对验证回归 | `compiler/test/` 下验证页面目录（新建 2 验证示例页面）；页面注册表文件；期望诊断登记文件 | AC-1.1, AC-1.2, AC-1.3, AC-1.4, AC-1.5 | TASK-1, TASK-2 | 既有全量验证入口与镜像回归入口全量通过（既有用例零漂移）；实现前失败证据已存档 | 经既有全量验证入口与镜像回归入口运行 | Done |
 | TASK-4 | v1.8 类型级触发扩展：主链+镜像传入值判定升级（语法级→类型级）+ 判定 helper，扩展验证示例页面 2 页 + 注册/期望，成对验证回归 | `compiler/src/process_custom_component.ts`；`compiler/src/interop/src/process_custom_component.ts`；`compiler/test/` 下验证页面目录（新建 2 扩展验证示例页面）；页面注册表文件；期望诊断登记文件 | AC-1.5（v1.8 扩展反例）, AC-1.6 | TASK-1, TASK-2, TASK-3（Done）+ proposal/spec/design v1.8 基线 Approved + 本 Plan v1.8 修订获 owner 批准 | `npm run build` 通过；既有全量验证入口全量通过（新增 2 页实现前失败→实现后通过、预存基线不变）；镜像回归入口全量通过（预存基线与本特性无关、零漂移）；既有 2 验证示例页面与其期望条目零改动；实现前失败证据存档 | `cd compiler && npm run build` 后经既有全量验证入口与镜像回归入口运行 | Done |
+| TASK-5 | v1.12 消息模板改写：主链+镜像 message 字符串模板整体替换（spec v1.12 新模板，占位符 propName/expectType/actualType；实现侧变量名沿用 paramName/declaredType/actualType 不变）+ 期望诊断登记 6 条期望消息文本同步 | `compiler/src/process_custom_component.ts`；`compiler/src/interop/src/process_custom_component.ts`；期望诊断登记文件 | AC-1, AC-1.1, AC-1.2, AC-1.6（文案契约刷新；AC-6/AC-1.5 反例无文案断言不受影响） | TASK-1～TASK-4（Done）+ proposal/spec/design v1.12 基线 Approved + 本 Plan v1.12 修订获 owner 批准 | `npm run build` 通过；既有全量验证入口 6 条消息断言先失败（Red）→镜像同步→更新期望后全量通过且预存基线不变（主链 2 例/镜像 19 例）；镜像回归入口零漂移；触发判定/级别/无码/锚点/验证页面/页面注册表零改动；成对验证证据存档 | `cd compiler && npm run build` 后经既有全量验证入口与镜像回归入口运行 | Done |
 
 ## Task 详情
 
@@ -711,6 +715,154 @@
 | Code Quality | 6 项文件 diff、Base/Head SHA、主/镜像新增块 IDENTICAL 复核、新增区间只读 eslint 结果；两 helper 方向语义（声明侧 vs 传入值侧）命名与注释核对 |
 | Verification | 既有全量验证入口/镜像回归入口的 Expected/Actual、成对验证（实现前失败→实现后通过）fresh 输出路径、AC 追溯表 TASK-4 相关行回填状态、探针结论复证记录 |
 
+### TASK-5: v1.12 消息模板改写与成对验证回归
+
+| 字段 | 内容 |
+|------|------|
+| 任务目标 | 将主链与镜像 WARN 推送处 message 字符串模板整体替换为 spec v1.12 新模板（`The type of property '${propName}' decorated with '@Require' is expected to be '${expectType}', but is actually '${actualType}' in the component constructor.`）；实现侧变量名沿用 `paramName`/`declaredType`/`actualType` 不变（最小 diff：仅改 message 字符串字面量，渲染结果与 spec v1.12 模板逐字符一致）；期望诊断登记 6 条期望消息文本同步替换；触发判定/类型级口径（ADR-4）/LogType.WARN/无数字码/属性级锚点/验证页面/页面注册表零改动；成对验证（改主链代码→build→既有全量验证入口 6 条消息断言失败=Red→镜像逐行同步→更新期望→全量通过=Green） |
+| AC 映射 | AC-1, AC-1.1, AC-1.2, AC-1.6（文案契约刷新；AC-6 引用 AC-1 同一模板随动刷新；AC-1.3/AC-1.4/AC-1.5 为反例无文案断言，不受影响） |
+| 前置依赖 | TASK-1～TASK-4 已交付（Done）；proposal.md/spec.md/design.md v1.12 基线 Approved；本 Plan v1.12 修订获 owner 批准（2026-11-10 owner 指示） |
+| 非目标 | 不改触发判定逻辑与类型级口径（ADR-4 的 `isTypeDefinitelyIncludingUndefined` 及声明侧判定门保持）；不改代码内部变量名（`paramName`/`declaredType`/`actualType`——重命名会造成无关大 diff）；不改 LogType.WARN/无数字码/属性级锚点（`pos: item.getStart()`）；不改 6 个验证示例页面与页面注册表（场景与字段零改动，仅消息文本变化）；不改既有诊断（10905316/10905321/10905359、问号规则）的级别/文案/触发条件；不改 `compile_plugin.js`/构建脚本/`utils.ts` |
+| 完成判据 | `npm run build` 通过；既有全量验证入口 6 条消息断言先失败（Red：实际输出新模板 vs 期望旧模板）→更新期望后全量通过且预存基线不变（主链 2 例）；镜像回归入口零漂移（预存 19 例不变）；6 验证示例页面与页面注册表 diff=0（git diff 核对）；成对验证证据存档 `evidence/checks/`；AC 追溯表 AC-1/AC-1.1/AC-1.2/AC-1.6/AC-6 行 v1.12 部分与代码范围映射 TASK-5 行回填 |
+| 停止条件 | ① 新模板渲染与 spec v1.12 口径不符（如 typeToString 输出与 actualType 段文本对不齐、expectType 段与声明类型文本不一致）；② 实现需要修改 Files 表之外文件（含验证页面/页面注册表/`utils.ts`）；③ 期望消息替换后既有用例出现不可归因漂移。任一命中即停止并回传修订 Plan |
+
+**状态所有权和生命周期**
+
+> 无状态变更时填写一行 `N/A`，不得删除本节。
+
+| Design Ref | 状态 | Owner | Key / Index | 创建 | 读取/更新 | 清理触发 | 生命周期不变量 |
+|------------|------|-------|-------------|------|-----------|----------|----------------|
+| N/A | N/A（无状态变更：纯文案字符串替换，不引入运行时状态、缓存或并发） | N/A | N/A | N/A | N/A | N/A | N/A |
+
+**任务间接口（Produces / Consumes）**
+
+> `Produces` 必须能被后续 Task 的 `Consumes` 精确引用；函数名、参数、错误码和数据结构不得靠执行者自行推断。
+
+| Direction | Contract | Provider / Consumer | Dependency | Compatibility Constraint |
+|-----------|----------|---------------------|------------|--------------------------|
+| Produces | 主链+镜像 message 模板（v1.12）：代码字面量 `` `The type of property '${paramName}' decorated with '@Require' is expected to be '${declaredType}', but is actually '${actualType}' in the component constructor.` ``（用既有变量名插值；`${paramName}`↔spec `${propName}`、`${declaredType}`↔spec `${expectType}`，渲染结果与 spec v1.12 模板逐字符一致） | TASK-5 → 期望诊断登记 6 条期望条目 | WARN 推送点主链 :2161-2166/镜像 :2177-2182（`log.push` 块） | 仅替换 message 字符串拼接（现 :2163-2165 两行），`type: LogType.WARN`/`pos: item.getStart()`/无 code 字段不动；主/镜像逐行一致（仓内架构铁律） |
+| Produces | 期望诊断登记 6 条期望消息文本（v1.12 渲染，逐字符）：`The type of property 'require_value' decorated with '@Require' is expected to be 'number', but is actually 'undefined' in the component constructor.`；`require_param_value`（string/undefined）；`void_value`（number/undefined）；`union_variable_value`（number/`number \| undefined`）；`void_param_value`（string/undefined）；`union_param_value`（string/`string \| undefined`） | TASK-5 → 既有全量验证入口断言 | 4 键 validateRequireParamUndefinedType/V2/Extension/ExtensionV2 既有条目（每条仅 message 文本替换，type WARN 不动） | 6 条期望条目数量不变（不增不删）；JSON 结构与既有格式一致 |
+| Consumes | TASK-1/TASK-4 交付的 `validateRequireParamUndefinedType` 既有结构（WARN 推送块、变量定义链 `paramName`/`declaredType`/`actualType`） | TASK-5 | 既有实现（主链 :2155-2169/镜像 :2171-2185） | 仅替换 message 字符串，其余结构不动 |
+| Consumes | TASK-3/TASK-4 交付的期望诊断登记条目模式（4 键 6 条，message/type 字段） | TASK-5 | 既有实现 | 仅替换 message 文本，条目键与结构不动 |
+
+**Read-only Context**
+
+| 路径 | 读取目的 |
+|------|----------|
+| `compiler/src/process_custom_component.ts:2155-2169` | WARN 推送区：message 拼接两行（:2163-2165）与变量定义（`declaredType` :2156/`actualType` :2161）——确认插值源不动 |
+| `compiler/src/interop/src/process_custom_component.ts:2171-2185` | 镜像同构结构（偏移 +16），同步落点参照 |
+| 6 个验证示例页面（validateRequireParamUndefinedType/V2/Extension/ExtensionV2） | 只读确认场景字段名与类型（require_value:number、require_param_value:string、void_value:number、union_variable_value:`number \| undefined`、void_param_value:string、union_param_value:`string \| undefined`）——推导期望消息文本 |
+| `.codespec/changes/issue-4719-require-type-check/design.md` | ADR-5（v1.12 占位符名 propName 与实现侧变量名 paramName 的对应说明） |
+
+**Files**
+
+| 操作 | 文件 | 说明 |
+|------|------|------|
+| Modify | `compiler/src/process_custom_component.ts` | WARN 推送处 message 字符串模板整体替换（:2163-2165 两行拼接改为 v1.12 模板单/双行拼接）；变量名与插值源不动 |
+| Modify | `compiler/src/interop/src/process_custom_component.ts` | 主链改动逐行同步（镜像 :2179-2181）；主/镜像 message 区块 diff 复核 IDENTICAL |
+| Modify | compiler/test/ 下期望诊断登记文件 | 6 条期望消息 message 文本替换（4 键，条目数与 type 字段不变） |
+
+**禁止修改文件**
+
+| 文件/路径 | 原因 |
+|-----------|------|
+| 6 个验证示例页面（validateRequireParamUndefinedType/...V2/...Extension/...ExtensionV2）与页面注册表文件 | 场景与字段零改动是本 Task 完成判据（仅消息文本变化）；改动即破坏零漂移对照基线 |
+| 代码内部变量名 `paramName`/`declaredType`/`actualType`（两 src 文件） | 重命名造成无关大 diff，违背最小实现原则；spec v1.12 占位符名与实现变量名的对应关系已在 design.md ADR-5 注记 |
+| `compiler/src/utils.ts` | 只读复用既有导出；需改动时触发停止条件②，停止并修订 Plan |
+| `compiler/lib/**` | Babel 生成物，仅经 `npm run build` 再生，禁止手工编辑 |
+| `compiler/compile_plugin.js`、`compiler/BUILD.gn`、根级构建脚本 | 插件链顺序与构建编排固定（OH-ARCH-COMPONENT-BUILD） |
+| `compiler/src/ets_checker.ts`、`compiler/src/fast_build/ets_ui/**` | TS 检查层/UI 变换层仅消费，不修改 |
+
+**Spec References**
+
+> 只写已存在的编号和章节锚点，禁止复制正文。
+
+- AC / Rules: `AC-1`, `AC-1.1`, `AC-1.2`, `AC-1.6`, `R-1`, `R-2`, `R-7`
+- Anchors: `spec.md#规则定义`（消息模板节，v1.12 修订注记）, `spec.md#验证映射`
+
+**Design References**
+
+> 引用 `ADR-*` / `STATE-*` / `INV-*` 或 design.md 中已存在的章节锚点。
+
+- IDs / Anchors: `ADR-5`, `design.md#关键设计决策`, `design.md#测试性设计`
+
+**Required Rules**
+
+| Rule ID | Must / Must Not |
+|---------|-----------------|
+| OH-ARCH-ERROR-LOG | Must：诊断保持 LogType.WARN、无数字码（O-3）、文案为 spec v1.12 固定英文模板、pos 为传值属性节点起点；Must Not：不新增 ERROR、不改既有 10905xxx 诊断的级别/文案/触发条件 |
+| OH-ARCH-LAYERING | Must：类型判定与渲染仍经 `CurrentProcessFile.getChecker` 消费既有 checker；Must Not：不引入反向或跨层依赖 |
+| OH-ARCH-COMPONENT-BUILD | Must：变更限于 src/ 两份 `process_custom_component.ts` 与期望诊断登记，`lib/` 由 `npm run build` 再生；Must Not：不改 BUILD.gn/插件链顺序/构建脚本 |
+| 镜像同步铁律（仓内架构约束） | Must：主链改动逐行同步 interop 镜像，主/镜像 message 区块 diff IDENTICAL；Must Not：镜像与主链行为漂移 |
+
+**Steps**
+
+- [x] 实现前基线复核：工作区干净（HEAD=81cdef38c），经既有全量验证入口运行确认预存基线失败（主链 2 例）与既往记录一致（**359 passing / 2 failing**：ExtendOneChild、StructNameWarn）——`baseline-etsTest.txt`
+- [x] Red 采集（主链）：替换主链 message 模板（:2163-2165）→ `cd compiler && npm run build`（114 files PASS）→ 经既有全量验证入口运行（**355 passing / 6 failing**：1-60～1-63 四页面用例消息断言失败 `expected false to be true` + 预存基线 2 例不变），输出存档 `evidence/checks/task5-red-green/`
+- [x] 镜像同步：同一模板替换逐行同步 `compiler/src/interop/src/process_custom_component.ts`（:2179-2181）；主/镜像 message 区块 diff 复核 IDENTICAL（偏移 +16 保持）
+- [x] Green：更新期望诊断登记 6 条期望消息文本（4 键，JSON valid 276 顶层键）→ `cd compiler && npm run build` → 经既有全量验证入口与镜像回归入口运行（主链 **359 passing / 2 failing**、镜像 **1120 passing / 19 failing**：预存基线主链 2 例/镜像 19 例不变）；验证运行污染的被跟踪 testdata 脏文件（.ts_checker_cache）`git checkout --` 恢复
+- [x] 只读 eslint：`./node_modules/.bin/eslint compiler/src/process_custom_component.ts compiler/src/interop/src/process_custom_component.ts --ext .ts` 核对 message 替换区间 0 新增错误（103 error 全预存，主 50/镜像 53；禁用带 --fix 的 `npm run lint`，TASK-1 已证其污染 src）
+- [x] 回填 AC 追溯表（AC-1/AC-1.1/AC-1.2/AC-1.6/AC-6 行 v1.12 部分）、代码范围映射 TASK-5 行、Anti-Fake Actual、Verification Actual；成对验证证据（Red→Green）归档 `evidence/checks/task5-red-green/`
+
+**Reference Pattern**
+
+| 参考实现 | 复用约定 | 偏差及理由 |
+|----------|----------|------------|
+| TASK-1 交付的 message 模板插值模式（主链 :2163-2165：两行模板字符串拼接 + `type`/`pos` 字段） | 替换方式照抄：仅字符串字面量整体替换，插值变量与 `log.push` 结构不动 | 新模板为单句完整文案，可保持两行拼接或合并单行——以主/镜像逐行一致为约束（仓内架构铁律），不为对齐旧换行而拆行 |
+| TASK-3/TASK-4 交付的期望诊断登记条目模式（4 键 6 条） | 仅 message 文本替换，条目结构与 type 字段照抄 | 无偏差 |
+
+**Anti-Fake Completion**
+
+| Check | Required Evidence |
+|-------|-------------------|
+| AC closed | 6 条消息断言实现前失败（实际新模板 vs 期望旧模板）→实现后通过（新模板 vs 新期望逐字符）；既有用例零漂移（主链失败集实现前→实现后恰差 6 条消息断言；镜像回归失败名集合与基线逐名一致、预存 19 例不变）；触发/级别/定位契约经既有 6 页计数+定位断言保持 |
+| Scope respected | 净 diff 仅含 Files 表 3 项（2 src 各 message 区块 + 期望诊断登记 6 条文本）；6 验证示例页面与页面注册表 diff 为零（git diff 核对）；与代码范围映射 TASK-5 行一致 |
+| State lifecycle complete | N/A：无 STATE-*/INV-*（纯文案字符串替换，无状态生命周期） |
+| Interface contract matched | 渲染结果与 spec v1.12 模板逐字符（含 expectType 段后逗号与模板尾部 ` in the component constructor.`）；主/镜像 message 区块 diff IDENTICAL；6 条期望条目与实际输出逐字符；条目数 6 不变 |
+| Relevant verification | 既有全量验证入口直接断言本特性 6 条消息（非无关验证）+ 镜像回归入口回归基线对照；成对验证（Red→Green）fresh 输出 |
+
+**Anti-Fake Actual 回填（2026-11-10）**
+
+- **AC closed：** AC-1/AC-1.1/AC-1.2/AC-1.6 文案契约闭合——6 条消息断言实现前失败（1-60～1-63 四页面用例消息 findIndex 严格相等断言失败，实际输出新模板 vs 期望旧模板）→实现后通过（新模板 vs 新期望逐字符，WARN 计数+消息双断言）；既有用例零漂移（三态失败集：主链基线 2 例 → Red 6 例（4 页面+2 预存）→ Green 2 例；镜像回归预存 19 例不变、@Require 相关失败 0）；触发/级别/定位契约经 6 页计数+定位断言保持。证据 `evidence/checks/task5-red-green/`（baseline/red/green etsTest + green interopArkTest + eslint + build 共 6 份日志）。
+- **Scope respected：** 实际净 diff 仅 Files 表 3 项——2 src 各 +2/-2（仅 message 两行字符串，变量名 paramName/declaredType/actualType 与 log.push 结构零改动）+ 期望诊断登记 6 条 message 文本替换（条目数与 type 字段不变，276 顶层键 JSON valid）；6 验证示例页面与页面注册表 diff = 0；与代码范围映射 TASK-5 行一致。
+- **State lifecycle complete：** N/A 维持（纯文案字符串替换，无 STATE-*/INV-*）。
+- **Interface contract matched：** 渲染结果与 spec v1.12 模板逐字符（含 expectType 段后逗号与模板尾部 ` in the component constructor.`）；主/镜像 message 区块 diff IDENTICAL（偏移 +16 保持）；6 条期望条目与实际输出逐字符（findIndex 严格相等断言 Green 全过）；条目数 6 不变。
+- **Relevant verification：** build 114 files PASS + 只读 eslint message 替换区间 0 命中（103 error 全预存）+ 主链成对验证 fresh 输出（三态 359/2 → 355/6 → 359/2）与镜像回归基线对照（预存 19 例同构、零回归），全部直接覆盖本 Task 生产代码与断言。
+
+**Verification**
+
+| 证据类型 | 命令/路径 | Expected Result | Actual Result |
+|----------|-----------|-----------------|---------------|
+| 编译 | `cd compiler && npm run build` | build 全步无错误，主链+镜像新 message 模板编译入 lib | **PASS（fresh，2026-11-10）**：`Successfully compiled 114 files with Babel`（Red 阶段独立 build 与 Green 阶段 etsTest/interopArkTest 内置 build 同 src 状态均通过）——`green-build.txt`、`green-etsTest.txt`、`green-interopArkTest.txt` |
+| 验证 | 经既有全量验证入口运行 | 全量通过（6 条消息断言 Red→Green；预存基线 2 例失败不变；既有用例零漂移） | **PASS（fresh，全量通过；预存基线 2 例失败不变）**：359 passing / 2 failing——1-60～1-63 四页面用例红转绿（WARN 计数+消息逐字符断言通过）；失败仅预存基线 2 例（ExtendOneChild、StructNameWarn）——`green-etsTest.txt` |
+| 验证 | 经既有镜像回归入口运行 | 全量通过（回归视角）；预存基线 19 例失败不变 | **PASS（fresh，全量通过，回归视角）**：1120 passing / 19 failing——失败集与预存基线同构（Lazy Imports ×8 + static interop imports ×10 + module_mode ×1，全部环境相关预存；@Require 相关失败 0）——`green-interopArkTest.txt` |
+| 实现前失败证据 | 期望更新前经既有全量验证入口复跑（输出存档 evidence/checks/task5-red-green/） | 6 条消息断言失败（实际新模板 vs 期望旧模板），既有用例不受影响；期望更新后恢复 | **PASS（成对 fresh，实现前失败按预期成立）**：355 passing / 6 failing——1-60～1-63 四页面用例消息断言失败（`expected false to be true`，findIndex 严格相等不匹配；实际输出新模板 vs 期望旧模板）+ 预存基线 2 例不变；三态对照 359/2 → 355/6 → 359/2 零漂移——`red-etsTest.txt`、`baseline-etsTest.txt` |
+| 静态检查 | `./node_modules/.bin/eslint <主链/镜像两文件> --ext .ts`（只读） | message 替换区间 0 新增 error | PASS：103 error 全部预存（主 50/镜像 53，行号均在编辑区外：主 ≤2007、镜像 ≤2225）；message 替换区间（主 :2163-2164、镜像 :2179-2180）0 命中；exit=1 系预存违规所致——`green-eslint.txt` |
+
+**Handoff Summary**
+
+> 交接信息只登记稳定引用和本 Task 的执行边界，不复制上游文档正文。
+
+| 项 | 内容 |
+|----|------|
+| 任务描述 | TASK-5：v1.12 消息模板改写——主链+镜像 message 字符串模板整体替换 + 期望诊断登记 6 条期望消息文本同步，成对验证回归（Red→Green） |
+| 允许修改 | `compiler/src/process_custom_component.ts`、`compiler/src/interop/src/process_custom_component.ts`、compiler/test/ 下期望诊断登记文件 |
+| 允许新建 | 无 |
+| 只读参考 | 6 个验证示例页面、页面注册表文件、design.md ADR-5、spec.md 消息模板节（v1.12） |
+| Spec 引用 | `AC-1`, `AC-1.1`, `AC-1.2`, `AC-1.6` / `R-1`, `R-2`, `R-7` / `spec.md#规则定义`, `spec.md#验证映射` |
+| Design 引用 | `ADR-5` / `design.md#关键设计决策`, `design.md#测试性设计` |
+| 执行步骤 | 本 Task Card 的 `Steps` |
+| 验证命令 | `cd compiler && npm run build` 后经既有全量验证入口与镜像回归入口运行 / 期望: PASS（口径见 Verification 表） |
+| 完成规则 | 不得修改允许范围外的文件；如需扩大范围，停止并修订 Plan；没有 fresh verification evidence，不得声明完成 |
+
+**Review Handoff**
+
+| Reviewer | Input |
+|----------|-------|
+| Spec Compliance | AC-1/AC-1.1/AC-1.2/AC-1.6（文案契约）与 R-1/R-2/R-7 消息模板节（v1.12）对照；6 条期望消息与 spec v1.12 模板渲染逐字符一致；既有用例零漂移结论 |
+| Code Quality | 3 项文件 diff、Base/Head SHA、主/镜像 message 区块 IDENTICAL 复核、只读 eslint message 替换区间结果；变量名零改动核对（paramName/declaredType/actualType 保持） |
+| Verification | 既有全量验证入口/镜像回归入口的 Expected/Actual、成对验证（Red→Green）fresh 输出路径、AC 追溯表 v1.12 部分回填状态 |
+
 ## 代码范围映射
 
 > Plan 审批时填写计划范围；实现后**如实回填实际范围和 Commit**（纯文档变更照填文档路径，不要清空或写 N/A）。三类 Review Evidence 状态触发：本表「实际文件/符号」列的值包含**代码文件/符号** → 归档必须三份 Approved（Evidence 列填文件路径，不得以 N/A 规避；N/A 后夹带代码路径不放行）；实际范围仅文档类文件（.md 等）或 `N/A：理由` → evidence 可选，一旦生成任一 evidence 文件则三份必须齐全且 Approved。实际文件超出计划范围时必须先修订 Plan，不能仅在"偏差"列解释后继续。
@@ -721,6 +873,7 @@
 | TASK-2 | `compiler/src/interop/src/process_custom_component.ts:validateRequireParamUndefinedType`（镜像新增）+ 挂载行 | `compiler/src/interop/src/process_custom_component.ts`：同 4 函数（:2093-2167）+ 挂载行 `:1591`（+77 行纯插入；主/镜像新增块 diff IDENTICAL） | Add/Modify | `单 commit（Change-Id Ieca81b2）` | Approved：`evidence/reviews/spec-compliance.md`（镜像同步 PASS，v1.7 起非 AC） | Approved：`evidence/reviews/code-quality.md`（镜像逐行 IDENTICAL 复核成立；新增区间只读 eslint 0 错误） | Approved：`evidence/reviews/verification.md`（interopBuild PASS + 既有镜像回归入口 fresh 全量通过、预存基线 19 例失败不变，日志 `interopArkTest-final-fresh.txt`） | 无 |
 | TASK-3 | compiler/test/ 下验证页面目录新增页面 validateRequireParamUndefinedType、validateRequireParamUndefinedTypeV2（新建）；compiler/test/ 下页面注册表文件、期望诊断登记文件（修改） | 与计划一致：2 验证示例页面新建（V1 正例+5 反例矩阵 / V2 @Require @Param 正例+反例）；页面注册表 +2 行注册（:311-313 区域）；期望诊断登记 +2 WARN 期望条目（274 页，JSON valid） | Create/Modify | `单 commit（Change-Id Ieca81b2）` | Approved：`evidence/reviews/spec-compliance.md`（期望文案与契约逐字符一致；@Builder 使用点属 R-1 字面范围，登记说明） | Approved：`evidence/reviews/code-quality.md`（与既有先例结构一致；Minor：测试 env 恢复惯例） | Approved：`evidence/reviews/verification.md`（成对验证（实现前失败→实现后通过）+ 双基线对照零漂移 + 最终态 fresh 复跑 + 边界探针，存档 `evidence/checks/task3-red-green/` 8 份日志 + README.md） | 无 |
 | TASK-4 | `compiler/src/process_custom_component.ts`（触发条件类型级替换 + 新判定 helper `isTypeDefinitelyIncludingUndefined`）；`compiler/src/interop/src/process_custom_component.ts`（镜像同步）；compiler/test/ 下验证页面目录新增页面 validateRequireParamUndefinedTypeExtension、validateRequireParamUndefinedTypeExtensionV2（新建）；compiler/test/ 下页面注册表文件、期望诊断登记文件（追加） | 主链：`isTypeDefinitelyIncludingUndefined`（:2087-2097，含函数头 2 行方向语义注释）+ 触发条件类型级替换（:2147-2148），+14/-2；镜像同构：helper :2103-2113 / 触发 :2163-2164（偏移 +16，HELPER-REGION-IDENTICAL + FUNC-REGION-IDENTICAL），+14/-2；2 扩展验证示例页面新建（V1：`void 0` + 联合变量正例 + 独立反例 child `narrowed_value`/`any_var_value`；V2：两正例）；页面注册表 +2 注册；期望诊断登记 +20/-0 纯追加（276 页 JSON valid，既有期望条目 diff=0）；既有 2 验证示例页面 diff = 0 | Modify/Create | `单 commit（Change-Id Ia0e5e0a，2026-10-31）`（代码+文档同 commit，追溯同 TASK-1 口径） | Approved：`evidence/reviews/spec-compliance.md` v1.8 增补段（2026-10-31；AC-6/AC-1.6/AC-1.5 v1.8 扩展边界 PASS，基准 spec.md md5 `254bf315c9444956a20f9df36c717172`） | Approved：`evidence/reviews/code-quality.md` v1.8 增补段（2026-10-31；净 diff 与 Files 表 6 项一致，镜像 IDENTICAL，新增区间 eslint 0 命中，无新 finding） | Approved：`evidence/reviews/verification.md` v1.8 增补段（2026-10-31；成对验证 fresh 输出（实现前失败→实现后通过、预存基线不变）+ 回归基线对照预存失败名集合逐名一致，存档 `evidence/checks/task4-red-green/`） | 无（实际区间与 Files 表/计划一致；Commit 列开放状态登记于 review.md 开放问题 #7） |
+| TASK-5 | `compiler/src/process_custom_component.ts`（WARN 推送处 message 字符串模板替换，仅 :2163-2165 两行 message 拼接）；`compiler/src/interop/src/process_custom_component.ts`（镜像同步，:2179-2181）；compiler/test/ 下期望诊断登记文件（6 条期望消息文本替换：4 键 validateRequireParamUndefinedType/V2/Extension/ExtensionV2） | 与计划一致：主链 :2163-2164 message 两行（+2/-2）、镜像 :2179-2180 同构（+2/-2，message 区块 diff IDENTICAL、偏移 +16 保持）；期望诊断登记 6 条 message 文本替换（4 键、条目数不变、276 顶层键 JSON valid）；6 验证示例页面与页面注册表 diff = 0；变量名 paramName/declaredType/actualType 与 log.push 结构零改动 | Modify | `单 commit（代码+文档同 commit，2026-11-10 owner 授权 TASK-5，随 PR #7259 追加）` | Approved：`evidence/reviews/spec-compliance.md` v1.12 增补段（2026-11-10；AC-1/AC-1.1/AC-1.2/AC-1.6/AC-6 文案契约 PASS，渲染与 spec v1.12 模板逐字符） | Approved：`evidence/reviews/code-quality.md` v1.12 增补段（2026-11-10；净 diff 3 项与 Files 表一致，镜像 message 区块 IDENTICAL，eslint 替换区间 0 命中，无新 finding） | Approved：`evidence/reviews/verification.md` v1.12 增补段（2026-11-10；成对验证 fresh 三态 359/2→355/6→359/2、镜像回归预存 19 例同构、@Require 相关失败 0，存档 `evidence/checks/task5-red-green/` 6 份日志） | 无（实际区间与 Files 表/计划一致） |
 
 ## 实现偏差和开放问题
 

@@ -19,7 +19,7 @@
 
 | 文档 | 路径 | 状态 |
 |------|------|------|
-| Requirement | `proposal.md`（issue-4719-require-type-check，基线 v1.11） | Approved |
+| Requirement | `proposal.md`（issue-4719-require-type-check，基线 v1.12） | Approved |
 
 > AC 对应关系：proposal 以 AC-1 为首的 6 条 AC ↔ 本文档 AC-1.1～AC-1.6（顺序一一对应）。其中本文档 AC-1.6 为 v1.8 新增类型级触发正例，与 v1.7 移除的 interop 维度 AC-1.6 无关（编号复用，v1.8 基线记录注记）。需求基线、不涉及项、影响范围详见 proposal.md，本文档不重复摘录。
 
@@ -35,7 +35,7 @@
 
 | AC编号 | 验收标准 | 可观察表面 | 类型 |
 |--------|----------|--------------|------|
-| AC-1.1 | Given ArkTS 应用工程中 V1 组件（`@Component`）构造传参对象含 `@Require` 修饰（单独使用或与 `@Prop`/`@State`/`@Provide`/`@BuilderParam` 组合，有无默认值不限）且声明类型不含 `undefined` 的字段（含数组/集合等泛型引用类型，如 `string[]`、`Array<number>`、`Map<string, number>`），WHEN 构造传参中该字段显式传入 `undefined` 标识符后编译 THEN 编译输出 1 条 WARNING 级别诊断（无数字错误码，文案为消息模板 `'@Require' decorated '${paramName}' expects type '${paramType}' but got '${actualType}' through the component constructor.`——`${paramName}` 为字段名、`${paramType}` 为该字段声明类型文本、`${actualType}` 为实际传入值类型文本（渲染口径见 R-1 消息模板说明）；诊断定位该字段的传值属性行），且编译继续完成、无新增 ERROR | 终端用户（应用开发者编译/构建输出） | 正常 |
+| AC-1.1 | Given ArkTS 应用工程中 V1 组件（`@Component`）构造传参对象含 `@Require` 修饰（单独使用或与 `@Prop`/`@State`/`@Provide`/`@BuilderParam` 组合，有无默认值不限）且声明类型不含 `undefined` 的字段（含数组/集合等泛型引用类型，如 `string[]`、`Array<number>`、`Map<string, number>`），WHEN 构造传参中该字段显式传入 `undefined` 标识符后编译 THEN 编译输出 1 条 WARNING 级别诊断（无数字错误码，文案为消息模板 `The type of property '${propName}' decorated with '@Require' is expected to be '${expectType}', but is actually '${actualType}' in the component constructor.`——`${propName}` 为字段名、`${expectType}` 为该字段声明类型文本、`${actualType}` 为实际传入值类型文本（渲染口径见 R-1 消息模板说明）；诊断定位该字段的传值属性行），且编译继续完成、无新增 ERROR | 终端用户（应用开发者编译/构建输出） | 正常 |
 | AC-1.2 | Given ArkTS 应用工程中 V2 组件（`@ComponentV2`）构造传参对象含 `@Require` 与 `@Param` 共同修饰且声明类型不含 `undefined` 的字段，WHEN 构造传参中该字段显式传入 `undefined` 后编译 THEN 编译输出与 AC-1.1 相同级别、相同文案（AC-1.1 内嵌消息模板）的 1 条 WARNING，且编译继续完成 | 终端用户（应用开发者编译/构建输出） | 正常 |
 | AC-1.3 | Given `@Require` 字段声明类型含 `undefined`（如 `number \| undefined` 联合类型），或字段类型不可解析/不可判定，WHEN 该字段显式传入 `undefined` 后编译 THEN 编译不输出本特性告警（既有行为不变） | 终端用户（应用开发者编译/构建输出） | 异常 |
 | AC-1.4 | Given 构造传参对象中的字段无 `@Require` 修饰，WHEN 该字段显式传入 `undefined` 后编译 THEN 编译不输出本特性告警 | 终端用户（应用开发者编译/构建输出） | 异常 |
@@ -79,10 +79,12 @@
 **消息模板（R-1/R-2 统一）：**
 
 ```text
-'@Require' decorated '${paramName}' expects type '${paramType}' but got '${actualType}' through the component constructor.
+The type of property '${propName}' decorated with '@Require' is expected to be '${expectType}', but is actually '${actualType}' in the component constructor.
 ```
 
-其中 `${paramName}` 为字段名，`${paramType}` 为该字段的声明类型文本（与下述类型判定口径同源；命中本告警时该类型必然不含 `undefined`），`${actualType}` 为实际传入值的类型文本：`undefined` 标识符与 `void` 表达式（如 `void 0`）渲染为 `undefined`（R-1/R-2 触发条件），其余命中场景（R-7）为该传入值的解析类型文本（如 `number | undefined`）。文案为英文，遵循仓内编译器诊断既有惯例（既有 `@Require` 诊断同族句式）。
+其中 `${propName}` 为字段名，`${expectType}` 为该字段的声明类型文本（与下述类型判定口径同源；命中本告警时该类型必然不含 `undefined`），`${actualType}` 为实际传入值的类型文本：`undefined` 标识符与 `void` 表达式（如 `void 0`）渲染为 `undefined`（R-1/R-2 触发条件），其余命中场景（R-7）为该传入值的解析类型文本（如 `number | undefined`）。文案为英文（owner 2026-11-10 指定措辞），遵循仓内编译器诊断既有英文惯例。
+
+> **v1.12 修订注记：** 消息模板措辞经 2026-11-10 owner 会话指示整体改写为现模板（占位符名 `paramName`→`propName`、`paramType`→`expectType`，`actualType` 不变，插值语义不变）；触发条件、级别、定位与反例口径均不变。
 
 **类型判定口径（"声明类型是否含 `undefined` 成员"，R-1/R-2/R-3/R-6 共用）：**
 
@@ -186,4 +188,4 @@ context-queries:
     query: "compiler/test/ 下验证页面目录、页面注册表与期望诊断登记文件的验证断言机制与既有全量验证入口/镜像回归入口的运行方式"
 ```
 
-**关键文档：** `proposal.md`（issue-4719-require-type-check，Approved v1.11）；GitCode Issue https://gitcode.com/openharmony/developtools_ace_ets2bundle/issues/4719；知识库 `docs/specs/02-校验规则/02-05 @Require.md`（既有 `@Require` 规则先例）。
+**关键文档：** `proposal.md`（issue-4719-require-type-check，Approved v1.12）；GitCode Issue https://gitcode.com/openharmony/developtools_ace_ets2bundle/issues/4719；知识库 `docs/specs/02-校验规则/02-05 @Require.md`（既有 `@Require` 规则先例）。

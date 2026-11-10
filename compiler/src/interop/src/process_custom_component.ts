@@ -2176,8 +2176,8 @@ function validateRequireParamUndefinedType(node: ts.CallExpression, name: string
     const actualType: string = checker.typeToString(checker.getTypeAtLocation(item.initializer));
     log.push({
       type: LogType.WARN,
-      message: `'@Require' decorated '${paramName}' expects type '${declaredType}' ` +
-        `but got '${actualType}' through the component constructor.`,
+      message: `The type of property '${paramName}' decorated with '@Require' is expected to be '${declaredType}', ` +
+        `but is actually '${actualType}' in the component constructor.`,
       pos: item.getStart()
     });
   });

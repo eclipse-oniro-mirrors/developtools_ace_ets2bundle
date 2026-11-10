@@ -7,7 +7,7 @@ struct RequireUndefinedDemoParent {
   build() {
     Column() {
       RequireUndefinedDemoChild({ 
-        require_value: undefined // 预期输出恰 1 条 WARN：'@Require' decorated 'require_value' expects type 'number' but got 'undefined' through the component constructor.
+        require_value: undefined // 预期输出恰 1 条 WARN：The type of property 'require_value' decorated with '@Require' is expected to be 'number', but is actually 'undefined' in the component constructor.
       }) 
     }
   }
@@ -32,7 +32,7 @@ struct RequireUndefinedV2DemoParent {
   build() {
     Column() {
       RequireUndefinedV2DemoChild({
-        require_param_value: undefined // 预期输出恰 1 条 WARN：'@Require' decorated 'require_param_value' expects type 'string' but got 'undefined' through the component constructor.
+        require_param_value: undefined // 预期输出恰 1 条 WARN：The type of property 'require_param_value' decorated with '@Require' is expected to be 'string', but is actually 'undefined' in the component constructor.
       })
     }
   }
@@ -144,8 +144,8 @@ struct RequireTypeLevelDemoParent {
   build() {
     Column() {
       RequireTypeLevelDemoChild({
-        void_value: void 0, // 预期输出恰 1 条 WARN：'@Require' decorated 'void_value' expects type 'number' but got 'undefined' through the component constructor.
-        union_variable_value: this.plainUnion // 预期输出恰 1 条 WARN：'@Require' decorated 'union_variable_value' expects type 'number' but got 'number | undefined' through the component constructor.
+        void_value: void 0, // 预期输出恰 1 条 WARN：The type of property 'void_value' decorated with '@Require' is expected to be 'number', but is actually 'undefined' in the component constructor.
+        union_variable_value: this.plainUnion // 预期输出恰 1 条 WARN：The type of property 'union_variable_value' decorated with '@Require' is expected to be 'number', but is actually 'number | undefined' in the component constructor.
       })
     }
   }
@@ -173,8 +173,8 @@ struct RequireTypeLevelV2DemoParent {
   build() {
     Column() {
       RequireTypeLevelV2DemoChild({
-        void_param_value: void 0, // 预期输出恰 1 条 WARN：'@Require' decorated 'void_param_value' expects type 'string' but got 'undefined' through the component constructor.
-        union_param_value: this.unionParamVariable // 预期输出恰 1 条 WARN：'@Require' decorated 'union_param_value' expects type 'string' but got 'string | undefined' through the component constructor.
+        void_param_value: void 0, // 预期输出恰 1 条 WARN：The type of property 'void_param_value' decorated with '@Require' is expected to be 'string', but is actually 'undefined' in the component constructor.
+        union_param_value: this.unionParamVariable // 预期输出恰 1 条 WARN：The type of property 'union_param_value' decorated with '@Require' is expected to be 'string', but is actually 'string | undefined' in the component constructor.
       })
     }
   }

@@ -10,7 +10,7 @@ status: done
 owner: "@youzhi92"
 source_issue: "https://gitcode.com/openharmony/developtools_ace_ets2bundle/issues/4719"
 created_at: 2026-08-11
-updated_at: 2026-11-06
+updated_at: 2026-11-10
 related: []
 related_tasks: []
 related_decisions: []
@@ -96,6 +96,16 @@ commits: []
 - 文档链修订：proposal（范围包含项/基线版本/修订记录，baseline_digest 复算回填 `6e17643e…e6339`）、spec（验证映射表验证方式列/NFR 可测试性表述/修订记录，source_spec_hash `edbfba1e…03c17`）、design（测试输入约束/测试性设计/代码事实基线/ADR/风险表措辞，source_design_hash `7bd7c5d7…64229`）、execution-plan（Task Card 步骤/Verification 表/Handoff/范围映射/偏差表措辞）、spec-for-validation（5.3 interop 行/附录术语表/十章与十一章 hash 回填/元信息/历史记录改述）、manifest（本节 + spectest_feature_path + 历史运行记录中性化改写）、review（GC 口径/Evidence 索引/开放问题 #6/最终决策增补）。历史运行记录与审查注记同步中性化改写（事实结论不变）；evidence/ 为历史快照不回改（文件名引用保留）；`npm run build/lint/interopBuild` 与 ohos-sdd CLI 命令保留；预存失败用例名与失败例数保留为事实基线记录。
 - 验证：`ohos-sdd spec-for-validation check` 15/15 PASS；`ohos-sdd validate --level all` 46 checks / 0 broken / 0 warn PASS。
 - 后续（待 owner 指令）：业务仓 amend 推送 fork（PR #7259 随动）→ design-docs 归档链同步（PR #1897）→ PR/issue 正文同步中性化 → 门禁触发待 owner 指令。
+
+## v1.12 消息模板改写——文档链修订与 TASK-5 交付（2026-11-10，owner 双批准后交付闭合）
+
+- 背景：owner 会话（2026-11-10）指示「提示信息改成：The type of property '{propName}' decorated with '@Require' is expected to be '{expectType}', but is actually '{actualType}' in the component constructor.」——消息模板为 spec R-1/R-2 固定契约，属行为契约变更，按 v1.8「文档链先行」纪律先修订文档链至 v1.12 候选态呈批，批准后经 TASK-5 实施代码。owner 同会话双批准：①「1. 批准」（v1.12 文档链）②「2. 批准，执行 TASK-5」（执行授权），当日完成交付。
+- 占位符映射：`paramName`→`propName`、`paramType`→`expectType`、`actualType` 不变（插值语义不变；spec 记法沿用 `${...}` 风格，渲染结果与 owner 单花括号原文一致）；触发条件/级别/无码/锚点/反例口径均不变。
+- 文档链修订（活文本）：spec（AC-1.1 模板+插值说明、R-1 模板本体+插值说明+v1.12 注记、基线版本引用 ×2）、proposal（frontmatter evidence、基线版本行、AC-1 模板；批准后 baseline_digest 重算回填 `7d48660b…75fb3`）、design（ADR-5 插值说明、Task 分解表 TASK-5 行、骨架注记、AC-1.1 验证点占位符名、审批 checklist/结论 v1.12 修订句、关联需求基线 v1.12）、execution-plan（状态行 v1.12、输入状态、Task 列表/Phase-4/AC 追溯 5 行（AC-1/AC-1.1/AC-1.2/AC-1.6/AC-6）追加 TASK-5 关联、v1.12 回填注记、TASK-5 完整卡（交付后 Done + Anti-Fake/Verification 回填）、范围映射 TASK-5 行）、spec-for-validation（投影区 AC-1.1/R-1 模板+v1.12 注记、5.5 场景表 3 行、5.11 占位符名、八章 AC-1.1 行、术语表、元信息、十一章 v1.12 修订记录（补交付句）、source_spec_hash `265fa9f1…260a6`/source_design_hash `d284e0a3…14a84` 回填）、demo（6 处 WARN 注释渲染文本）、review.md（v1.12 括注）、manifest（本节）。历史记录（v1.4/v1.5 告警措辞节、TASK-1/TASK-4 Produces、sfv 历史修订记录）保留旧模板原文（交付时点事实）。
+- TASK-5 交付记录（2026-11-10 执行）：代码 3 文件——主链 `compiler/src/process_custom_component.ts:2163-2164` + 镜像 `:2179-2180` 各 2 行 message 字符串模板替换（实现变量名 paramName/declaredType/actualType 与 log.push 结构零改动；主/镜像 message 区块 diff IDENTICAL、偏移 +16 保持）+ 期望诊断登记 6 条期望消息文本（4 键、条目数不变、JSON valid）；6 验证示例页面与页面注册表 diff = 0。
+- TASK-5 验证结果（成对验证 fresh）：基线主链 359/2（预存 2 例一致）→ Red 355/6（1-60～1-63 四页面用例消息 findIndex 严格相等断言失败 + 预存 2 例）→ Green 主链 359/2（四页面红转绿）+ 镜像回归 1120/19（预存 19 例同构：Lazy Imports ×8 + static interop ×10 + module_mode ×1；@Require 相关失败 0）——三态零漂移；build 114 files PASS；只读 eslint 替换区间 0 新增（103 error 全预存：主 50/镜像 53）。证据 `evidence/checks/task5-red-green/`（README + 6 份日志）；evidence/reviews 三份 v1.12 增补段（GA/GB/GC Approved 维持，Verdict 补 Approver/Evidence 表）。
+- 交付载体：单 commit（代码+文档同 commit，随 PR #7259 追加——2026-11-10 owner 会话指令「2. 追加commit」）；本地 commit/push 待收尾复核呈报后按 owner 指令执行；门禁触发（start build）等 owner 显式指令（PR #7259 当日已用 1/3）。
+- 收尾复核（2026-11-10）：`ohos-sdd spec-for-validation check` 15/15 PASS；`ohos-sdd validate --level all` **60 checks / 0 broken / 0 warn PASS**。其中 E10.profile-application 存量格式差距（CLI 用户级 60-check 版新增检查，要求历史 Gate 证据文件带 frontmatter + applied_gates 判定）已按既有检查记录与 owner 真实批准事实补齐：check-proposal.md / check-design.md / check-spec.md 三份补 frontmatter + Profile Gate 应用记录节（Gate 判定映射至文件既有检查行；原英文缩写占位字面量按语义改写为「未分配」，指 v1.2 元数据补全前的 FuncID/FeatID 状态），check-execution-plan.md 新建（plan 阶段 Gate 证据：task3/task4/task5-red-green 成对验证对账 + manifest SpecTest/长期归档 N/A 理由 + proposal 设备差异规格 N/A）；proposal baseline_digest 随 v1.12 批准重算回填 `7d48660b…75fb3`。补齐内容全部为既有事实的格式承载，无新增未记录结论。
 
 ## spec-for-validation refresh 后恢复清单（2026-10-29 固化）
 
