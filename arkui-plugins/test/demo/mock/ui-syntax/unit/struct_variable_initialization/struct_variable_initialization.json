@@ -13,7 +13,7 @@
   "struct_variable_initialization_2": {
     "messages": [
       {
-        "message": "The 'regular' property 'value2' cannot be assigned to the '@Link' property 'title'.",
+        "message": "The 'regular' property value cannot be assigned to the '@Link' property 'title'.",
         "position": {
           "line": 37,
           "column": 16
