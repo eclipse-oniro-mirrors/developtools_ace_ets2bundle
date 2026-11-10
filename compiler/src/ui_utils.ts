@@ -218,12 +218,47 @@ export function updateStylesStatementsWithSdkVersions(
   return resultIfStatement;
 }
 
+function checkDuplicateVersionConditionDecorators(
+  isStyles: boolean,
+  decorators: readonly ts.Decorator[],
+  node: ts.FunctionDeclaration | ts.MethodDeclaration,
+  log: LogInfo[]
+): void {
+  const targetDecoratorName: string = isStyles ? COMPONENT_STYLES_DECORATOR : COMPONENT_EXTEND_DECORATOR;
+  let targetNums: number = 0;
+  let newVersionNums: number = 0;
+  let decoratorName: string = '';
+  decorators.forEach((decorator: ts.Decorator) => {
+    decoratorName = getDecoratorNameFromAst(decorator);
+    if (decoratorName !== targetDecoratorName) {
+      return;
+    }
+    targetNums++;
+    if (!decorator.expression ||
+      !ts.isCallExpression(decorator.expression) ||
+      !decorator.expression.arguments) {
+      return;
+    }
+    const argNums: number = decorator.expression.arguments.length;
+    (isStyles || argNums === 2) && newVersionNums++;
+  });
+  const message: string = `Duplicate '${targetDecoratorName}' decorators for function are not allowed.`;
+  if (targetNums > 1 && newVersionNums > 0) {
+    log.push({
+      type: LogType.ERROR,
+      message: message,
+      pos: node.getStart(),
+      code: '10905391'
+    });
+  }
+}
+
 export function fetchExtendDecoratorVersionCondition(
   node: ts.FunctionDeclaration,
   log: LogInfo[]
 ): ISdkApiValues | undefined {
   const decorators: readonly ts.Decorator[] = ts.getAllDecorators(node);
-
+  checkDuplicateVersionConditionDecorators(false, decorators, node, log);
   const extendDecorator: ts.Decorator | undefined = decorators.find((item) => {
     const decoratorName: string = getDecoratorNameFromAst(item);
     return decoratorName === COMPONENT_EXTEND_DECORATOR;
@@ -261,7 +296,7 @@ export function fetchStylesDecoratorVersionCondition(
   log: LogInfo[]
 ): ISdkApiValues | undefined {
   const decorators: readonly ts.Decorator[] = ts.getAllDecorators(node);
-
+  checkDuplicateVersionConditionDecorators(true, decorators, node, log);
   const stylesDecorator: ts.Decorator | undefined = decorators.find((item) => {
     const decoratorName: string = getDecoratorNameFromAst(item);
     return decoratorName === COMPONENT_STYLES_DECORATOR;
@@ -375,13 +410,13 @@ function checkVersionConditionProperty(
   if (!ts.isStringLiteral(initializer) && !ts.isNumericLiteral(initializer)) {
     log.push({
       type: LogType.ERROR,
-      message: `The attribute value of type VersionCondition must be a numeric literal or string literal corresponding to an actual existing version.`,
+      message: `The attribute value of type VersionCondition must be a numeric literal or string literal.`,
       pos: initializer.getStart(),
       code: "10905386"
     });
     return;
   }
-  const propertyName: string =
+  const propertyName: string | undefined =
     ts.isIdentifier(property.name) || ts.isStringLiteral(property.name) ?
       property.name.text :
       undefined;
@@ -418,7 +453,7 @@ function checkVersionConditionValueExistence(
   if (!versionComparator.hasValue(versionValue)) {
     log.push({
       type: LogType.ERROR,
-      message: `The attribute value of type VersionCondition must be a numeric literal or string literal corresponding to an actual existing version.`,
+      message: `The attribute value of type VersionCondition must be a value corresponding to an actual existing version.`,
       pos: initializer.getStart(),
       code: "10905387"
     });
