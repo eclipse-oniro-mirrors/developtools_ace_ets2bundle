@@ -63,15 +63,13 @@ export class DeclTransformer extends AbstractVisitor {
             let newnode = this.processComponent(node);
             debugLog(`DeclTransformer:after:flag:${node.definition?.isFromStruct!}`);
             return newnode;
-        } else if (arkts.isETSImportDeclaration(astNode)) {
-            return this.updateImportDeclaration(astNode);
-        } else if (arkts.isMethodDefinition(astNode)) {
-            if (astNode.id?.name === 'build' ) {
-                return this.transformMethodDefinition(astNode);
+        } else if (arkts.isETSImportDeclaration(node)) {
+            return this.updateImportDeclaration(node);
+        } else if (arkts.isMethodDefinition(node)) {
+            if (node.id?.name === 'build' ) {
+                return this.transformMethodDefinition(node);
             }
-            return astNode;
-        } else if (arkts.isVariableDeclarator(astNode)) {
-            return this.transformWrappedBuilderVarDecl(astNode);
+            return node;
         }
         return node;
     }
@@ -144,46 +142,5 @@ export class DeclTransformer extends AbstractVisitor {
             }
         });
         return astNode;
-    }
-
-    transformWrappedBuilderVarDecl(node: arkts.VariableDeclarator): arkts.VariableDeclarator {
-        const nodeId = node?.id as arkts.Identifier | undefined;
-        const typeAnn = nodeId?.typeAnnotation;
-        let isArray = false;
-        let typeRef = typeAnn;
-        if (arkts.isTSArrayType(typeAnn)) {
-            isArray = true;
-            if (!arkts.isETSTypeReference(typeAnn.elementType!)) {
-                return node;
-            }
-            typeRef = typeAnn.elementType;
-        } else if (!arkts.isETSTypeReference(typeAnn)) {
-            return node;
-        }
-        const part = (typeRef as arkts.ETSTypeReference).part;
-        if (!part?.name || !arkts.isIdentifier(part?.name) || part?.name.name !== 'WrappedBuilder') {
-            return node;
-        }
-        const fnType = part.typeParams?.params?.[0];
-        if (!fnType || !arkts.isETSFunctionType(fnType)) {
-            return node;
-        }
-        const types: arkts.TypeNode[] = [];
-        for (const p of fnType.params) {
-            if (!arkts.isETSParameterExpression(p) || !p.typeAnnotation || !arkts.isTypeNode(p.typeAnnotation)) {
-                return node;
-            }
-            types.push(p.typeAnnotation);
-        }
-        const tuple = arkts.ETSTuple.create2ETSTuple(types);
-
-        const newTypeParams = arkts.factory.updateTSTypeParameterInstantiation(part.typeParams, [tuple]);
-        const newPart = arkts.factory.updateETSTypeReferencePart(part, part.name, newTypeParams, part.previous);
-        const newTypeRef = arkts.factory.updateETSTypeReference(typeRef as arkts.ETSTypeReference, newPart);
-        let newTypeAnn = isArray
-            ? arkts.TSArrayType.updateTSArrayType(typeAnn as arkts.TSArrayType, newTypeRef)
-            : newTypeRef;
-        const newId = arkts.factory.updateIdentifier(nodeId, nodeId!.name, newTypeAnn);
-        return arkts.factory.updateVariableDeclarator(node, node.flag, newId, node.init);
     }
 }
