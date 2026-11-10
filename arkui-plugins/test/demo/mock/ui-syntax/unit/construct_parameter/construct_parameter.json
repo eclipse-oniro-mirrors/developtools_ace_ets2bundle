@@ -2,7 +2,7 @@
   "construct_parameter_1": {
     "messages": [
       {
-        "message": "The 'regular' property 'value2' cannot be assigned to the '@Link' property 'title'.",
+        "message": "The 'regular' property value cannot be assigned to the '@Link' property 'title'.",
         "position": {
           "line": 35,
           "column": 16
@@ -42,7 +42,7 @@
   "construct_parameter_4": {
     "messages": [
       {
-        "message": "The 'regular' property 'message' cannot be assigned to the '@Link' property 'message'.",
+        "message": "The 'regular' property value cannot be assigned to the '@Link' property 'message'.",
         "position": {
           "line": 29,
           "column": 43

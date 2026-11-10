@@ -2,7 +2,7 @@
   "construct_parameter_literal_1": {
     "messages": [
       {
-        "message": "The 'regular' property 'value2' cannot be assigned to the '@Link' property 'title'.",
+        "message": "The 'regular' property value cannot be assigned to the '@Link' property 'title'.",
         "position": {
           "line": 35,
           "column":16
@@ -13,7 +13,7 @@
   "construct_parameter_literal_2": {
     "messages": [
       {
-        "message": "The 'regular' property 'value' cannot be assigned to the '@ObjectLink' property 'title'",
+        "message": "The 'regular' property value cannot be assigned to the '@ObjectLink' property 'title'.",
         "position": {
           "line": 39,
           "column":24
@@ -24,7 +24,7 @@
   "construct_parameter_literal_3": {
     "messages": [
       {
-        "message": "The 'regular' property '$$.paramA1' cannot be assigned to the '@Link' property 'message'.",
+        "message": "The 'regular' property value cannot be assigned to the '@Link' property 'message'.",
         "position": {
           "line": 33,
           "column": 25
@@ -35,7 +35,7 @@
    "construct_parameter_literal_4": {
     "messages": [
       {
-        "message": "The 'regular' property '\"Static String\"' cannot be assigned to the '@Link' property 'message'.",
+        "message": "The 'regular' property value cannot be assigned to the '@Link' property 'message'.",
         "position": {
           "line": 37,
           "column": 24
@@ -46,7 +46,7 @@
    "construct_parameter_literal_5": {
     "messages": [
       {
-        "message": "The 'regular' property '((this.count) + (5))' cannot be assigned to the '@Link' property 'val'.",
+        "message": "The 'regular' property value cannot be assigned to the '@Link' property 'val'.",
         "position": {
           "line": 39,
           "column": 20
@@ -57,7 +57,7 @@
    "construct_parameter_literal_6": {
     "messages": [
       {
-        "message": "The 'regular' property 'this.generateText()' cannot be assigned to the '@Link' property 'label'.",
+        "message": "The 'regular' property value cannot be assigned to the '@Link' property 'label'.",
         "position": {
           "line": 42,
           "column": 19

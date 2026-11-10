@@ -57,7 +57,7 @@ function _checkConstructParameterLiteral(
         this.report({
             node: property,
             level: LogType.WARN,
-            message: `The 'regular' property '${errorNode.dumpSrc()}' cannot be assigned to the '@${annotationName}' property '${propertyInfo.name}'.`,
+            message: `The 'regular' property value cannot be assigned to the '@${annotationName}' property '${propertyInfo.name}'.`,
         });
     });
 }
