@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { FileManager } from './interop_manager';
+import { FileManager, getOverrideDeclPath } from './interop_manager';
 import { mkdirsSync, toUnixPath } from '../../../utils';
 import {
   ArkTSEvolutionModule,
@@ -116,7 +116,7 @@ export class InteropContext {
     const isNativeFlag = moduleInfo.isNative ? 'Y' : 'N';
     const ohmUrl: string = `${isNativeFlag}&&&${normalizedFilePath}&`;
     this.pkgDeclFilesConfig[moduleInfo.packageName].files[projectFilePath] = {
-      declPath,
+      declPath: getOverrideDeclPath(declPath),
       filePath,
       ohmUrl: `@normalized:${ohmUrl}`
     };
