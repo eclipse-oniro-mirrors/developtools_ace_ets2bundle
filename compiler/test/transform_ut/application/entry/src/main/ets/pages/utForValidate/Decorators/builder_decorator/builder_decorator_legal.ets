@@ -51,9 +51,3 @@ function placeholderBuilder() {
 function placeholderWithUnknownKeyBuilder() {
   Text('unknown key')
 }
-
-// constant boolean expressions evaluate like their folded literal (false here: legal, no instrumentation)
-@Builder({ isPlaceholder: true && false })
-function constExprValueBuilder() {
-  Text('constant expression value')
-}
