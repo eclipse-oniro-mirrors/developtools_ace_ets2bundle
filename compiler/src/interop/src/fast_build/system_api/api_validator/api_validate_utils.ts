@@ -135,7 +135,10 @@ function checkElseBranchAt(node: ts.Node, ancestor: ts.Node, isGuard: GuardTruth
  * a.b();
  */
 function checkGuardClauseAt(ancestor: ts.Node, isGuard: GuardTruthPredicate): boolean {
-  //
+  // 函数声明存在提升（hoisting）：声明在守卫之后，也可能在守卫之前被调用
+  if (ts.isFunctionDeclaration(ancestor)) {
+    return false;
+  }
   const container: ts.Node = ancestor.parent;
   if (!container || !ts.isBlock(container)) {
     return false;
@@ -252,9 +255,10 @@ export class SdkComparisonHelper {
    * Checks if an expression contains a valid SDK version comparison.
    *
    * @param expression - The expression to analyze
+   * @param impliedConditionValue - Indicates if the expression is implied to be true or false in the current context
    * @returns True if valid SDK comparison found
    */
-  public isSdkComparisonHelper(expression: ts.Expression): boolean {
+  public isSdkComparisonHelper(expression: ts.Expression, impliedConditionValue: boolean = true): boolean {
     let isSinceMSFVersion: boolean = true;
     const expressionText = expression.getText();
     const runtimeType = projectConfig.runtimeOS;
@@ -284,7 +288,15 @@ export class SdkComparisonHelper {
       return false;
     }
 
-    if (!this.validateSdkVersionCompatibility(parts.operator, parts.value, matchedApi, runtimeType, parts.apiPosition)) {
+    // cv=false 时运算符取反（逆条件），无法取反则不消除。
+    const effectiveOperator = impliedConditionValue
+      ? parts.operator
+      : this.negateOperator(parts.operator);
+    if (!effectiveOperator) {
+      return false;
+    }
+
+    if (!this.validateSdkVersionCompatibility(effectiveOperator, parts.value, matchedApi, runtimeType, parts.apiPosition)) {
       return false;
     }
 
@@ -464,7 +476,11 @@ export class SdkComparisonHelper {
       return undefined;
     }
 
-    const resolvedValue = this.resolveDeclarationValue(valueExpression, targetValue);
+    // 解析比较值：若为 const/let/enum/import 引用则取其初始值，否则用原始文本。
+    const resolvedInitializer = this.resolveInitializerExpression(valueExpression);
+    const resolvedValue = resolvedInitializer
+      ? this.extractValueFromInitializer(resolvedInitializer)
+      : targetValue;
 
     return { operator, value: resolvedValue, apiPosition };
   }
@@ -793,6 +809,23 @@ export class SdkComparisonHelper {
         return operator;
       default:
         return operator;
+    }
+  }
+
+  /**
+   * 比较运算符取反：`<`↔`>=`、`<=`↔`>`、`==`↔`!=` 等。无法取反返回 undefined。
+   */
+  private negateOperator(op: string): string | undefined {
+    switch (op) {
+      case '<': return '>=';
+      case '<=': return '>';
+      case '>': return '<=';
+      case '>=': return '<';
+      case '==': return '!=';
+      case '===': return '!==';
+      case '!=': return '==';
+      case '!==': return '===';
+      default: return undefined;
     }
   }
 
