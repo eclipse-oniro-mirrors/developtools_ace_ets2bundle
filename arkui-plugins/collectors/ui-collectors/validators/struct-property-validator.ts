@@ -37,6 +37,7 @@ import {
     checkRequireDecoratorRegular,
     checkTrackDecorator,
     checkNoPropLinkObjectlinkInEntry,
+    checkObjectLinkFunctionType,
     checkOldNewDecoratorMixUse,
     checkWatchDecoratorRegular,
     checkStructPropertyOptional,
@@ -67,6 +68,7 @@ export class StructPropertyValidator extends BaseValidator<arkts.ClassProperty, 
         checkRequireDecoratorRegular.bind(this)(node);
         checkTrackDecorator.bind(this)(node);
         checkNoPropLinkObjectlinkInEntry.bind(this)(node);
+        checkObjectLinkFunctionType.bind(this)(node);
         checkOldNewDecoratorMixUse.bind(this)(node);
         checkWatchDecoratorRegular.bind(this)(node);
         checkStructPropertyOptional.bind(this)(node);
