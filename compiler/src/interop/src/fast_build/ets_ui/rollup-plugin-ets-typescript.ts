@@ -612,7 +612,7 @@ async function transform(code: string, id: string) {
     (interopTransformLog && interopTransformLog.errors.length) ||
     (staticInteropTransformLog && staticInteropTransformLog.errors.length)) &&
     !projectConfig.ignoreWarning) {
-    emitLogInfo(logger, getTransformLog(interopTransformLog), true, id);
+    emitLogInfo(logger, getTransformLog(interopTransformLog), true, id, ets2bundleHvigorLogger);
     emitLogInfo(logger, getTransformLog(staticInteropTransformLog), true, id, ets2bundleHvigorLogger);
     emitLogInfo(logger, getTransformLog(kitTransformLog), true, id);
     emitLogInfo(logger, getTransformLog(transformLog), true, id, hvigorLogger);
