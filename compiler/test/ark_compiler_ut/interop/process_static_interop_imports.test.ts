@@ -21,6 +21,7 @@ import * as ts from 'typescript';
 import { expect } from 'chai';
 
 import { FileManager } from '../../../lib/fast_build/ark_compiler/interop/interop_manager';
+import { projectConfig } from '../../../main';
 import { ARKTS_HYBRID } from '../../../lib/fast_build/ark_compiler/interop/pre_define';
 
 const etsChecker = require('../../../lib/ets_checker');
@@ -154,6 +155,37 @@ mocha.describe('process static interop imports tests', function() {
     expect(result).to.include('export const message = __createLazy__(');
     expect(result).to.include('export const bb = __createLazy__(');
     expect(result).to.include('const value = 1;');
+  });
+
+  mocha.it('checks lazy re-exports after static imports have been replaced', function() {
+    const { processLazyImport, reExportCheckLog, resetReExportCheckLog } =
+      require('../../../lib/process_lazy_import');
+    const sourceFile: ts.SourceFile = ts.createSourceFile(importerId, [
+      'import value from "./custom.ets";',
+      'import other from "./other";',
+      'export { value, other };'
+    ].join('\n'), ts.ScriptTarget.ES2021, true, ts.ScriptKind.ETS);
+    const originalProcessTs: boolean = projectConfig.processTs;
+    projectConfig.processTs = true;
+    resetReExportCheckLog();
+    try {
+      const result: ts.TransformationResult<ts.SourceFile> = ts.transform(sourceFile, [
+        processLazyImport({}, undefined, {
+          autoLazyImport: true,
+          reExportCheckMode: 'strict',
+          autoLazyFilter: {}
+        }, undefined, importerId)
+      ]);
+      const output: string = ts.createPrinter().printFile(result.transformed[0]);
+      result.dispose();
+      expect(output).to.include('Panda.getFunction');
+      expect(output).to.include('import lazy other from "./other";');
+      expect(reExportCheckLog.errors).to.have.lengthOf(1);
+      expect(reExportCheckLog.errors[0].message).to.include("'other' of lazy-import is re-export");
+    } finally {
+      projectConfig.processTs = originalProcessTs;
+      resetReExportCheckLog();
+    }
   });
 
   mocha.it('supports a configurable target file', function() {

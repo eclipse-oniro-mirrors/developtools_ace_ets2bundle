@@ -74,6 +74,28 @@ const WINDOWS: string = 'Windows_NT';
 const LINUX: string = 'Linux';
 const MAC: string = 'Darwin';
 const HARMONYOS: string = 'HarmonyOS';
+const KEEPTS: string = '// @keepTs';
+
+export interface ImportTransformResolver {
+  isReferenced(node: ts.Node): boolean;
+  isReferencedAliasDeclaration(node: ts.Node): boolean;
+  isValueAliasDeclaration(node: ts.Node): boolean;
+}
+
+export function checkHasKeepTs(node: ts.SourceFile): boolean {
+  // Get the first comment in the file and determine whether it is "// @keepTs"
+  const comments: ts.CommentRange[] = ts.getTrailingCommentRanges(node.getFullText(), 0) || [];
+  if (comments.length === 0) {
+    return false;
+  }
+  return node.getFullText().substring(comments[0].pos, comments[0].end).trim() === KEEPTS;
+}
+
+export function shouldSkipTsImportTransform(sourceFile: ts.SourceFile, processTs: boolean,
+  complieHar: boolean): boolean {
+  return processTs !== true || ts.hasTsNoCheckOrTsIgnoreFlag(sourceFile) &&
+    (complieHar || !checkHasKeepTs(sourceFile));
+}
 
 export interface LogInfo extends HvigorLogInfo {
   type: LogType,

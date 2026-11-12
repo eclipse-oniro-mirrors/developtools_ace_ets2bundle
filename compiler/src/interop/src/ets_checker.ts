@@ -80,6 +80,7 @@ import {
   isExtendFunction,
   isOriginalExtend
 } from './process_ui_syntax';
+import { preprocessSourceFileForCheckerlessImport } from './checkerless_import_transform';
 import { visualTransform } from './process_visual';
 import { tsWatchEmitter } from './fast_build/ets_ui/rollup-plugin-ets-checker';
 import {
@@ -959,6 +960,7 @@ export function serviceChecker(rootFileNames: string[], newLogger: Object = null
 export function traverseProgramSourceFiles(props: Set<string>): void {
   globalProgram.program.getSourceFiles().forEach((sourceFile: ts.SourceFile) => {
     checkUISyntax(sourceFile, sourceFile.fileName, [], props);
+    preprocessSourceFileForCheckerlessImport(globalProgram.program, sourceFile);
   });
 }
 
