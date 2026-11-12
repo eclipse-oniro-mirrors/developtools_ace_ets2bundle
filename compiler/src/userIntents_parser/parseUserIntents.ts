@@ -154,15 +154,13 @@ class ParseIntent {
     if (this.factsCollectedKeys.has(factKey)) {
       return;
     }
-    const resolvedMetaInfo: object | undefined = (metaInfo?.pkgName && metaInfo?.pkgPath) ?
+    // Keep the pre-change failure behavior: module information and checker are not filtered here.
+    // A missing module info goes through handleIntent -> getPkgInfo, which reports
+    // ETS2BUNDLE_EXTERNAL_FAILED_TO_RESOLVE_OHM_URL; a missing checker fails in handleDecorator
+    // exactly as it did when the facts were collected in processUISyntax.
+    const resolvedMetaInfo: object = (metaInfo?.pkgName && metaInfo?.pkgPath) ?
       metaInfo : this.deriveMetaInfo(filePath);
-    if (!resolvedMetaInfo) {
-      return;
-    }
     const checker: TypeChecker = CurrentProcessFile.getChecker();
-    if (!checker) {
-      return;
-    }
     this.factsCollectedKeys.add(factKey);
     this.initInsightIntent(node as ts.ClassDeclaration, resolvedMetaInfo, log, filePath);
     this.handleIntent(node as ts.ClassDeclaration, checker, filePath, resolvedMetaInfo);
