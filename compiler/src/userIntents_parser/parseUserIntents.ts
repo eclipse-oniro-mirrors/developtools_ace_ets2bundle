@@ -125,12 +125,12 @@ class ParseIntent {
     this.allCompiledSourceFiles.set(decoratorFile, filePath);
   }
 
-  private static readonly INTENT_DECORATORS: string[] = [COMPONENT_USER_INTENTS_DECORATOR_LINK, COMPONENT_USER_INTENTS_DECORATOR_ENTRY,
+  private static readonly INSIGHTINTENT_DECORATORS: string[] = [COMPONENT_USER_INTENTS_DECORATOR_LINK, COMPONENT_USER_INTENTS_DECORATOR_ENTRY,
     COMPONENT_USER_INTENTS_DECORATOR_FUNCTION, COMPONENT_USER_INTENTS_DECORATOR_PAGE, COMPONENT_USER_INTENTS_DECORATOR_ENTITY,
     COMPONENT_USER_INTENTS_DECORATOR_FORM];
 
   public hasIntentDecorator(node: ts.Node): boolean {
-    return this.hasDecorator(node, ParseIntent.INTENT_DECORATORS);
+    return this.hasDecorator(node, ParseIntent.INSIGHTINTENT_DECORATORS);
   }
 
   private deriveMetaInfo(filePath: string): object | undefined {
@@ -192,9 +192,9 @@ class ParseIntent {
         }
       });
     }
-    if (this.hasDecorator(node, ParseIntent.INTENT_DECORATORS)) {
+    if (this.hasDecorator(node, ParseIntent.INSIGHTINTENT_DECORATORS)) {
       return this.removeDecorator(node as ts.ClassDeclaration,
-        ParseIntent.INTENT_DECORATORS.concat(COMPONENT_USER_INTENTS_DECORATOR_METHOD));
+        ParseIntent.INSIGHTINTENT_DECORATORS.concat(COMPONENT_USER_INTENTS_DECORATOR_METHOD));
     }
     return node;
   }
