@@ -13,12 +13,15 @@
  * limitations under the License.
  */
 
+import * as fs from 'fs';
+import * as path from 'path';
 import * as arkts from '@koalaui/libarkts';
 import { Collector } from '../../collectors/collector';
+import { getUIComponents } from '../../common/arkts-utils';
+import { LIB_UI_COMPONENTS_PATH, EXTERNAL_SOURCE_PREFIX_NAMES } from '../../common/predefines';
 import { LogCollector, LogInfo } from '../../common/log-collector';
 import { MetaDataCollector } from '../../common/metadata-collector';
 import { ProgramVisitor } from '../../common/program-visitor';
-import { EXTERNAL_SOURCE_PREFIX_NAMES } from '../../common/predefines';
 import { PluginContext } from '../../common/plugin-context';
 
 type ShouldCapture = (logItem: LogInfo) => boolean;
@@ -33,6 +36,18 @@ let originalEmitLogInfo: EmitLogInfo | undefined;
 
 /** Swallows reports: the mock test driver cannot emit es2panda diagnostics; UTs stay capture-only. */
 function noopEmitLogInfo(this: LogCollector): void {}
+
+/**
+ * Resolves the built-in component JSON directory for jest runs. jest executes plugin
+ * sources directly, where `LIB_UI_COMPONENTS_PATH` (`arkui-plugins/components`) only
+ * exists in the compiled lib output — fall back to the source it is copied from.
+ */
+function resolveBuiltinComponentsPath(): string {
+    if (fs.existsSync(LIB_UI_COMPONENTS_PATH)) {
+        return LIB_UI_COMPONENTS_PATH;
+    }
+    return path.resolve(__dirname, '../../../compiler/components');
+}
 
 /** Stand-in for LogCollector.collectLogInfo that forwards matching reports to captureHandler. */
 function capturingCollectLogInfo(this: LogCollector, logItem: LogInfo): void {
@@ -85,6 +100,7 @@ export function runCheckedLinterCapture(
     let program = arkts.getOrUpdateGlobalContext(contextPtr).program;
     MetaDataCollector.getInstance()
         .setProjectConfig(pluginContext.getProjectConfig())
+        .setComponentsInfo(getUIComponents(pluginContext.getProjectConfig(), false, resolveBuiltinComponentsPath()))
         .setShouldHandleInsightIntent(false);
     stubLogCollector(filter, handler);
     try {

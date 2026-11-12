@@ -379,8 +379,11 @@ export function readJSON<T>(path: string): T | null {
 const EXTERNAL_COMPONENT_PATH_EDIT    = 'build-tools/ets-loader/components';
 const EXTERNAL_COMPONENT_PATH_COMPILE = '../build-tools/ets-loader/components';
 
-export function getUIComponents(projectConfig: ProjectConfig | undefined, isCoding: boolean): UIComponents | undefined {
-    const uiComponentPath = LIB_UI_COMPONENTS_PATH;
+export function getUIComponents(
+    projectConfig: ProjectConfig | undefined,
+    isCoding: boolean,
+    uiComponentPath: string = LIB_UI_COMPONENTS_PATH
+): UIComponents | undefined {
     const uiComponentFiles = fs.existsSync(uiComponentPath) ? fs.readdirSync(uiComponentPath) : [];
     const externalComponentPath = getExternalComponentPath(projectConfig, isCoding);
     const externalComponentFiles = fs.existsSync(externalComponentPath) ? fs.readdirSync(externalComponentPath) : [];
