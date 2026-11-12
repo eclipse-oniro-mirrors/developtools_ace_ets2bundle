@@ -1731,3 +1731,23 @@ export function equalToHiddenNavComplementation(
   }
   return (EXT_WHITE_LIST.length >= 2) && (componentName === EXT_WHITE_LIST[0]);
 }
+/**
+ * Get the directory path of api/arkts/kits in the SDK used for compilation.
+ * For an ArkUI-X project the directory is located in the ArkUI-X SDK:
+ * <arkUIXSdkRootPath>/openharmony/ets/<subDir>, otherwise in the SDK where
+ * the ets_loader is deployed.
+ * @param {string} subDir - sub directory name under the SDK ets root
+ * @param {Object} shareProjectConfig - the shared projectConfig
+ * @param {string} relativeSdkRootPath - path from this module to the SDK ets root
+ * @returns {string} - the absolute path of the directory
+ */
+export function getEtsSdkDirPath(
+  subDir: string,
+  shareProjectConfig: Object,
+  relativeSdkRootPath: string
+): string {
+  if (shareProjectConfig.isCrossplatform && shareProjectConfig.arkUIXSdkRootPath) {
+    return path.resolve(shareProjectConfig.arkUIXSdkRootPath, 'openharmony', 'ets', subDir);
+  }
+  return path.resolve(__dirname, relativeSdkRootPath, subDir);
+}
