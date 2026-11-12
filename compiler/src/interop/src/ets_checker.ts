@@ -73,7 +73,8 @@ import {
   getRollupCache,
   setRollupCache,
   getRollupCommonCache,
-  setRollupCommonCache
+  setRollupCommonCache,
+  getEtsSdkDirPath
 } from './utils';
 import {
   isExtendFunction,
@@ -1588,8 +1589,14 @@ function isResolvedPathUnderExternalApi(target: string | undefined, externalApiP
   if (!target) {
     return false;
   }
-  const resolvedRoot: string = path.resolve(externalApiPath);
   const resolvedTarget: string = path.resolve(target);
+  if (projectConfig?.isCrossplatform && projectConfig?.arkUIXSdkRootPath) {
+    const arkUIXSdkEtsRoot: string = path.resolve(projectConfig.arkUIXSdkRootPath, 'openharmony', 'ets');
+    if (resolvedTarget.startsWith(arkUIXSdkEtsRoot + path.sep)) {
+      return false;
+    }
+  }
+  const resolvedRoot: string = path.resolve(externalApiPath);
   return resolvedTarget === resolvedRoot || resolvedTarget.startsWith(resolvedRoot + path.sep);
 }
 
@@ -1694,10 +1701,12 @@ export function resolveModuleNames(moduleNames: string[], containingFile: string
           const extension = resolveModuleInfo.isEts ? '.d.ets' : '.d.ts';
           resolvedModules.push(getResolveModule(modulePath, extension));
         } else {
-          const modulePath: string = path.resolve(__dirname, '../../../api', moduleName + '.d.ts');
-          const systemDETSModulePath: string = path.resolve(__dirname, '../../../api', moduleName + '.d.ets');
-          const kitModulePath: string = path.resolve(__dirname, '../../../kits', moduleName + '.d.ts');
-          const kitSystemDETSModulePath: string = path.resolve(__dirname, '../../../kits', moduleName + '.d.ets');
+          const apiDirPath: string = getEtsSdkDirPath('api', projectConfig, '../../../');
+          const kitsDirPath: string = getEtsSdkDirPath('kits', projectConfig, '../../../');
+          const modulePath: string = path.resolve(apiDirPath, moduleName + '.d.ts');
+          const systemDETSModulePath: string = path.resolve(apiDirPath, moduleName + '.d.ets');
+          const kitModulePath: string = path.resolve(kitsDirPath, moduleName + '.d.ts');
+          const kitSystemDETSModulePath: string = path.resolve(kitsDirPath, moduleName + '.d.ets');
           const suffix: string = /\.js$/.test(moduleName) ? '' : '.js';
           const jsModulePath: string = path.resolve(__dirname, '../node_modules', moduleName + suffix);
           const fileModulePath: string =
