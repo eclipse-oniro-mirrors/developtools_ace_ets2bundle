@@ -22,7 +22,8 @@ import {
   isCheckDistributionOSVersion,
   checkMSFVersionMajor,
   checkIntegerMoreVersion,
-  isOpenHarmonyRuntime
+  isOpenHarmonyRuntime,
+  isApiAvailableStatement
 } from '../api_check_utils';
 import { checkApiAvailableLiteral } from './apiAvailable_validate_utils';
 import {
@@ -305,6 +306,9 @@ export class SdkComparisonHelper {
     }
     const [matchedApi] = matchedEntry;
     if (!this.validateApiAvailablePreCheck(expression, matchedApi)) {
+      return false;
+    }
+    if (!isApiAvailableStatement(expression)) {
       return false;
     }
     const call = expression as ts.CallExpression;
