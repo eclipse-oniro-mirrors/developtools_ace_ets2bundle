@@ -47,6 +47,7 @@
         "autoAdjustScrollBarMargin",
         "enableScrollWithMouse",
         "scrollBarHeight",
-        "enableScrollWithKeyboard"
+        "enableScrollWithKeyboard",
+        "scrollSnapStrategy"
     ]
 }
