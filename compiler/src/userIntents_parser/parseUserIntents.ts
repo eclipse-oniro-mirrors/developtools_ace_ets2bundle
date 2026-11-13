@@ -138,6 +138,12 @@ class ParseIntent {
     if (!this.hasIntentDecorator(node)) {
       return;
     }
+    // validateUISyntax is also called from webpack preprocessing / preview paths without module meta.
+    // Master collected only in the emit path where module meta is complete, so skip those paths
+    // instead of reporting OHM URL errors or writing facts with a fallback file path.
+    if (!metaInfo?.pkgName || !metaInfo?.pkgPath) {
+      return;
+    }
     const factKey: string = this.getIntentFactKey(node, filePath);
     if (this.factsCollectedKeys.has(factKey)) {
       return;
