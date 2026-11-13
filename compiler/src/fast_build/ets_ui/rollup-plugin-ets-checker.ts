@@ -31,6 +31,7 @@ import {
   targetESVersionChanged,
   obfuscationConfigChanged,
   collectFileToIgnoreDiagnostics,
+  releaseModuleResolutionCaches,
   TSC_SYSTEM_CODE,
   traverseProgramSourceFiles
 } from '../../ets_checker';
@@ -129,17 +130,23 @@ export function etsChecker() {
         !executedOnce && serviceChecker(rootFileNames, logger, resolveModulePaths, eventServiceChecker, this.share);
         ts.PerformanceDotting?.startAdvanced('diagnostic');
         if (executedOnce) {
-          const timePrinterInstance = ts.ArkTSLinterTimePrinter.getInstance();
-          timePrinterInstance.setArkTSTimePrintSwitch(false);
-          const buildProgramRecordInfo = MemoryMonitor.recordStage(MemoryDefine.BUILDER_PROGRAM);
-          timePrinterInstance.appendTime(ts.TimePhase.START);
-          globalProgram.builderProgram = languageService.getBuilderProgram(/*withLinterProgram*/ true);
-          globalProgram.program = globalProgram.builderProgram.getProgram();
-          traverseProgramSourceFiles(languageService.getProps());
-          timePrinterInstance.appendTime(ts.TimePhase.GET_PROGRAM);
-          MemoryMonitor.stopRecordStage(buildProgramRecordInfo);
-          const collectFileToIgnore = MemoryMonitor.recordStage(MemoryDefine.COLLECT_FILE_TOIGNORE_RUN_TSLINTER);
-          collectFileToIgnoreDiagnostics(rootFileNames);
+          releaseModuleResolutionCaches();
+          let collectFileToIgnore: ReturnType<typeof MemoryMonitor.recordStage>;
+          try {
+            const timePrinterInstance = ts.ArkTSLinterTimePrinter.getInstance();
+            timePrinterInstance.setArkTSTimePrintSwitch(false);
+            const buildProgramRecordInfo = MemoryMonitor.recordStage(MemoryDefine.BUILDER_PROGRAM);
+            timePrinterInstance.appendTime(ts.TimePhase.START);
+            globalProgram.builderProgram = languageService.getBuilderProgram(/*withLinterProgram*/ true);
+            globalProgram.program = globalProgram.builderProgram.getProgram();
+            traverseProgramSourceFiles(languageService.getProps());
+            timePrinterInstance.appendTime(ts.TimePhase.GET_PROGRAM);
+            MemoryMonitor.stopRecordStage(buildProgramRecordInfo);
+            collectFileToIgnore = MemoryMonitor.recordStage(MemoryDefine.COLLECT_FILE_TOIGNORE_RUN_TSLINTER);
+            collectFileToIgnoreDiagnostics(rootFileNames);
+          } finally {
+            releaseModuleResolutionCaches();
+          }
           runArkTSLinter(getErrorCodeLogger(LINTER_SUBSYSTEM_CODE, this.share));
           MemoryMonitor.stopRecordStage(collectFileToIgnore);
         }

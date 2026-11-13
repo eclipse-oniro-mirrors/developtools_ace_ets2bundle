@@ -936,6 +936,459 @@ function setupIsolatedEtsChecker(): void {
     proxyquire('../../lib/ets_checker', { 'typescript': tsWithStub }).resolveModuleNames;
 }
 
+mocha.describe('module resolution memoization', () => {
+  let checker: typeof import('../../lib/ets_checker');
+  let realpath: sinon.SinonStub;
+  const dependency: string = path.resolve('shared.ts');
+  const first: string = path.resolve('first.ets');
+  const second: string = path.resolve('second.ets');
+
+  mocha.beforeEach((): void => {
+    snapshotProjectConfig();
+    quarantineProjectConfig();
+    projectConfig.externalApiPaths = undefined;
+    realpath = sinon.stub();
+    const resolveModuleName = sinon.stub().callsFake(() => ({
+      resolvedModule: makeResolvedModule(dependency)
+    }));
+    checker = proxyquire('../../lib/ets_checker', {
+      'typescript': { ...ts, sys: { ...ts.sys, realpath }, resolveModuleName }
+    });
+  });
+
+  mocha.afterEach((): void => {
+    checker.resetEtsCheck();
+    restoreProjectConfig();
+  });
+
+  function installPathsSetter(options: ts.CompilerOptions): void {
+    let mergedPaths: NonNullable<ts.CompilerOptions['paths']> = { '*': ['initial/*'], '@alias/*': ['alias/*'] };
+    // Match the Hvigor merge of two wildcard rules.
+    Object.defineProperty(options, 'paths', {
+      enumerable: true,
+      configurable: true,
+      get: () => mergedPaths,
+      set(incomingPaths: NonNullable<ts.CompilerOptions['paths']>) {
+        mergedPaths['*'] = [...new Set([...mergedPaths['*'], ...incomingPaths['*']])];
+        delete incomingPaths['*'];
+        mergedPaths = { ...mergedPaths, ...incomingPaths };
+      }
+    });
+  }
+
+  mocha.it('freezes the merged Hvigor paths after configuration and reuses them in Rollup preview', () => {
+    const resolveModuleName = sinon.stub().returns({ resolvedModule: makeResolvedModule(dependency) });
+    const config = { cachePath: process.cwd(), projectPath: process.cwd() };
+    const isolatedChecker: typeof checker = proxyquire('../../lib/ets_checker', {
+      '../main': { projectConfig: config },
+      'typescript': { ...ts, createWatchCompilerHost: sinon.stub().returns({}), resolveModuleName }
+    });
+    const savedCompileTool: string | undefined = process.env.compileTool;
+    process.env.compileTool = 'rollup';
+    try {
+      installPathsSetter(isolatedChecker.compilerOptions);
+      isolatedChecker.createWatchCompilerHost([], () => {}, () => {}, () => {}, false, [path.resolve('first-lib')]);
+      isolatedChecker.resolveModuleNames(['shared', 'other'], first);
+      const firstPaths = resolveModuleName.firstCall.args[2].paths;
+      expect(firstPaths).to.deep.equal({ '*': ['initial/*', '*', path.join('first-lib', '*')], '@alias/*': ['alias/*'] });
+      expect(Object.isFrozen(firstPaths)).to.be.true;
+      expect(isolatedChecker.compilerOptions.paths).to.equal(firstPaths);
+      expect(resolveModuleName.secondCall.args[2].paths).to.equal(firstPaths);
+
+      isolatedChecker.createWatchCompilerHost([], () => {}, () => {}, () => {}, true);
+      expect(isolatedChecker.compilerOptions.paths).to.equal(firstPaths);
+
+      // Hvigor installs a new setter with new build configuration before starting a new build.
+      installPathsSetter(isolatedChecker.compilerOptions);
+      isolatedChecker.createWatchCompilerHost([], () => {}, () => {}, () => {},
+        false, [path.resolve('first-lib'), path.resolve('second-lib')]);
+      isolatedChecker.resolveModuleNames(['shared'], second);
+      const updatedPaths = resolveModuleName.lastCall.args[2].paths;
+      expect(updatedPaths).not.to.equal(firstPaths);
+      expect(Object.isFrozen(updatedPaths)).to.be.true;
+      expect(updatedPaths['*']).to.deep.equal(['initial/*', '*', path.join('first-lib', '*'), path.join('second-lib', '*')]);
+      expect(firstPaths['*']).to.deep.equal(['initial/*', '*', path.join('first-lib', '*')]);
+    } finally {
+      isolatedChecker.resetEtsCheck();
+      if (savedCompileTool === undefined) {
+        delete process.env.compileTool;
+      } else {
+        process.env.compileTool = savedCompileTool;
+      }
+    }
+  });
+
+  mocha.it('reuses realpath results and the original-path fallback until reset', () => {
+    realpath.withArgs(dependency).returns(path.resolve('target.ts'));
+    const missing: string = path.resolve('missing.ts');
+    realpath.withArgs(missing).returns(missing);
+    const host = checker.moduleResolutionHostTest;
+    for (let i = 0; i < 2; i++) {
+      expect(host.realpath(dependency)).to.equal(path.resolve('target.ts'));
+      expect(host.realpath(missing)).to.equal(missing);
+    }
+    expect(realpath.callCount).to.equal(2);
+    checker.resetEtsCheck();
+    realpath.withArgs(dependency).returns(path.resolve('new-target.ts'));
+    expect(host.realpath(dependency)).to.equal(path.resolve('new-target.ts'));
+    expect(realpath.callCount).to.equal(3);
+  });
+
+  mocha.it('updates the parent array in place without duplicating existing importers', () => {
+    checker.resolveModuleNames(['shared'], first);
+    const parents = checker.cache[dependency].parent;
+    checker.resolveModuleNames(['shared', 'shared'], second);
+    checker.resolveModuleNames(['shared'], first);
+    expect(checker.cache[dependency].parent).to.equal(parents);
+    expect(parents).to.deep.equal([first, second]);
+  });
+
+  mocha.it('treats an empty-string parent loaded from the checker cache as an empty list', () => {
+    const cachedEntry = '{"mtimeMs":0,"children":[],"parent":"","error":false}';
+    checker.cache[dependency] = JSON.parse(cachedEntry);
+    checker.cache[first] = JSON.parse(cachedEntry);
+
+    checker.resolveModuleNames(['shared'], first);
+
+    expect(checker.cache[dependency].parent).to.deep.equal([first]);
+    expect(checker.cache[first].parent).to.deep.equal([]);
+  });
+
+  mocha.it('deduplicates loaded parents in order and reuses the repaired list for later importers', () => {
+    checker.cache[dependency] = {
+      mtimeMs: 0, children: [], parent: [first, second, first], error: true
+    };
+    checker.resolveModuleNames(['shared'], first);
+    const parents = checker.cache[dependency].parent;
+    expect(parents).to.deep.equal([first, second]);
+    expect(checker.cache[dependency].error).to.equal(false);
+
+    const third: string = path.resolve('third.ets');
+    checker.resolveModuleNames(['shared', 'shared'], third);
+    checker.resolveModuleNames(['shared'], second);
+    expect(checker.cache[dependency].parent).to.equal(parents);
+    expect(parents).to.deep.equal([first, second, third]);
+  });
+
+  mocha.it('does not conflate paths that may cross a symlink', () => {
+    const throughLink = `${path.dirname(dependency)}${path.sep}link${path.sep}..${path.sep}shared.ts`;
+    realpath.withArgs(dependency).returns(dependency);
+    realpath.withArgs(throughLink).returns(path.resolve('other', 'shared.ts'));
+    const host = checker.moduleResolutionHostTest;
+    expect(host.realpath(dependency)).to.equal(dependency);
+    expect(host.realpath(throughLink)).to.equal(path.resolve('other', 'shared.ts'));
+    expect(realpath.callCount).to.equal(2);
+  });
+
+  mocha.it('releases realpath results and seeds the parent index from the surviving array', () => {
+    const host = checker.moduleResolutionHostTest;
+    realpath.withArgs(dependency).returns(dependency);
+    host.realpath(dependency);
+    checker.resolveModuleNames(['shared'], first);
+    checker.resolveModuleNames(['shared'], second);
+    checker.releaseModuleResolutionCaches();
+    realpath.withArgs(dependency).returns(path.resolve('updated.ts'));
+    expect(host.realpath(dependency)).to.equal(path.resolve('updated.ts'));
+    checker.resolveModuleNames(['shared'], first);
+    expect(checker.cache[dependency].parent).to.deep.equal([first, second]);
+  });
+
+  mocha.it('restores parents after watch clears them and preserves order in later rounds', () => {
+    checker.resolveModuleNames(['shared'], first);
+    checker.resolveModuleNames(['shared'], second);
+    for (let round = 0; round < 2; round++) {
+      checker.incrementWatchFile([dependency], []);
+      expect(checker.cache[dependency].parent).to.deep.equal([]);
+      checker.resolveModuleNames(['shared'], first);
+      checker.resolveModuleNames(['shared'], second);
+      expect(checker.cache[dependency].parent).to.deep.equal([first, second]);
+    }
+  });
+
+  mocha.it('isolates native watch realpath results from other rounds and the shared resolver', () => {
+    const savedCompileTool: string | undefined = process.env.compileTool;
+    const createWatchCompilerHost = sinon.stub().callsFake((_roots, _options, _sys, createProgram) => ({
+      createProgram
+    }));
+    const resolveModuleName = sinon.stub().callsFake((_name, _file, _options, host: ts.ModuleResolutionHost) => ({
+      resolvedModule: makeResolvedModule(host.realpath(dependency))
+    }));
+    let resolveInRound: () => void;
+    const watchChecker: typeof checker = proxyquire('../../lib/ets_checker', {
+      '../main': { projectConfig: { cachePath: process.cwd(), modulePath: process.cwd(), xtsMode: true } },
+      'typescript': {
+        ...ts, sys: { ...ts.sys, realpath }, createWatchCompilerHost, resolveModuleName,
+        resolveTypeReferenceDirective: (_name, _file, _options, host: ts.ModuleResolutionHost) => ({
+          resolvedTypeReferenceDirective: { resolvedFileName: host.realpath(dependency), primary: true }
+        }),
+        createSemanticDiagnosticsBuilderProgram: () => resolveInRound()
+      }
+    });
+    process.env.compileTool = 'rollup';
+    try {
+      const host = watchChecker.createWatchCompilerHost([], () => {}, () => {}, () => {}, true);
+      const resolve = (importer: string): string => host.resolveModuleNames(['shared'], importer, undefined, undefined,
+        watchChecker.compilerOptions)[0].resolvedFileName;
+      const resolveType = (): string => host.resolveTypeReferenceDirectives(['shared'], first, undefined,
+        watchChecker.compilerOptions)[0].resolvedFileName;
+      const oldTarget = path.resolve('v1', 'shared.ts');
+      const newTarget = path.resolve('v2', 'shared.ts');
+      const sharedTarget = path.resolve('outside-watch', 'shared.ts');
+      realpath.withArgs(dependency).returns(sharedTarget);
+      expect(watchChecker.moduleResolutionHostTest.realpath(dependency)).to.equal(sharedTarget);
+      realpath.withArgs(dependency).returns(oldTarget);
+      resolveInRound = () => {
+        expect(resolve(first)).to.equal(oldTarget);
+        expect(resolveType()).to.equal(oldTarget);
+        throw new Error('interrupted round');
+      };
+      expect(() => host.createProgram([], {})).to.throw('interrupted round');
+      expect(watchChecker.moduleResolutionHostTest.realpath(dependency)).to.equal(sharedTarget);
+      expect(resolveType()).to.equal(sharedTarget);
+      expect(realpath.callCount).to.equal(2);
+      realpath.withArgs(dependency).returns(newTarget);
+      resolveInRound = () => {
+        expect(resolve(second)).to.equal(newTarget);
+        expect(resolveType()).to.equal(newTarget);
+      };
+      host.createProgram([], {});
+      expect(watchChecker.moduleResolutionHostTest.realpath(dependency)).to.equal(sharedTarget);
+      expect(realpath.callCount).to.equal(3);
+    } finally {
+      if (savedCompileTool === undefined) {
+        delete process.env.compileTool;
+      } else {
+        process.env.compileTool = savedCompileTool;
+      }
+    }
+  });
+
+  mocha.it('refreshes the shared parent index after a native watch round appends an importer', () => {
+    const third = path.resolve('third.ets');
+    let resolveInRound: () => void;
+    const watchChecker: typeof checker = proxyquire('../../lib/ets_checker', {
+      '../main': { projectConfig: { cachePath: process.cwd(), xtsMode: false } },
+      'typescript': {
+        ...ts,
+        createWatchCompilerHost: (_roots, _options, _sys, createProgram) => ({ createProgram }),
+        resolveModuleName: () => ({ resolvedModule: makeResolvedModule(dependency) }),
+        createSemanticDiagnosticsBuilderProgram: () => resolveInRound()
+      }
+    });
+    const savedCompileTool: string | undefined = process.env.compileTool;
+    process.env.compileTool = 'rollup';
+    try {
+      const host = watchChecker.createWatchCompilerHost([], () => {}, () => {}, () => {}, true);
+      watchChecker.resolveModuleNames(['shared'], first);
+      watchChecker.resolveModuleNames(['shared'], second);
+      const parents = watchChecker.cache[dependency].parent;
+      resolveInRound = () => {
+        host.resolveModuleNames(['shared'], third, undefined, undefined, watchChecker.compilerOptions);
+        host.resolveModuleNames(['shared'], third, undefined, undefined, watchChecker.compilerOptions);
+      };
+      host.createProgram([], {});
+      watchChecker.resolveModuleNames(['shared'], third);
+      expect(watchChecker.cache[dependency].parent).to.equal(parents);
+      expect(parents).to.deep.equal([first, second, third]);
+    } finally {
+      if (savedCompileTool === undefined) {
+        delete process.env.compileTool;
+      } else {
+        process.env.compileTool = savedCompileTool;
+      }
+    }
+  });
+
+  mocha.it('discards standalone realpath results when Program creation throws', () => {
+    const savedWatchMode: string | undefined = process.env.watchMode;
+    const config = { cachePath: process.cwd(), projectPath: process.cwd(), xtsMode: true };
+    const resolvedTargets: string[] = [];
+    let importer = first;
+    const standaloneChecker: typeof checker = proxyquire('../../lib/ets_checker', {
+      '../main': { projectConfig: { ...config } },
+      'typescript': {
+        ...ts,
+        sys: { ...ts.sys, realpath },
+        resolveModuleName: (_name, _file, _options, host: ts.ModuleResolutionHost) => ({
+          resolvedModule: makeResolvedModule(host.realpath(dependency))
+        }),
+        createLanguageService: (host: ts.LanguageServiceHost) => ({
+          getBuilderProgram() {
+            resolvedTargets.push(host.resolveModuleNames(['shared'], importer, undefined, undefined,
+              standaloneChecker.compilerOptions)[0].resolvedFileName);
+            throw new Error('interrupted standalone checker');
+          }
+        })
+      }
+    });
+    process.env.watchMode = 'true';
+    try {
+      const oldTarget = path.resolve('v1', 'shared.ts');
+      const newTarget = path.resolve('v2', 'shared.ts');
+      realpath.withArgs(dependency).returns(oldTarget);
+      expect(() => standaloneChecker.etsStandaloneChecker({}, console, config)).to.throw('interrupted standalone checker');
+      importer = second;
+      realpath.withArgs(dependency).returns(newTarget);
+      expect(() => standaloneChecker.etsStandaloneChecker({}, console, config)).to.throw('interrupted standalone checker');
+      expect(resolvedTargets).to.deep.equal([oldTarget, newTarget]);
+      expect(realpath.callCount).to.equal(2);
+      const nextTarget = path.resolve('v3', 'shared.ts');
+      realpath.withArgs(dependency).returns(nextTarget);
+      expect(standaloneChecker.moduleResolutionHostTest.realpath(dependency)).to.equal(nextTarget);
+    } finally {
+      if (savedWatchMode === undefined) {
+        delete process.env.watchMode;
+      } else {
+        process.env.watchMode = savedWatchMode;
+      }
+    }
+  });
+
+  mocha.it('discards service checker realpath results when Program creation throws', () => {
+    const savedWatchMode = process.env.watchMode;
+    const config = { cachePath: process.cwd(), projectPath: process.cwd(), xtsMode: true };
+    const oldTarget = path.resolve('v1', 'shared.ts');
+    const newTarget = path.resolve('v2', 'shared.ts');
+    const interrupted = new Error('interrupted service checker');
+    const service: typeof checker = proxyquire('../../lib/ets_checker', {
+      '../main': { projectConfig: config },
+      'typescript': {
+        ...ts,
+        sys: { ...ts.sys, realpath },
+        createLanguageService: () => ({
+          getProps: () => new Set(),
+          getBuilderProgram() {
+            expect(service.moduleResolutionHostTest.realpath(dependency)).to.equal(oldTarget);
+            throw interrupted;
+          }
+        })
+      }
+    });
+    process.env.watchMode = 'true';
+    try {
+      realpath.withArgs(dependency).returns(oldTarget);
+      expect(() => service.serviceChecker([])).to.throw(interrupted);
+      realpath.withArgs(dependency).returns(newTarget);
+      expect(service.moduleResolutionHostTest.realpath(dependency)).to.equal(newTarget);
+      expect(realpath.callCount).to.equal(2);
+    } finally {
+      if (savedWatchMode === undefined) {
+        delete process.env.watchMode;
+      } else {
+        process.env.watchMode = savedWatchMode;
+      }
+    }
+  });
+
+  for (const shouldThrow of [false, true]) {
+    mocha.it(`discards declaration merge realpath results on ${shouldThrow ? 'failure' : 'success'}`, () => {
+      const savedWatchMode = process.env.watchMode;
+      const oldTarget = path.resolve('v1', 'shared.ts');
+      const newTarget = path.resolve('v2', 'shared.ts');
+      const config = {
+        cachePath: process.cwd(), projectPath: process.cwd(), modulePath: process.cwd(), moduleName: 'mod',
+        ohExports: [first], xtsMode: true, projectArkOption: { bundle: { bundledDeclare: true } }
+      };
+      const interrupted = new Error('interrupted declaration merge');
+      let resolveDeclaration: (names: string[], file: string) => ts.ResolvedModuleFull[];
+      const mergeDeclarationFiles = sinon.spy(() => {
+        expect(resolveDeclaration(['shared'], path.resolve('first.d.ts'))[0].resolvedFileName).to.equal(oldTarget);
+        if (shouldThrow) {
+          throw interrupted;
+        }
+      });
+      const service: typeof checker = proxyquire('../../lib/ets_checker', {
+        '../main': { projectConfig: config, globalProgram: {}, partialUpdateConfig: {} },
+        'typescript': {
+          ...ts,
+          sys: { ...ts.sys, realpath },
+          createLanguageService: () => ({
+            getProps: () => new Set(),
+            getBuilderProgram: () => ({ getProgram: () => ({ getSourceFiles: () => [] }) })
+          }),
+          resolveModuleName: (_name, _file, _options, host: ts.ModuleResolutionHost) => ({
+            resolvedModule: makeResolvedModule(host.realpath(dependency))
+          })
+        },
+        './do_arkTS_linter': { doArkTSLinter: () => [] },
+        './declaration_merger': { DeclarationMerger: { mergeDeclarationFiles } }
+      });
+      resolveDeclaration = proxyquire('../../lib/declaration_merger_utils', { './ets_checker': service })
+        .createDeclarationModuleResolver(process.cwd());
+      process.env.watchMode = 'true';
+      try {
+        realpath.withArgs(dependency).returns(oldTarget);
+        if (shouldThrow) {
+          expect(() => service.serviceChecker([])).to.throw(interrupted);
+        } else {
+          service.serviceChecker([]);
+        }
+        expect(mergeDeclarationFiles.calledOnce).to.be.true;
+        realpath.withArgs(dependency).returns(newTarget);
+        expect(service.moduleResolutionHostTest.realpath(dependency)).to.equal(newTarget);
+        expect(realpath.callCount).to.equal(2);
+      } finally {
+        if (savedWatchMode === undefined) {
+          delete process.env.watchMode;
+        } else {
+          process.env.watchMode = savedWatchMode;
+        }
+      }
+    });
+  }
+
+  mocha.it('discards Rollup watch realpath results when a later Program creation throws', () => {
+    const savedWatchMode = process.env.watchMode;
+    const savedTrigger = process.env.triggerTsWatch;
+    const oldTarget = path.resolve('v1', 'shared.ts');
+    const newTarget = path.resolve('v2', 'shared.ts');
+    const interrupted = new Error('interrupted Rollup watch checker');
+    const watchPlugin = proxyquire('../../lib/fast_build/ets_ui/rollup-plugin-ets-checker', {
+      '../../../main': {
+        projectConfig: { entryObj: {}, ohExports: [] },
+        globalProgram: { builderProgram: { getSyntacticDiagnostics: () => [], getSemanticDiagnostics: () => [] } }
+      },
+      '../../ets_checker': {
+        serviceChecker: () => {},
+        emitBuildInfo: () => {},
+        fastBuildLogger: { debug: () => {} },
+        releaseModuleResolutionCaches: checker.releaseModuleResolutionCaches,
+        languageService: {
+          getBuilderProgram() {
+            expect(checker.moduleResolutionHostTest.realpath(dependency)).to.equal(oldTarget);
+            throw interrupted;
+          }
+        }
+      },
+      '../../utils': { setChecker: () => {} },
+      '../../file_info_cache': { fileInfoCache: { setShare: () => {} } },
+      '../ark_compiler/common/process_ark_config': { validateHarWidgetCompile: () => {} }
+    }).etsChecker();
+    const context = { share: { projectConfig: {}, getLogger: () => console } };
+    process.env.watchMode = 'true';
+    process.env.triggerTsWatch = 'true';
+    try {
+      watchPlugin.buildStart.call(context);
+      realpath.withArgs(dependency).returns(oldTarget);
+      expect(() => watchPlugin.buildStart.call(context)).to.throw(interrupted);
+      realpath.withArgs(dependency).returns(newTarget);
+      expect(checker.moduleResolutionHostTest.realpath(dependency)).to.equal(newTarget);
+      expect(realpath.callCount).to.equal(2);
+    } finally {
+      if (savedWatchMode === undefined) {
+        delete process.env.watchMode;
+      } else {
+        process.env.watchMode = savedWatchMode;
+      }
+      if (savedTrigger === undefined) {
+        delete process.env.triggerTsWatch;
+      } else {
+        process.env.triggerTsWatch = savedTrigger;
+      }
+    }
+  });
+});
+
 function snapshotProjectConfig(): void {
   savedExternalApiConfig = {
     externalApiPaths: projectConfig.externalApiPaths,
