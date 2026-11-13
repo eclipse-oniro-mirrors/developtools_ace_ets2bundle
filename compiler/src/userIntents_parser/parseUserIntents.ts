@@ -42,7 +42,7 @@ import {
   COMPONENT_USER_INTENTS_DECORATOR_PAGE,
   COMPONENT_USER_INTENTS_DECORATOR_FORM
 } from '../pre_define';
-import {emitLogInfo, getTransformLog, LogInfo, LogType, CurrentProcessFile, getBelongModuleInfo, toUnixPath} from '../utils';
+import {emitLogInfo, getTransformLog, LogInfo, LogType, CurrentProcessFile, tryToLowerCasePath} from '../utils';
 import {ABILITY_SUBSYSTEM_CODE} from '../hvigor_error_code/hvigor_error_info';
 import {resetLog, transformLog} from '../process_ui_syntax';
 
@@ -133,18 +133,6 @@ class ParseIntent {
     return this.hasDecorator(node, ParseIntent.INSIGHTINTENT_DECORATORS);
   }
 
-  private deriveMetaInfo(filePath: string): object | undefined {
-    const moduleInfo: object = getBelongModuleInfo(filePath, projectConfig.modulePathMap, projectConfig.projectRootPath);
-    if (moduleInfo?.isLocalDependency && moduleInfo.moduleName && moduleInfo.belongModulePath) {
-      return { pkgName: moduleInfo.moduleName, pkgPath: moduleInfo.belongModulePath };
-    }
-    const modulePath: string = projectConfig.modulePath || '';
-    if (modulePath && toUnixPath(filePath).startsWith(toUnixPath(modulePath) + '/')) {
-      return { pkgName: projectConfig.entryPackageName, pkgPath: modulePath };
-    }
-    return undefined;
-  }
-
   public collectIntentFacts(node: ts.ClassDeclaration | ts.StructDeclaration, filePath: string, log: LogInfo[],
     metaInfo?: object): void {
     if (!this.hasIntentDecorator(node)) {
@@ -154,21 +142,19 @@ class ParseIntent {
     if (this.factsCollectedKeys.has(factKey)) {
       return;
     }
-    // Keep the pre-change failure behavior: module information and checker are not filtered here.
-    // A missing module info goes through handleIntent -> getPkgInfo, which reports
+    // Keep the pre-change behavior: use the module metaInfo passed by the caller as-is.
+    // A missing/incomplete module info goes through handleIntent -> getPkgInfo, which reports
     // ETS2BUNDLE_EXTERNAL_FAILED_TO_RESOLVE_OHM_URL; a missing checker fails in handleDecorator
     // exactly as it did when the facts were collected in processUISyntax.
-    const resolvedMetaInfo: object = (metaInfo?.pkgName && metaInfo?.pkgPath) ?
-      metaInfo : this.deriveMetaInfo(filePath);
     const checker: TypeChecker = CurrentProcessFile.getChecker();
     this.factsCollectedKeys.add(factKey);
-    this.initInsightIntent(node as ts.ClassDeclaration, resolvedMetaInfo, log, filePath);
-    this.handleIntent(node as ts.ClassDeclaration, checker, filePath, resolvedMetaInfo);
+    this.initInsightIntent(node as ts.ClassDeclaration, metaInfo, log, filePath);
+    this.handleIntent(node as ts.ClassDeclaration, checker, filePath, metaInfo);
   }
 
   private getIntentFactKey(node: ts.ClassDeclaration | ts.StructDeclaration, filePath: string): string {
     const className: string = (node.name && ts.isIdentifier(node.name)) ? node.name.text : String(node.pos);
-    return `${toUnixPath(filePath)}#${className}`;
+    return `${tryToLowerCasePath(filePath)}#${className}`;
   }
 
   public removeIntentDecorators(node: ts.ClassDeclaration | ts.StructDeclaration, errors: LogInfo[]):
@@ -583,8 +569,7 @@ class ParseIntent {
   }
 
   private normalizeIntentPath(filePath: string): string {
-    const normalizedPath: string = toUnixPath(path.resolve(filePath));
-    return process.platform === 'win32' ? normalizedPath.toLowerCase() : normalizedPath;
+    return tryToLowerCasePath(path.resolve(filePath));
   }
 
   private processFormInfo(node: ts.ClassDeclaration, formClassPath: string, pkgParams: object,

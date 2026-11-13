@@ -477,8 +477,9 @@ async function transform(code: string, id: string) {
     }
     compilerOptions.moduleResolution = 'nodenext';
     compilerOptions.module = 'es2020';
-    const newContent: string = jsBundlePreProcess(code, id, this.getModuleInfo(id).isEntry, logger, hvigorLogger);
     const metaInfo: Object = this.getModuleInfo(id).metaInfo || {};
+    const newContent: string = jsBundlePreProcess(code, id, this.getModuleInfo(id).isEntry, logger, hvigorLogger,
+      metaInfo);
     const result: ts.TranspileOutput = ts.transpileModule(newContent, {
       compilerOptions: compilerOptions,
       fileName: id,
@@ -757,14 +758,14 @@ function validateEts(code: string, id: string, isEntry: boolean, logger: Object,
   }
 }
 
-function jsBundlePreProcess(code: string, id: string, isEntry: boolean, logger: Object, 
-  hvigorLogger: Object | undefined = undefined): string {
+function jsBundlePreProcess(code: string, id: string, isEntry: boolean, logger: Object,
+  hvigorLogger: Object | undefined = undefined, metaInfo: Object = {}): string {
   if (/\.ets$/.test(id)) {
     clearCollection();
     let content = preprocessExtend(code);
     content = preprocessNewExtend(content);
     const fileQuery: string = isEntry && !abilityPagesFullPath.has(path.resolve(id).toLowerCase()) ? '?entry' : '';
-    const log: LogInfo[] = validateUISyntax(code, content, id, fileQuery);
+    const log: LogInfo[] = validateUISyntax(code, content, id, fileQuery, null, metaInfo);
     if (log.length && !projectConfig.ignoreWarning) {
       emitLogInfo(logger, log, true, id, hvigorLogger);
     }
