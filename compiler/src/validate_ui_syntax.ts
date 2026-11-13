@@ -141,7 +141,6 @@ import constantDefine from './constant_define';
 import processStructComponentV2, { StructInfo, getDecoratorName } from './process_struct_componentV2';
 import logMessageCollection from './log_message_collection';
 import { ISdkApiValues, fetchStylesDecoratorVersionCondition } from './ui_utils';
-import parseIntent from './userIntents_parser/parseUserIntents';
 
 export class ComponentCollection {
   localStorageName: string = null;
@@ -260,7 +259,7 @@ const CUSTOM_ENV_KEY: string = 'CustomEnvKey';
 const CREATE: string = 'create';
 
 export function validateUISyntax(source: string, content: string, filePath: string,
-  fileQuery: string, sourceFile: ts.SourceFile = null, metaInfo: object = undefined): LogInfo[] {
+  fileQuery: string, sourceFile: ts.SourceFile = null): LogInfo[] {
   let log: LogInfo[] = [];
   if (process.env.compileMode === 'moduleJson' ||
     path.resolve(filePath) !== path.resolve(projectConfig.projectPath || '', 'app.ets')) {
@@ -272,7 +271,7 @@ export function validateUISyntax(source: string, content: string, filePath: stri
     }
     const allComponentNames: Set<string> =
       new Set([...INNER_COMPONENT_NAMES, ...componentCollection.customComponents]);
-    checkUISyntax(filePath, allComponentNames, content, log, sourceFile, fileQuery, metaInfo);
+    checkUISyntax(filePath, allComponentNames, content, log, sourceFile, fileQuery);
     componentCollection.customComponents.forEach(item => componentInfo.componentNames.add(item));
   }
 
@@ -554,23 +553,18 @@ function collectLocalStorageName(node: ts.Decorator): void {
 }
 
 function checkUISyntax(filePath: string, allComponentNames: Set<string>, content: string,
-  log: LogInfo[], sourceFile: ts.SourceFile | null, fileQuery: string, metaInfo: object = undefined): void {
+  log: LogInfo[], sourceFile: ts.SourceFile | null, fileQuery: string): void {
   if (!sourceFile) {
     sourceFile = ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.ETS);
   }
   visitAllNode(sourceFile, sourceFile, allComponentNames, log, false, false, false, false, fileQuery, false, false,
-    undefined, undefined, metaInfo, filePath);
+    undefined, undefined);
 }
 
 function visitAllNode(node: ts.Node, sourceFileNode: ts.SourceFile, allComponentNames: Set<string>,
   log: LogInfo[], structContext: boolean, classContext: boolean, isObservedClass: boolean,
   isComponentV2: boolean, fileQuery: string, isObservedV1Class: boolean, isSendableClass: boolean,
-  classNode: ts.ClassDeclaration | undefined, structNode: ts.StructDeclaration | undefined,
-  metaInfo: object = undefined, filePath: string = ''): void {
-  if ((ts.isClassDeclaration(node) || ts.isStructDeclaration(node)) &&
-      parseIntent.hasIntentDecorator(node)) {
-    parseIntent.collectIntentFacts(node, filePath || sourceFileNode.fileName, log, metaInfo);
-  }
+  classNode: ts.ClassDeclaration | undefined, structNode: ts.StructDeclaration | undefined): void {
   if (ts.isStructDeclaration(node) && node.name && ts.isIdentifier(node.name)) {
     structContext = true;
     const structName: string = node.name.escapedText.toString();
@@ -604,7 +598,7 @@ function visitAllNode(node: ts.Node, sourceFileNode: ts.SourceFile, allComponent
     isObservedV1Class, isSendableClass, classNode, structNode);
   ts.forEachChild(node, (child: ts.Node) => visitAllNode(child, sourceFileNode, allComponentNames, log,
     structContext, classContext, isObservedClass, isComponentV2, fileQuery, isObservedV1Class, isSendableClass,
-    classNode, structNode, metaInfo, filePath));
+    classNode, structNode));
   structContext = false;
   classContext = false;
   isObservedClass = false;

@@ -751,7 +751,8 @@ function validateEts(code: string, id: string, isEntry: boolean, logger: Object,
   if (/\.ets$/.test(id)) {
     clearCollection();
     const fileQuery: string = isEntry && !abilityPagesFullPath.has(path.resolve(id).toLowerCase()) ? '?entry' : '';
-    const log: LogInfo[] = validateUISyntax(code, code, id, fileQuery, sourceFile, metaInfo);
+    const log: LogInfo[] = validateUISyntax(code, code, id, fileQuery, sourceFile);
+    parseIntent.collectIntentFactsFromSourceFile(sourceFile, id, log, metaInfo);
     if (log.length && !projectConfig.ignoreWarning) {
       emitLogInfo(logger, log, true, id, hvigorLogger);
     }
@@ -765,7 +766,10 @@ function jsBundlePreProcess(code: string, id: string, isEntry: boolean, logger: 
     let content = preprocessExtend(code);
     content = preprocessNewExtend(content);
     const fileQuery: string = isEntry && !abilityPagesFullPath.has(path.resolve(id).toLowerCase()) ? '?entry' : '';
-    const log: LogInfo[] = validateUISyntax(code, content, id, fileQuery, null, metaInfo);
+    const sourceFile: ts.SourceFile =
+      ts.createSourceFile(id, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.ETS);
+    const log: LogInfo[] = validateUISyntax(code, content, id, fileQuery, sourceFile);
+    parseIntent.collectIntentFactsFromSourceFile(sourceFile, id, log, metaInfo);
     if (log.length && !projectConfig.ignoreWarning) {
       emitLogInfo(logger, log, true, id, hvigorLogger);
     }
