@@ -23,7 +23,7 @@ action("gen_sdk_ts_wrapper") {
     "--source_path",
     rebase_path(get_path_info(".", "abspath")),
     "--output_path",
-    rebase_path("$target_gen_dir"),
+    rebase_path("$target_gen_dir/koala-wrapper"),
     "--npm",
     rebase_path(npm_path),
     "--current_os",
@@ -32,12 +32,12 @@ action("gen_sdk_ts_wrapper") {
     rebase_path(root_out_dir),
   ]
 
-  outputs = [ "$target_gen_dir" ]
+  outputs = [ "$target_gen_dir/koala-wrapper" ]
 }
 
 ohos_copy("ets2panda_koala_wrapper") {
   deps = [ ":gen_sdk_ts_wrapper" ]
-  sources = [ rebase_path("$target_gen_dir") ]
+  sources = [ rebase_path("$target_gen_dir/koala-wrapper") ]
   outputs = [ target_out_dir + "/$target_name" ]
   module_source_dir = target_out_dir + "/$target_name"
   module_install_name = ""
@@ -47,7 +47,7 @@ ohos_copy("ets2panda_koala_wrapper") {
 
 ohos_copy("ohos_ets_koala_wrapper") {
   deps = [ ":gen_sdk_ts_wrapper" ]
-  sources = [ rebase_path("$target_gen_dir") ]
+  sources = [ rebase_path("$target_gen_dir/koala-wrapper") ]
   outputs = [ ohos_ets_koala_wrapper_path ]
   subsystem_name = "developtools"
   part_name = "ace_ets2bundle"

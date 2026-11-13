@@ -14,6 +14,7 @@
 import("//build/config/components/sdk/interface.gni")
 import("//build/ohos.gni")
 import("//build/ohos/ace/ace.gni")
+import("//build/ohos/ace/loader_ark_layout.gni")
 import("//build/ohos_var.gni")
 if (!defined(is_arkui_x) || !is_arkui_x) {
   import("//build/templates/bpf/ohos_bpf_config.gni")
@@ -293,6 +294,12 @@ ohos_copy("ets_loader_declaration") {
 }
 
 ohos_copy("ets_loader_ark") {
+  stable_directory_copy = build_framework_enable_incremental_build && !build_xts
+  stable_directory_copy_caches = []
+  foreach(_cache, ets_loader_runtime_caches) {
+    stable_directory_copy_caches +=
+        [ "$target_out_dir/$target_name/node_modules/" + _cache ]
+  }
   deps = [
     ":build_ets_loader_library",
     ":install_arkguard_tsc_declgen",
