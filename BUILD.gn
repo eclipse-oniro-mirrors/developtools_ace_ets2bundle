@@ -294,11 +294,13 @@ ohos_copy("ets_loader_declaration") {
 }
 
 ohos_copy("ets_loader_ark") {
-  stable_directory_copy = build_framework_enable_incremental_build && !build_xts
-  stable_directory_copy_caches = []
-  foreach(_cache, ets_loader_runtime_caches) {
-    stable_directory_copy_caches +=
-        [ "$target_out_dir/$target_name/node_modules/" + _cache ]
+  if (build_framework_enable_incremental_build && !build_xts) {
+    stable_directory_copy = true
+    stable_directory_copy_caches = []
+    foreach(_cache, ets_loader_runtime_caches) {
+      stable_directory_copy_caches +=
+          [ "$target_out_dir/$target_name/node_modules/" + _cache ]
+    }
   }
   deps = [
     ":build_ets_loader_library",

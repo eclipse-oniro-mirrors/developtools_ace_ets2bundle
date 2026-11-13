@@ -28,6 +28,19 @@ def depfile_escape(value):
     return value.replace('\\', '\\\\').replace('$', '$$').replace(' ', '\\ ').replace('#', '\\#').replace(':', '\\:')
 
 
+def add_directory_dependencies(directory, names, generated, dependencies):
+    for name in names:
+        path = directory / name
+        if path == generated:
+            continue
+        if path.exists():
+            dependencies.add(path)
+        else:
+            # Ninja follows links. Track the containing directory for
+            # an optional/broken link instead of declaring a missing input.
+            dependencies.add(path.parent)
+
+
 def write_input_depfile(options):
     if not options.depfile:
         return
@@ -59,16 +72,8 @@ def write_input_depfile(options):
                 continue
             visited.add(resolved)
             dependencies.add(directory)
-            for name in directories + files:
-                path = directory / name
-                if path == generated:
-                    continue
-                if path.exists():
-                    dependencies.add(path)
-                else:
-                    # Ninja follows links. Track the containing directory for
-                    # an optional/broken link instead of declaring a missing input.
-                    dependencies.add(path.parent)
+            add_directory_dependencies(directory, directories + files,
+                                       generated, dependencies)
     depfile = Path(options.depfile)
     depfile.parent.mkdir(parents=True, exist_ok=True)
     target = depfile_escape(os.path.relpath(options.output_path))
