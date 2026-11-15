@@ -20,6 +20,11 @@ if (!defined(is_arkui_x) || !is_arkui_x) {
 }
 import("//build/templates/cxx/prebuilt.gni")
 
+# Legacy and XTS copies do not require the incremental layout extension.
+if (build_framework_enable_incremental_build && !build_xts) {
+  import("//build/ohos/ace/loader_ark_layout.gni")
+}
+
 ets_loader_lib_dir =
     get_label_info(":build_ets_loader_library", "target_out_dir") + "/lib"
 ets_loader_declarations_dir = get_label_info(":build_ets_loader_library",
@@ -293,6 +298,14 @@ ohos_copy("ets_loader_declaration") {
 }
 
 ohos_copy("ets_loader_ark") {
+  if (build_framework_enable_incremental_build && !build_xts) {
+    stable_directory_copy = true
+    stable_directory_copy_caches = []
+    foreach(_cache, ets_loader_runtime_caches) {
+      stable_directory_copy_caches +=
+          [ "$target_out_dir/$target_name/node_modules/" + _cache ]
+    }
+  }
   deps = [
     ":build_ets_loader_library",
     ":install_arkguard_tsc_declgen",
