@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+import { getDeclarationsDirectory } from '../../pre_define';
+
 import ts from 'typescript';
 import path from 'path';
 import fs from 'fs';
@@ -886,7 +888,7 @@ class CreateProgramMoment {
     if (CreateProgramMoment.promise) {
       return;
     }
-    const commonDtsPath: string = path.resolve(__dirname, '../../../declarations/common.d.ts');
+    const commonDtsPath: string = path.resolve(getDeclarationsDirectory(), 'common.d.ts');
     CreateProgramMoment.roots.set(commonDtsPath, fs.readFileSync(commonDtsPath, 'utf-8'));
     CreateProgramMoment.emitter = new nodeEvents.EventEmitter();
     CreateProgramMoment.promise = new Promise<void>(resolve => {

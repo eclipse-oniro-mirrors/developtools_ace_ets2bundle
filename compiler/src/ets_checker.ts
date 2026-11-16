@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+import { getDeclarationsDirectory } from './pre_define';
+
 import fs from 'fs';
 import path from 'path';
 import * as ts from 'typescript';
@@ -151,10 +153,11 @@ export const SENDABLE_CLASS_DECORATOR_RULE = 'arkts-sendable-class-decorator';
 
 export function readDeaclareFiles(): string[] {
   const declarationsFileNames: string[] = [];
-  fs.readdirSync(path.resolve(__dirname, '../declarations'))
+  const declarationsDirectory: string = getDeclarationsDirectory();
+  fs.readdirSync(declarationsDirectory)
     .forEach((fileName: string) => {
       if (/\.d\.ts$/.test(fileName)) {
-        declarationsFileNames.push(path.resolve(__dirname, '../declarations', fileName));
+        declarationsFileNames.push(path.resolve(declarationsDirectory, fileName));
       }
     });
   return declarationsFileNames;

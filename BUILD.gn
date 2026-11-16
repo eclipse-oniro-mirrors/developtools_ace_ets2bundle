@@ -78,6 +78,8 @@ action("build_ets_loader_library") {
   outputs = [
     ets_loader_lib_dir,
     ets_loader_declarations_dir,
+    "$ets_loader_declarations_dir/global.d.ts",
+    "$ets_loader_declarations_dir/featureability.d.ts",
     ets_loader_component_config_file,
     ets_loader_form_config_file,
     ets_loader_kit_configs_dir,
@@ -291,8 +293,11 @@ ohos_copy("codegen") {
 
 ohos_copy("ets_loader_declaration") {
   deps = [ ":build_ets_loader_library" ]
-  sources = [ ets_loader_declarations_dir ]
-  outputs = [ target_out_dir + "/$target_name" ]
+  sources = [
+    "$ets_loader_declarations_dir/global.d.ts",
+    "$ets_loader_declarations_dir/featureability.d.ts",
+  ]
+  outputs = [ target_out_dir + "/$target_name/{{source_file_part}}" ]
   module_source_dir = target_out_dir + "/$target_name"
   module_install_name = ""
 }
