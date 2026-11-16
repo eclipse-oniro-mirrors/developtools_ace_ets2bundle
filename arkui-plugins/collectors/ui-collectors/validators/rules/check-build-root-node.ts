@@ -16,6 +16,7 @@
 import * as arkts from '@koalaui/libarkts';
 import { BaseValidator } from '../base';
 import { StructMethodInfo } from '../../records';
+import { checkIsStructFromNode } from '../../utils';
 import { LogType } from '../../../../common/predefines';
 import { getPerfName, performanceLog } from '../../../../common/debug';
 import { MetaDataCollector } from '../../../../common/metadata-collector';
@@ -36,7 +37,8 @@ const INVALID_BUILD_ROOT = `The 'build' function can have only one root node.`;
  * 1. 组件的 `build()` 方法必须只包含一个根节点。
  * 2. 如果组件被 `@Entry` 装饰器修饰：
  *      - `build()` 方法中必须只有一个根节点；
- *      - 该根节点必须是一个容器组件（如：`Column`, `Row`, `Stack`, `Scroll` 等）。
+ *      - 该根节点必须是一个容器组件（如：`Column`, `Row`, `Stack`, `Scroll` 等），
+ *        自定义组件同样不可以作为根节点。
  * 3. `build()`内使用`console.log()`或`hilog.info()`，打印日志的方法不被计算为根节点。
  *
  * 校验等级：error
@@ -59,7 +61,7 @@ function _checkBuildRootNode(
     const statements = blockStatement.statements;
     const rootNodeNames: string[] = [];
     const componentsInfo = MetaDataCollector.getInstance().componentsInfo;
-    recordRootNode.bind(this)(statements, rootNodeNames, componentsInfo);
+    recordRootNode.bind(this)(statements, rootNodeNames, componentsInfo, hasEntryInStruct);
     if (rootNodeNames.length > BUILD_COUNT_LIMIT) {
         this.report({
             node: node,
@@ -75,7 +77,8 @@ function recordRootNode(
     this: BaseValidator<arkts.MethodDefinition, StructMethodInfo>,
     statements: readonly arkts.Statement[],
     rootNodeNames: string[],
-    componentsInfo?: UIComponents
+    componentsInfo?: UIComponents,
+    shouldCheckCustomComponents: boolean = false
 ): void {
     statements.forEach((statement) => {
         if (!arkts.isExpressionStatement(statement)) {
@@ -93,8 +96,30 @@ function recordRootNode(
             componentsInfo?.containerComponents.includes(componentName);
         if (isBuiltInComponent) {
             rootNodeNames.push(componentName);
+        } else if (shouldCheckCustomComponents && checkIsCustomComponentCall(statement.expression)) {
+            rootNodeNames.push(componentName);
         }
     });
+}
+
+/**
+ * 判断根节点语句是否为自定义组件调用：仅对根候选的标识符做一次声明解析，
+ * 不做全文件扫描。裸调用 `Child()`、链式调用与翻译后的 `Child.$_invoke()`
+ * 均由 `getComponentIdentifier` 的遍历统一覆盖。
+ */
+function checkIsCustomComponentCall(expression: arkts.AstNode): boolean {
+    const componentIdentifier = getComponentIdentifier(expression);
+    if (!componentIdentifier) {
+        return false;
+    }
+    const decl = arkts.getPeerIdentifierDecl(componentIdentifier.peer);
+    if (!decl) {
+        return false;
+    }
+    if (arkts.isClassDefinition(decl)) {
+        return decl.isFromStruct;
+    }
+    return checkIsStructFromNode(decl, true);
 }
 
 function validateContainerInBuild(
@@ -115,18 +140,16 @@ function validateContainerInBuild(
 }
 
 function getComponentName(node: arkts.AstNode): string | undefined {
+    return getComponentIdentifier(node)?.name;
+}
+
+function getComponentIdentifier(node: arkts.AstNode): arkts.Identifier | undefined {
     let children = node.getChildren();
-    let componentName: string | undefined;
 
-    while (true) {
-        if (!children || children.length === 0) {
-            return undefined;
-        }
-
+    while (children && children.length > 0) {
         const firstChild = children[0];
         if (arkts.isIdentifier(firstChild)) {
-            componentName = firstChild.name;
-            return componentName;
+            return firstChild;
         }
 
         if (!arkts.isMemberExpression(firstChild) && !arkts.isCallExpression(firstChild)) {
@@ -134,4 +157,5 @@ function getComponentName(node: arkts.AstNode): string | undefined {
         }
         children = firstChild.getChildren();
     }
+    return undefined;
 }
