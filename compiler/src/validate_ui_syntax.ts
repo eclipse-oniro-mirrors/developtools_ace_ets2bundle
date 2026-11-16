@@ -141,6 +141,7 @@ import constantDefine from './constant_define';
 import processStructComponentV2, { StructInfo, getDecoratorName } from './process_struct_componentV2';
 import logMessageCollection from './log_message_collection';
 import { ISdkApiValues, fetchStylesDecoratorVersionCondition } from './ui_utils';
+import { checkScrollContainerSize } from './scroll_container_size_check';
 
 export class ComponentCollection {
   localStorageName: string = null;
@@ -2067,6 +2068,7 @@ export function checkAllNode(
     checkNoChildComponent(node, sourceFileNode, log);
     checkOneChildComponent(node, allComponentNames, sourceFileNode, log);
     checkSpecificChildComponent(node, allComponentNames, sourceFileNode, log);
+    checkScrollContainerSize(node, sourceFileNode, log);
   }
 }
 

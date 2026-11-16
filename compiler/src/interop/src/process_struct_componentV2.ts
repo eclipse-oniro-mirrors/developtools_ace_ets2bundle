@@ -570,7 +570,7 @@ export function getDecoratorNameFromAst(
   }
 
   try {
-    const expr: ts.Exprssion = decorator.expression;
+    const expr: ts.Expression = decorator.expression;
 
     if (ts.isCallExpression(expr)) {
       return getIdentifierName(expr.expression);

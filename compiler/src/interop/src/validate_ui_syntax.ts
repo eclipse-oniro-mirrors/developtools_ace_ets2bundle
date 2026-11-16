@@ -142,6 +142,7 @@ import logMessageCollection from './log_message_collection';
 import { FileManager, isMixCompile } from './fast_build/ark_compiler/interop/interop_manager';
 import { ARKTS_1_2 } from './fast_build/ark_compiler/interop/pre_define';
 import { ISdkApiValues, fetchStylesDecoratorVersionCondition } from './ui_utils';
+import { checkScrollContainerSize } from './scroll_container_size_check';
 
 export class ComponentCollection {
   localStorageName: string = null;
@@ -2252,6 +2253,7 @@ export function checkAllNode(
     checkNoChildComponent(node, sourceFileNode, log);
     checkOneChildComponent(node, allComponentNames, sourceFileNode, log);
     checkSpecificChildComponent(node, allComponentNames, sourceFileNode, log);
+    checkScrollContainerSize(node, sourceFileNode, log);
   }
 }
 
