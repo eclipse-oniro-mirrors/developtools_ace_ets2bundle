@@ -152,7 +152,9 @@ import {
   HOVER,
   WRAPPED_BUILDER_PARENTHESIZED_MESSAGE,
   WRAPPED_BUILDER_NON_NULL_MESSAGE,
-  WRAPPED_BUILDER_TYPE_ASSERTION_MESSAGE
+  WRAPPED_BUILDER_TYPE_ASSERTION_MESSAGE,
+  SAFEAREAINSET,
+  SAFEAREAINSET_NAME_RANGE
 } from './pre_define';
 import {
   INNER_COMPONENT_NAMES,
@@ -2665,19 +2667,33 @@ function parseBuilderNode(node: ts.Node, propertyName: string):
       return getParsedBuilderAttrArgumentWithParams(node);
     }
   } else if (ts.isObjectLiteralExpression(node)) {
-    return processObjectPropertyBuilder(node);
+    return processObjectPropertyBuilder(node, propertyName === SAFEAREAINSET ?
+      propertyName : undefined);
   } else if (ts.isPropertyAccessExpression(node)) {
     return node;
   }
   return undefined;
 }
 
-export function processObjectPropertyBuilder(node: ts.ObjectLiteralExpression): ts.ObjectLiteralExpression {
+function checkObjectPropertyBuilderName(
+  currentPropertyName: string,
+  rootAttributeName?: string
+): boolean {
+  if (!rootAttributeName) {
+    return [CUSTOM_DIALOG_CONTROLLER_BUILDER, HEADER, INDICATORBUILDER, FOOTER, START, END, PREVIEW, TITLE].includes(currentPropertyName);
+  }
+  return (rootAttributeName === SAFEAREAINSET) && SAFEAREAINSET_NAME_RANGE.has(currentPropertyName);
+}
+
+export function processObjectPropertyBuilder(
+  node: ts.ObjectLiteralExpression,
+  rootAttributeName?: string
+): ts.ObjectLiteralExpression {
   const newProperties: ts.PropertyAssignment[] = [];
   node.properties.forEach((property: ts.PropertyAssignment) => {
     if (property.name && ts.isIdentifier(property.name) &&
-      [CUSTOM_DIALOG_CONTROLLER_BUILDER, HEADER, INDICATORBUILDER, FOOTER, START, END, PREVIEW, TITLE].includes(
-        property.name.escapedText.toString()) && property.initializer) {
+      checkObjectPropertyBuilderName(property.name.escapedText.toString(), rootAttributeName) &&
+      property.initializer) {
       warnIfWrappedBuilderPropertyInitializer(property.initializer);
       if (isPropertyAccessExpressionNode(property.initializer) || ts.isIdentifier(property.initializer) &&
         storedFileInfo.builderLikeCollection.has(property.initializer.escapedText.toString())) {
@@ -2695,7 +2711,7 @@ export function processObjectPropertyBuilder(node: ts.ObjectLiteralExpression): 
         newProperties.push(transformBuilderCallExpression(property));
       } else if (ts.isObjectLiteralExpression(property.initializer)) {
         newProperties.push(ts.factory.updatePropertyAssignment(property, property.name,
-          processObjectPropertyBuilder(property.initializer)));
+          processObjectPropertyBuilder(property.initializer, rootAttributeName)));
       } else {
         newProperties.push(property);
       }

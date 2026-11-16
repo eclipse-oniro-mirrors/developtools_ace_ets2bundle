@@ -381,7 +381,7 @@ export const BIND_OBJECT_PROPERTY: Map<string, Set<string>> = new Map([
   ['Radio', new Set([COMPONENT_CREATE_FUNCTION])],
   ['Checkbox', new Set([COMPONENT_CREATE_FUNCTION])],
   ['Web', new Set(['bindSelectionMenu'])],
-  [ALL_COMPONENTS, new Set(['bindMenu', 'bindContextMenu', 'bindContextMenuByResponseType', 'bindContextMenuByIsShow', 'bindContextMenuWithResponse', 'bindSheet', 'dragPreview'])]
+  [ALL_COMPONENTS, new Set(['bindMenu', 'bindContextMenu', 'bindContextMenuByResponseType', 'bindContextMenuByIsShow', 'bindContextMenuWithResponse', 'bindSheet', 'dragPreview', 'safeAreaInset'])]
 ]);
 
 export const CHECKED: string = 'checked';
@@ -530,6 +530,9 @@ export const CREATE_BIND_COMPONENT: Set<string> = new Set(['ListItemGroup', REFR
 export const HEADER: string = 'header';
 export const INDICATORBUILDER: string = 'indicatorBuilder';
 export const FOOTER: string = 'footer';
+
+export const SAFEAREAINSET: string = 'safeAreaInset';
+export const SAFEAREAINSET_NAME_RANGE: Set<string> = new Set(['top', 'end', 'bottom', 'start', 'content']);
 
 export const INTERFACE_NAME_SUFFIX: string = '_Params';
 export const OBSERVED_PROPERTY_ABSTRACT: string = 'ObservedPropertyAbstract';
