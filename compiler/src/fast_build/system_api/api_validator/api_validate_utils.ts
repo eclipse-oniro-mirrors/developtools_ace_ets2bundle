@@ -200,6 +200,100 @@ function checkThenBranchAt(node: ts.Node, ancestor: ts.Node, isGuard: GuardTruth
   return isNodeInIfThenBlock(node, ancestor) &&
     isGuard(ancestor.expression, true);
 }
+
+export function resolveIdentifierInitializer(
+  identifier: ts.Identifier,
+  typeChecker: ts.TypeChecker
+): ts.Expression | undefined {
+  const symbol = typeChecker.getSymbolAtLocation(identifier);
+  if (!symbol?.declarations?.length) {
+    return undefined;
+  }
+  const declaration = symbol.declarations[0];
+  if (ts.isVariableDeclaration(declaration) && declaration.initializer) {
+    return declaration.initializer;
+  }
+  if (ts.isImportSpecifier(declaration) || ts.isImportClause(declaration)) {
+    const aliased = getAliasedDeclaration(symbol, typeChecker);
+    if (!aliased) {
+      return undefined;
+    }
+    if (ts.isImportClause(declaration) && ts.isExportAssignment(aliased)) {
+      return aliased.expression;
+    }
+    if (ts.isVariableDeclaration(aliased) && aliased.initializer) {
+      return aliased.initializer;
+    }
+  }
+  return undefined;
+}
+
+export function getAliasedDeclaration(symbol: ts.Symbol, typeChecker: ts.TypeChecker): ts.Declaration | undefined {
+  const targetSymbol = typeChecker.getAliasedSymbol(symbol);
+  const actualSymbol = targetSymbol !== symbol ? targetSymbol : symbol;
+  return actualSymbol.declarations && actualSymbol.declarations[0];
+}
+
+export function isNamespaceImport(identifier: ts.Identifier, typeChecker: ts.TypeChecker): boolean {
+  const symbol = typeChecker.getSymbolAtLocation(identifier);
+  if (!symbol?.declarations?.length) {
+    return false;
+  }
+  const declaration = symbol.declarations[0];
+  return ts.isNamespaceImport(declaration);
+}
+
+export function resolveEnumMember(
+  propertyAccess: ts.PropertyAccessExpression,
+  typeChecker: ts.TypeChecker
+): ts.Expression | undefined {
+  const symbol = typeChecker.getSymbolAtLocation(propertyAccess.name);
+  if (!symbol?.declarations?.length) {
+    return undefined;
+  }
+  const member = symbol.declarations[0];
+  if (ts.isEnumMember(member) && member.initializer) {
+    return member.initializer;
+  }
+  return undefined;
+}
+
+export function resolveNamespaceImportMember(
+  propertyAccess: ts.PropertyAccessExpression,
+  typeChecker: ts.TypeChecker
+): ts.Expression | undefined {
+  const symbol = typeChecker.getSymbolAtLocation(propertyAccess.name);
+  if (!symbol?.declarations?.length) {
+    return undefined;
+  }
+  const member = symbol.declarations[0];
+  if (ts.isVariableDeclaration(member) && member.initializer) {
+    return member.initializer;
+  }
+  return undefined;
+}
+
+export function resolveInitializerExpression(
+  expression: ts.Expression,
+  typeChecker: ts.TypeChecker
+): ts.Expression | undefined {
+  try {
+    if (ts.isIdentifier(expression)) {
+      return resolveIdentifierInitializer(expression, typeChecker);
+    }
+    if (ts.isPropertyAccessExpression(expression) && ts.isIdentifier(expression.name)) {
+      if (ts.isIdentifier(expression.expression) &&
+        isNamespaceImport(expression.expression, typeChecker)) {
+        return resolveNamespaceImportMember(expression, typeChecker);
+      }
+      return resolveEnumMember(expression, typeChecker);
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * Shared helper for SDK version comparison logic.
  * Encapsulates all version comparison and validation logic.
@@ -308,7 +402,7 @@ export class SdkComparisonHelper {
       return false;
     }
     const call = expression as ts.CallExpression;
-    const arg = this.resolveInitializerExpression(call.arguments[0]) ?? call.arguments[0];
+    const arg = resolveInitializerExpression(call.arguments[0], this.typeChecker) ?? call.arguments[0];
     if (!this.validateApiAvailableArgument(arg)) {
       return false;
     }
@@ -505,131 +599,6 @@ export class SdkComparisonHelper {
     } catch (error) {
       return fallbackValue;
     }
-  }
-
-  /**
-   * 解析参数节点 → 声明初始化器：标识符走 resolveIdentifierInitializer，
-   * 属性访问按来源分流——命名空间导入走 resolveNamespaceImportMember，
-   * 其他（enum）走 resolveEnumMember。
-   */
-  private resolveInitializerExpression(expression: ts.Expression): ts.Expression | undefined {
-    if (!this.typeChecker) {
-      return undefined;
-    }
-
-    const typeChecker = this.typeChecker;
-    try {
-      if (ts.isIdentifier(expression)) {
-        return this.resolveIdentifierInitializer(expression, typeChecker);
-      }
-      if (ts.isPropertyAccessExpression(expression) && ts.isIdentifier(expression.name)) {
-        // 先判断是不是命名空间导入（import * as C），只有导入才解析常量
-        if (ts.isIdentifier(expression.expression) &&
-          this.isNamespaceImport(expression.expression, typeChecker)) {
-          return this.resolveNamespaceImportMember(expression, typeChecker);
-        }
-        // 非命名空间导入 → enum 成员（同文件或 import enum 均可，不判断 import）
-        return this.resolveEnumMember(expression, typeChecker);
-      }
-      return undefined;
-    } catch (error) {
-      return undefined;
-    }
-  }
-
-  /**
-   * 标识符参数 → 声明初始化器：同文件 const/let、解构默认值、命名/默认导入
-   */
-  private resolveIdentifierInitializer(
-    identifier: ts.Identifier,
-    typeChecker: ts.TypeChecker
-  ): ts.Expression | undefined {
-    const symbol = typeChecker.getSymbolAtLocation(identifier);
-    if (!symbol?.declarations?.length) {
-      return undefined;
-    }
-
-    const declaration = symbol.declarations[0];
-    // eg. const LEVEL = 20; let v = 20; apiAvailable(LEVEL)
-    if (ts.isVariableDeclaration(declaration) && declaration.initializer) {
-      return declaration.initializer;
-    }
-    if (ts.isImportSpecifier(declaration) || ts.isImportClause(declaration)) {
-      const aliased = this.getAliasedDeclaration(symbol, typeChecker);
-      if (!aliased) {
-        return undefined;
-      }
-      // eg. import DEF from './m'; apiAvailable(DEF)  (./m: export default 20)
-      if (ts.isImportClause(declaration) && ts.isExportAssignment(aliased)) {
-        return aliased.expression;
-      }
-      // eg. import { LEVEL } from './m'; apiAvailable(LEVEL)  (./m: export const LEVEL = 20)
-      // eg. import DEF from './m'; apiAvailable(DEF)  (./m: const v = 20; export default v)
-      if (ts.isVariableDeclaration(aliased) && aliased.initializer) {
-        return aliased.initializer;
-      }
-    }
-    return undefined;
-  }
-
-  /**
-   * 判断标识符是否为命名空间导入（import * as C from './m'）。
-   */
-  private isNamespaceImport(identifier: ts.Identifier, typeChecker: ts.TypeChecker): boolean {
-    const symbol = typeChecker.getSymbolAtLocation(identifier);
-    if (!symbol?.declarations?.length) {
-      return false;
-    }
-    const declaration = symbol.declarations[0];
-    // import * as C from './m' → C 的声明节点是 NamespaceImport
-    return ts.isNamespaceImport(declaration);
-  }
-
-  /**
-   * enum 成员 → 声明初始化器。enum 同文件或 import 均可，不判断 import。
-   * eg. enum L { A = 20 }; apiAvailable(L.A)
-   */
-  private resolveEnumMember(
-    propertyAccess: ts.PropertyAccessExpression,
-    typeChecker: ts.TypeChecker
-  ): ts.Expression | undefined {
-    const symbol = typeChecker.getSymbolAtLocation(propertyAccess.name);
-    if (!symbol?.declarations?.length) {
-      return undefined;
-    }
-
-    const member = symbol.declarations[0];
-    if (ts.isEnumMember(member) && member.initializer) {
-      return member.initializer;
-    }
-    return undefined;
-  }
-
-  /**
-   * 命名空间限定导入常量 → 声明初始化器。支持 import * as
-   * eg. import * as C from './m'; apiAvailable(C.LEVEL)  (./m: export const LEVEL = 20)
-   */
-  private resolveNamespaceImportMember(
-    propertyAccess: ts.PropertyAccessExpression,
-    typeChecker: ts.TypeChecker
-  ): ts.Expression | undefined {
-    // 进入时已确认 propertyAccess.expression 是 import * as 的标识符
-    const symbol = typeChecker.getSymbolAtLocation(propertyAccess.name);
-    if (!symbol?.declarations?.length) {
-      return undefined;
-    }
-
-    const member = symbol.declarations[0];
-    if (ts.isVariableDeclaration(member) && member.initializer) {
-      return member.initializer;
-    }
-    return undefined;
-  }
-
-  private getAliasedDeclaration(symbol: ts.Symbol, typeChecker: ts.TypeChecker): ts.Declaration | undefined {
-    const targetSymbol = typeChecker.getAliasedSymbol(symbol);
-    const actualSymbol = targetSymbol !== symbol ? targetSymbol : symbol;
-    return actualSymbol.declarations && actualSymbol.declarations[0];
   }
 
   /**
