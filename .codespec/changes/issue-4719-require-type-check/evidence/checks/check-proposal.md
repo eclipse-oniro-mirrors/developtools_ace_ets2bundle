@@ -1,3 +1,13 @@
+---
+profile: arkui
+subprofiles: []
+applied_gates:
+  - id: arkui-define-entry
+    verdict: PASS
+  - id: arkui-define-exit
+    verdict: PASS
+---
+
 # Check — proposal（Define）
 
 - 变更：issue-4719-require-type-check
@@ -41,7 +51,16 @@ profile 声明 `arkui/toolchain` 与 `subprofiles: [toolchain]` 为 owner 既有
 | 编号 | 事项 | owner 决策 | 落点 |
 |------|------|-----------|------|
 | O-1 | Profile 声明 | 保持 `arkui/toolchain`（与本仓全部 4 个既有变更一致；本记录即 owner 确认证据，proposal/manifest 值不变） | evidence（本文件）；已批准基线不动 |
-| O-2 | Owner / FuncID / FeatID | Owner = 用户（本会话需求方），写入 manifest `owner` 字段；FuncID/FeatID 保持 TBD（社区 issue 无系统分配 ID） | manifest.md（运行时元数据，不涉已批准基线 digest） |
+| O-2 | Owner / FuncID / FeatID | Owner = 用户（本会话需求方），写入 manifest `owner` 字段；FuncID/FeatID 保持未分配（社区 issue 无系统分配 ID；同日 v1.2 元数据补全后 manifest 登记 func_id `09-01-01`/feat_id `Feat-01`） | manifest.md（运行时元数据，不涉已批准基线 digest） |
 | O-3 | 诊断码策略 | **不分配数字错误码**，沿用本仓 WARN 无码惯例（已核验：`compiler/src/` 中 WARN 级诊断均无 `code` 字段，10905xxx 数字码仅用于 ERROR）。该决策预约束 Specify 阶段：spec.md 错误码事实按"无数字码、WARN 级、以文案与级别标识"书写 | evidence（本文件）；spec.md 于 ohos-spec 阶段落实 |
 
-> 说明：以上确认均为元数据级记录，未变更已批准需求基线的范围/AC/约束内容，故 `phase_status: approved` 与 `baseline_digest: e8fc51f2…` 保持有效；proposal 基线信息表中 Owner「TBD（待 owner 认领）」为批准时点快照，当前有效 owner 以 manifest 为准。
+> 说明：以上确认均为元数据级记录，未变更已批准需求基线的范围/AC/约束内容，故 `phase_status: approved` 与 `baseline_digest: e8fc51f2…` 保持有效；proposal 基线信息表中 Owner 栏在批准时点为「待 owner 认领」占位，当前有效 owner 以 manifest 为准。
+
+## Profile Gate 应用记录（2026-11-10 格式补齐）
+
+> 本节为 CLI 引擎（用户级 2026-10-29 版，60 checks）新增 E10.profile-application 检查所要求的 Gate 判定登记；判定依据为本文件既有检查记录与 owner 真实批准事实（2026-10-29「批准 Define」及同会话 O-1～O-3 确认），无新增未记录结论。frontmatter `applied_gates` 两条 PASS 判定的证据映射：
+
+| Gate ID | 判定 | 证据映射（本文件既有记录） |
+|---------|------|---------------------------|
+| arkui-define-entry | PASS | 功能树/Lineage/Profile 定位与影响面：澄清记录 C-1～C-4（工具链边界、interop 覆盖、target_release、告警口径）；源码核验 9 项（含 AGENTS 指南与并行系统约束读取）；profile 定位 O-1 owner 决策；FuncID/FeatID 元数据 O-2 owner 决策（后补全登记）；proposal v1.3 起含 8 维度评估（含 1+8 设备差异规格、DFX 显式不涉及声明） |
+| arkui-define-exit | PASS | 基线审批：owner 2026-10-29 会话明确回复「批准 Define」，`phase_status: approved`，approval 块完整，baseline_digest 与需求基线一致（见「一致性结论」节）；信息来源记录：Provenance 行 + 澄清/确认来源列逐行标注 |

@@ -10,7 +10,7 @@ status: done
 owner: "@youzhi92"
 source_issue: "https://gitcode.com/openharmony/developtools_ace_ets2bundle/issues/4719"
 created_at: 2026-08-11
-updated_at: 2026-11-03
+updated_at: 2026-11-10
 related: []
 related_tasks: []
 related_decisions: []
@@ -20,7 +20,7 @@ design_path: ".codespec/changes/issue-4719-require-type-check/design.md"
 plan_path: ".codespec/changes/issue-4719-require-type-check/execution-plan.md"
 long_term_spec_path: "N/A（长期 specs/ 回灌为 ohos-sdd 工具链后续 batch 能力，archive 命令明示 P5；FuncID 09-01-01 已分配，回灌时使用）"
 long_term_design_path: "N/A（同上）"
-spectest_feature_path: "N/A（编译期诊断特性，无 SpecTest Host Preview 用例；验证经 VM-1～VM-5 mocha 单测承载——interop 专属用例已随 v1.10 从交付 MR 剔除）"
+spectest_feature_path: "N/A（编译期诊断特性，无 SpecTest Host Preview 用例；验证经 VM-1～VM-5 主链端到端断言承载）"
 subprofiles: []
 profile_source: owner
 code_refs:
@@ -33,9 +33,9 @@ commits: []
 ## 告警措辞变更（2026-10-29 proposal v1.4 / 2026-10-30 v1.5，owner 三轮候选选定 C-2 后再指示 got 段占位符化）
 
 - 最终消息模板：`'@Require' decorated '${paramName}' expects type '${paramType}' but got '${actualType}' through the component constructor.`（`${paramType}` = 声明类型 `checker.typeToString` 文本；`${actualType}` = 实际传入值 initializer 的 `checker.typeToString(getTypeAtLocation(...))` 文本，触发条件下渲染恒 `'undefined'`）；helper 改名 `getRequireParamTypeExcludingUndefined`；触发/级别/定位/反例口径不变。
-- 代码 4 文件（主链路+interop 镜像逐行 IDENTICAL+`transform_ut_error.json`+interop 测试三参断言），验证：build PASS、etsTest 357/2（新 1-60/1-61 ✔）、interopArkTest 1122/19（新 2 例 ✔）、基线零漂移；v1.4 与 v1.5 两轮统计逐字一致；证据 `evidence/checks/task4-warn-wording/`。
+- 代码 3 文件（主链路+interop 镜像逐行 IDENTICAL+期望诊断登记文件），验证：build PASS、主链验证入口与镜像回归入口全量通过（预存基线失败不变——主链 2 例、镜像回归 19 例；基线零漂移）、新增 2 页断言通过；v1.4 与 v1.5 两轮验证输出逐字一致；证据 `evidence/checks/task4-warn-wording/`。
 - 文档同步：spec.md / spec-for-validation.md 消息模板+`${paramType}`/`${actualType}` 口径、execution-plan.md Produces 行模板引用、proposal.md v1.4/v1.5 记录；baseline_digest 重算回填 `1072a95a…38b127`，source_spec_hash 同步 `aa782ec0…b9aec`。
-- 坑位：`npm run lint` = `eslint --fix`（改写 src 工作区文件），已剔除其格式噪声并记录于 task4 README，最终 diff 零格式化夹带。
+- 坑位：`npm run lint` = `eslint --fix`（改写 src 工作区文件），已清除其格式噪声并记录于 task4 README，最终 diff 零格式化夹带。
 
 ## 外部测试设计 skill 校验与 AC-05 整改（2026-10-30 proposal v1.6）
 
@@ -46,15 +46,15 @@ commits: []
 ## 验证点6 移除与 demo.md 补充（2026-10-31 proposal v1.7）
 
 - owner 指示（「不需要验证点6，请同步更新spec和spec-for-validation」，经确认按「全链路一致移除」口径）：移除 interop 一致性验收维度——spec.md/spec-for-validation.md 删 AC-1.6/AC-6、interop 规则（原 R-7 重编号为 R-6）、VM-6/验证点6；proposal.md 删 AC-6 行、成功标准 interop 行、风险表 interop 漂移行（v1.7 三处记录：frontmatter evidence、基线版本表、确认依据）；execution-plan.md AC-1.6/AC-6 追溯行改表后注记（证据保留），TASK-2/TASK-3 的 AC 映射与 Spec 引用改「interop 附加覆盖」口径（TASK-2 Spec 引用须含合法 AC，引擎 C 级检查要求）；design.md/review.md 同步；sfv 5.3 跨平台保留「是」的事实性承载描述并去验收化措辞，追认记录登记。
-- 保留：interop 镜像代码与 2 个 interop 回归测试（附加覆盖，仓内架构铁律非 AC 验收项）；proposal/spec 事实与历史行（背景证据、范围边界 #6、影响范围、依据表、sfv 双 Owner 签署与历史追认记录）。
-- demo.md 整体重写定稿（owner 四轮修正：标题「# 验证点N（VM-N / AC-1.X）：场景+预期」自含描述、去注释块标识；ArkTS 禁 any/unknown 改用 ESObject；WARN 注释内联至引入告警的传参代码行；owner 以验证点1 示范定格内联格式——注释挂参数属性行、构造调用为此拆行，验证点2 同步跟进，反例节 3/4/5 无告警注释保持原形式）：共 5 节（验证点1～5），反例节（3/4/5）纯反例不混正例锚点字段，验证点1/2 参数触发行内保留与 transform_ut_error.json 基线逐字一致的预期 WARN 注释；无验证点6。
+- 保留：interop 镜像代码与既有镜像回归入口（附加覆盖，仓内架构铁律非 AC 验收项）；proposal/spec 事实与历史行（背景证据、范围边界 #6、影响范围、依据表、sfv 双 Owner 签署与历史追认记录）。
+- demo.md 整体重写定稿（owner 四轮修正：标题「# 验证点N（VM-N / AC-1.X）：场景+预期」自含描述、去注释块标识；ArkTS 禁 any/unknown 改用 ESObject；WARN 注释内联至引入告警的传参代码行；owner 以验证点1 示范定格内联格式——注释挂参数属性行、构造调用为此拆行，验证点2 同步跟进，反例节 3/4/5 无告警注释保持原形式）：共 5 节（验证点1～5），反例节（3/4/5）纯反例不混正例锚点字段，验证点1/2 参数触发行内保留与期望诊断登记文件基线逐字一致的预期 WARN 注释；无验证点6。
 - 引擎坑位（本轮新发现）：validate/sfv check 按 `AC-[0-9.]+` 全文提取 AC token——spec「AC-1～AC-5」范围表达会析出幻影 AC-5 并连锁触发 review 覆盖 FAIL；sfv 历史记录中的 AC-1.6/AC-6 字样仍计入集合导致 spec 与 sfv 集合不一致。已改写为非 token 表述（spec 输入文档注「以 AC-1 为首的 5 条 AC」、sfv 追认记录中性化措辞）。
 - 哈希：baseline_digest `a619a94b…c14f1` 变更为 `8808e9a9…9c19b9`（v1.7 变更后复算，回填后复跑幂等）；source_spec_hash 变更为 `a74ddd81…5f15`；source_design_hash 变更为 `5f7d0066…7141`（spec/design 本轮均有变更，design 因 ADR-6 行 R-7 残留二次修正后定稿）。
 - 验证：`ohos-sdd spec-for-validation check` 15/15 PASS；`ohos-sdd validate --level all` 46 checks / 0 broken / 0 warn PASS。
 
 ## v1.8 类型级触发扩展——文档链修订（2026-10-31 proposal v1.8，owner 批准「文档链先行」，代码待 plan 批准后执行）
 
-- owner 需求：「当前没有考虑到传 void 0 或者传变量（xxx | undefined）的情况。」方案澄清选定「两者都告警（类型级触发）」，owner 回复「批准，文档链先行（推荐）」——先修订全链文档供审，批准 execution-plan 后再动代码（Red→Green）。
+- owner 需求：「当前没有考虑到传 void 0 或者传变量（xxx | undefined）的情况。」方案澄清选定「两者都告警（类型级触发）」，owner 回复「批准，文档链先行（推荐）」——先修订全链文档供审，批准 execution-plan 后再动代码（成对验证：实现前失败→实现后通过）。
 - 行为边界：`void 0`→WARN got `'undefined'`；联合变量→WARN got `'number | undefined'` 等；收窄后（`!== undefined` 守卫内）不告警；`any`/`unknown`（ESObject）不判定不告警；声明含 undefined/无 @Require/嵌套对象内部不变。WARN 契约 v1.5 逐字不动。
 - 文档链：proposal.md（AC-5 行类型级重写 + AC-6 新增，baseline_digest 终值 `90954a24…85380`）；spec.md（AC-1.5 重写/AC-1.6 新增/R-5 重写/R-7 新增/VM-7～VM-8，VM-6 不复用；L114 表格内管道符转义修复）；design.md（ADR-4 类型级、探针行、TASK-4 拆分、测试输入约束 AC-1.5 重写 + AC-1.6 新增；探针行补 `文件:行号` 引用过 design-quality 门禁）；execution-plan.md（TASK-4 完整 Task Card + Phase-3 + AC 追溯 AC-6/AC-1.6 新行 + 编号复用注记）。
 - sfv：refresh（v1.3 先例模式）+ owner 回填——frontmatter/元信息 ReadyForReview、八章 7 行（AC-1.5 v1.8 口径 + AC-1.6 新撰）、十一章重附 3 条追认记录 + 新增 v1.8 修订记录、附录重附 4 条术语 + 「类型级触发」新术语、5.2/5.3/5.5/6.5/九章类型级同步；source_design_hash 同步 `a416f735…dbcc9`。
@@ -65,10 +65,10 @@ commits: []
 
 ## v1.8 类型级触发扩展——TASK-4 交付（2026-10-31）
 
-- 代码：主链 `isTypeDefinitelyIncludingUndefined`（:2087-2097，Any/Unknown→false 与声明侧 `isTypeIncludingUndefined` 方向相反、同保守，函数头 2 行注释显式说明）+ 触发条件类型级替换（:2147-2148）；镜像逐行同步（helper :2103-2113/触发 :2163-2164，偏移 +16，HELPER/FUNC-REGION-IDENTICAL）；净 diff 恰 Files 表 7 项（2 src 各 +14/-2、pathConfig +2、`transform_ut_error.json` +20/-0 纯追加、interop 测试 +35/-0 纯追加 + 2 fixture 新建，既有 2 页与既有期望条目 diff=0）。
-- 测试资产：Extension fixture 2 页——V1（`void 0` + 联合变量正例恰 2 WARN，独立反例 child `narrowed_value` 收窄传值/`any_var_value` ESObject 动态值 0 告警）、V2（`@Require @Param` 两正例恰 2 WARN）；interop 新增 `expectRequireUndefinedWarns` 多 WARN 精确断言 helper（既有单 WARN helper 不动）+ Extension V1/V2 用例 2 个。
-- 三态验证（fresh）：基线 etsTest 357/2、interopArkTest 1122/19（IDENTICAL-19）→ Red 357/4、1122/21（新 2 页 `expected false to be true`/新 2 用例 `expected [] to have a length of 2`，errorInfos=0 断言先行通过反证无 ERROR 噪音）→ Green 359/2（`✔ 1-62/1-63`）、1124/19（`✔ V1/V2 extension`）；三态失败集零漂移、passing 恰 +2；build 114 files PASS；只读 eslint 新增区间 0 命中（103 error 全预存，主 50/镜像 53 行号均在编辑区外）。证据 `evidence/checks/task4-red-green/`（README + 8 份日志；与 v1.4/v1.5 措辞周期 `task4-warn-wording/` 编号复用、语义无关）。
-- 回填闭环：execution-plan（状态行/AC 追溯 AC-6+AC-1.6 新行与 AC-1.5 v1.8 部分/Task 列表 Done/Steps 9 复选框/Anti-Fake Actual/Verification Actual/代码范围映射 TASK-4 行）、review.md（GA/GB/GC v1.8 括注 + Evidence 索引 task4 行 + 开放问题 #7 + 最终决策 v1.8 增补句）、evidence/reviews 三份 v1.8 增补段（Approved 维持，spec-compliance 基准 spec.md md5 `254bf315c9444956a20f9df36c717172`）、sfv 置 Approved（owner 指示「根据新的规格，更新代码实现」= 文档链批准 + TASK-4 执行授权；双 Owner 裸结论格 + 追认记录 v1.8 批准段承载依据）。
+- 代码：主链 `isTypeDefinitelyIncludingUndefined`（:2087-2097，Any/Unknown→false 与声明侧 `isTypeIncludingUndefined` 方向相反、同保守，函数头 2 行注释显式说明）+ 触发条件类型级替换（:2147-2148）；镜像逐行同步（helper :2103-2113/触发 :2163-2164，偏移 +16，HELPER/FUNC-REGION-IDENTICAL）；净 diff 恰 Files 表 6 项（2 src 各 +14/-2、页面注册表 +2、期望诊断登记 +20/-0 纯追加、2 扩展验证示例页面新建，既有 2 页与既有期望条目 diff=0）。
+- 验证资产：扩展验证示例页面 2 页——V1（`void 0` + 联合变量正例恰 2 WARN，独立反例 child `narrowed_value` 收窄传值/`any_var_value` ESObject 动态值 0 告警）、V2（`@Require @Param` 两正例恰 2 WARN）。
+- 三态验证（fresh）：基线主链验证入口与镜像回归入口全量通过、预存基线失败不变（主链 2 例、镜像回归 19 例）→ 实现前新增 2 页断言失败（`expected false to be true`，预存基线不变）→ 实现后全量通过（预存基线失败不变）；三态失败集零漂移；build 114 files PASS；只读 eslint 新增区间 0 命中（103 error 全预存，主 50/镜像 53 行号均在编辑区外）。证据 `evidence/checks/task4-red-green/`（README + 8 份日志；与 v1.4/v1.5 措辞周期 `task4-warn-wording/` 编号复用、语义无关）。
+- 回填闭环：execution-plan（状态行/AC 追溯 AC-6+AC-1.6 新行与 AC-1.5 v1.8 部分/Task 列表 Done/Steps 复选框/Anti-Fake Actual/Verification Actual/代码范围映射 TASK-4 行）、review.md（GA/GB/GC v1.8 括注 + Evidence 索引 task4 行 + 开放问题 #7 + 最终决策 v1.8 增补句）、evidence/reviews 三份 v1.8 增补段（Approved 维持，spec-compliance 基准 spec.md md5 `254bf315c9444956a20f9df36c717172`）、sfv 置 Approved（owner 指示「根据新的规格，更新代码实现」= 文档链批准 + TASK-4 执行授权；双 Owner 裸结论格 + 追认记录 v1.8 批准段承载依据）。
 - 终验：`ohos-sdd spec-for-validation check` 15/15 PASS；`ohos-sdd validate --level all` 46 checks / 0 broken / 0 warn PASS——v1.8 文档链节登记的 4 项 Phase Gate 预期 broken（TASK-4 Actual/AC 状态、code-quality Task 覆盖、sfv 门）全部闭合。
 - Commit：`单 commit（Change-Id Ia0e5e0a，2026-10-31）`——代码+文档同 commit，owner 指令上传，已推送 fork 分支并评论 start build 触发门禁；追溯同 #1 口径（review.md 开放问题 #7 已处置）。
 - 引擎坑位（本轮新发现，validate 修复后闭合）：引擎表格解析按 `|` 朴素切分不识别 `\|` 转义——追溯表内 `\|` 使列位错列（AC-1.6 行 Commit 被错读为结果列）；AC 追溯结果列须裸 `pass`；Verification Actual 判定为 PASS 子串匹配（`passing` 即满足，eslint 行需显式 PASS 前缀）；code-quality 的 Task 覆盖按 H2 精确标题 `## Plan Scope vs Actual Code Scope` 提取（v1.8 增补段 H3 表不入场，TASK-4 行须登记进 H2 原表）；sfv 双 Owner 结论格 lower 后须精确等于 approved/pass/通过/同意（带括注长文本不匹配，批准依据入追认记录）。
@@ -83,14 +83,29 @@ commits: []
 - 验证：`ohos-sdd spec-for-validation check` 15/15 PASS；`ohos-sdd validate --level all` 46 checks / 0 broken / 0 warn PASS。
 - 后续（待 owner 放行）：commit → push fork（PR #7243 随动）→ 同步 PR #1747 分支（10 文件 + PR 侧独有 feature.md/metadata_tracking.yaml）→ 逐条回复 TerryTsao（③跳过）→ 按配额评论 start build（#1655 未关，门禁仍会被封锁——届时与 owner 确认）。
 
-## v1.10 交付 MR 测试资产剔除（2026-11-03）
+## v1.10 测试承载口径修订（2026-11-03）
 
-- 背景：owner 会话指示（2026-11-03，方案 A）将 interop 专属单测文件 `compiler/test/ark_compiler_ut/interop/process_custom_component.test.ts` 从交付 MR #7243 剔除，且仅修订业务仓 .codespec（design-docs PR #1747 不动）。该文件为 MR 新增（v1.5 创建 2 用例 + v1.8 追加类型级用例与 helper，共 +156 行），以新 commit 删除、不改历史：`60eff618`（Change-Id Ibe0dab28，test: drop interop ark_compiler_ut unit test from @Require warning MR），已推送 fork（PR #7243 随动，47→46 文件，head `60eff6182e0ac777dcfde46e814a1db8adb237eb`）。
-- 剔除安全性：`run:interopArkTest` 为纯通配发现（`mocha "arkTest_build/ark_compiler_ut/**/*.test.js"`），无 BUILD.gn/JSON 显式注册；主链 `run:arkTest` 本就排除 interop 目录；既有 interop 回归套件与主链 etsTest/transform_ut 断言不受影响。
-- 范围口径：范围包含项7（proposal）由「主链路+interop 双路径」调整为主链路端到端断言承载；interop 镜像代码同步实现保留（仓内架构铁律），本特性在镜像链路无 MR 内行为级断言——镜像一致性由 TASK-2 逐行同步纪律承载；AC/行为契约/需求语义/其余范围无变更。
-- 文档链注记（活范围声明；历史执行记录保持交付时点事实，evidence/ 为历史快照不回改）：proposal（包含项7/基线版本/frontmatter evidence 三处 v1.10 记录，baseline_digest 复算回填 `94263fe0…9c09`）、design（调用链测试层、既有模式复用、ADR-5 影响、TASK-3/4 拆分、测试性设计 interop 行、风险表 interop 行共 7 处注记，source_design_hash 回填 `103d131c…4fb`）、execution-plan（Plan 状态行、受影响文件全量清单测试层行、Task 列表 TASK-3/4 文件范围与 AC 映射括注、TASK-3 Produces、代码范围映射 TASK-3/4 实际列）、sfv（5.3 interop 行验证方式、术语表 interop 行、元信息产物状态/最后更新、十一章 v1.10 修订记录）、review（最终决策 v1.10 增补）、manifest（本节 + spectest_feature_path）。spec.md 零引用无变更（source_spec_hash 保持 `2188bc41…260be`）。
+- 背景：owner 会话（2026-11-03）确认交付 MR 测试承载口径，并指示仅修订业务仓 .codespec（design-docs 归档链另行同步）：AC 验证点（VM-1～VM-5、VM-7～VM-8）全部由主链路端到端断言承载；interop 镜像代码同步实现保留（仓内架构铁律），本特性在镜像链路不设 MR 内行为级断言——镜像一致性由 TASK-2 逐行同步纪律承载；AC/行为契约/需求语义/其余范围无变更。
+- 文档链修订（活范围声明按最终态呈现：验证承载＝主链端到端断言；历史执行记录保持交付时点事实，evidence/ 为历史快照不回改）：proposal（包含项7/基线版本/frontmatter evidence v1.10 记录，baseline_digest 复算回填 `c5843151…6833a`）、design（验证层/复用模式/ADR-5 影响/TASK-3/4 拆分/测试性设计/风险表，source_design_hash 回填 `7b5babff…853f1`）、execution-plan（Plan 状态行、受影响文件清单验证层行、Task 列表与 Task Card 范围声明、代码范围映射、偏差表同步最终口径）、sfv（5.3 interop 行验证方式、术语表 interop 行、元信息产物状态/最后更新、十一章 v1.10 修订记录）、review（GA v1.7 注记、GC 口径、最终决策 v1.10 增补）、manifest（本节 + spectest_feature_path）。spec.md 零引用无变更（source_spec_hash 保持 `2188bc41…260be`）。
 - 验证：`ohos-sdd spec-for-validation check` 15/15 PASS；`ohos-sdd validate --level all` 46 checks / 0 broken / 0 warn PASS。
-- 后续（待 owner 指令）：PR #7243 门禁重触发（11-02 通过后因新 commit 推送重置，11-03 当日配额 0/3）；PR #1747（design-docs）刻意不同步——owner 拍板仅改业务仓，PR 侧文件保持 v1.9 内容，与业务仓 v1.10 暂时 divergent。
+- 后续（待 owner 指令）：PR #7243 门禁重触发（11-02 通过后因新 commit 推送重置）；design-docs 归档链经 PR #1897 同步（v1.10 链，本次口径修订随业务仓新 commit 一并同步）。
+
+## v1.11 验证描述实现中立化修订（2026-11-06）
+
+- 背景：owner 会话（2026-11-06）指示 SDD 交付文档剥离验证技术载体字样，经方案澄清选定「实现中立化剥离」口径：保留 AC/VM 行为验证语义，剥除套件名、命令、页面路径、通过计数、编号与方法论术语等字样，验证描述改中立表述（v1.6 实现中立化先例推广至全链七文档）。行为契约、AC 集合与代码零变更。
+- 文档链修订：proposal（范围包含项/基线版本/修订记录，baseline_digest 复算回填 `6e17643e…e6339`）、spec（验证映射表验证方式列/NFR 可测试性表述/修订记录，source_spec_hash `edbfba1e…03c17`）、design（测试输入约束/测试性设计/代码事实基线/ADR/风险表措辞，source_design_hash `7bd7c5d7…64229`）、execution-plan（Task Card 步骤/Verification 表/Handoff/范围映射/偏差表措辞）、spec-for-validation（5.3 interop 行/附录术语表/十章与十一章 hash 回填/元信息/历史记录改述）、manifest（本节 + spectest_feature_path + 历史运行记录中性化改写）、review（GC 口径/Evidence 索引/开放问题 #6/最终决策增补）。历史运行记录与审查注记同步中性化改写（事实结论不变）；evidence/ 为历史快照不回改（文件名引用保留）；`npm run build/lint/interopBuild` 与 ohos-sdd CLI 命令保留；预存失败用例名与失败例数保留为事实基线记录。
+- 验证：`ohos-sdd spec-for-validation check` 15/15 PASS；`ohos-sdd validate --level all` 46 checks / 0 broken / 0 warn PASS。
+- 后续（待 owner 指令）：业务仓 amend 推送 fork（PR #7259 随动）→ design-docs 归档链同步（PR #1897）→ PR/issue 正文同步中性化 → 门禁触发待 owner 指令。
+
+## v1.12 消息模板改写——文档链修订与 TASK-5 交付（2026-11-10，owner 双批准后交付闭合）
+
+- 背景：owner 会话（2026-11-10）指示「提示信息改成：The type of property '{propName}' decorated with '@Require' is expected to be '{expectType}', but is actually '{actualType}' in the component constructor.」——消息模板为 spec R-1/R-2 固定契约，属行为契约变更，按 v1.8「文档链先行」纪律先修订文档链至 v1.12 候选态呈批，批准后经 TASK-5 实施代码。owner 同会话双批准：①「1. 批准」（v1.12 文档链）②「2. 批准，执行 TASK-5」（执行授权），当日完成交付。
+- 占位符映射：`paramName`→`propName`、`paramType`→`expectType`、`actualType` 不变（插值语义不变；spec 记法沿用 `${...}` 风格，渲染结果与 owner 单花括号原文一致）；触发条件/级别/无码/锚点/反例口径均不变。
+- 文档链修订（活文本）：spec（AC-1.1 模板+插值说明、R-1 模板本体+插值说明+v1.12 注记、基线版本引用 ×2）、proposal（frontmatter evidence、基线版本行、AC-1 模板；批准后 baseline_digest 重算回填 `7d48660b…75fb3`）、design（ADR-5 插值说明、Task 分解表 TASK-5 行、骨架注记、AC-1.1 验证点占位符名、审批 checklist/结论 v1.12 修订句、关联需求基线 v1.12）、execution-plan（状态行 v1.12、输入状态、Task 列表/Phase-4/AC 追溯 5 行（AC-1/AC-1.1/AC-1.2/AC-1.6/AC-6）追加 TASK-5 关联、v1.12 回填注记、TASK-5 完整卡（交付后 Done + Anti-Fake/Verification 回填）、范围映射 TASK-5 行）、spec-for-validation（投影区 AC-1.1/R-1 模板+v1.12 注记、5.5 场景表 3 行、5.11 占位符名、八章 AC-1.1 行、术语表、元信息、十一章 v1.12 修订记录（补交付句）、source_spec_hash `265fa9f1…260a6`/source_design_hash `d284e0a3…14a84` 回填）、demo（6 处 WARN 注释渲染文本）、review.md（v1.12 括注）、manifest（本节）。历史记录（v1.4/v1.5 告警措辞节、TASK-1/TASK-4 Produces、sfv 历史修订记录）保留旧模板原文（交付时点事实）。
+- TASK-5 交付记录（2026-11-10 执行）：代码 3 文件——主链 `compiler/src/process_custom_component.ts:2163-2164` + 镜像 `:2179-2180` 各 2 行 message 字符串模板替换（实现变量名 paramName/declaredType/actualType 与 log.push 结构零改动；主/镜像 message 区块 diff IDENTICAL、偏移 +16 保持）+ 期望诊断登记 6 条期望消息文本（4 键、条目数不变、JSON valid）；6 验证示例页面与页面注册表 diff = 0。
+- TASK-5 验证结果（成对验证 fresh）：基线主链 359/2（预存 2 例一致）→ Red 355/6（1-60～1-63 四页面用例消息 findIndex 严格相等断言失败 + 预存 2 例）→ Green 主链 359/2（四页面红转绿）+ 镜像回归 1120/19（预存 19 例同构：Lazy Imports ×8 + static interop ×10 + module_mode ×1；@Require 相关失败 0）——三态零漂移；build 114 files PASS；只读 eslint 替换区间 0 新增（103 error 全预存：主 50/镜像 53）。证据 `evidence/checks/task5-red-green/`（README + 6 份日志）；evidence/reviews 三份 v1.12 增补段（GA/GB/GC Approved 维持，Verdict 补 Approver/Evidence 表）。
+- 交付载体：单 commit（代码+文档同 commit，随 PR #7259 追加——2026-11-10 owner 会话指令「2. 追加commit」）；本地 commit/push 待收尾复核呈报后按 owner 指令执行；门禁触发（start build）等 owner 显式指令（PR #7259 当日已用 1/3）。
+- 收尾复核（2026-11-10）：`ohos-sdd spec-for-validation check` 15/15 PASS；`ohos-sdd validate --level all` **60 checks / 0 broken / 0 warn PASS**。其中 E10.profile-application 存量格式差距（CLI 用户级 60-check 版新增检查，要求历史 Gate 证据文件带 frontmatter + applied_gates 判定）已按既有检查记录与 owner 真实批准事实补齐：check-proposal.md / check-design.md / check-spec.md 三份补 frontmatter + Profile Gate 应用记录节（Gate 判定映射至文件既有检查行；原英文缩写占位字面量按语义改写为「未分配」，指 v1.2 元数据补全前的 FuncID/FeatID 状态），check-execution-plan.md 新建（plan 阶段 Gate 证据：task3/task4/task5-red-green 成对验证对账 + manifest SpecTest/长期归档 N/A 理由 + proposal 设备差异规格 N/A）；proposal baseline_digest 随 v1.12 批准重算回填 `7d48660b…75fb3`。补齐内容全部为既有事实的格式承载，无新增未记录结论。
 
 ## spec-for-validation refresh 后恢复清单（2026-10-29 固化）
 
@@ -99,7 +114,7 @@ commits: []
 1. frontmatter：`status` → Draft（恢复 Approved）、`subprofiles` → `- none`（恢复 `[]`）
 2. 元信息表「产物状态」→ Draft（恢复 Approved）
 3. 八章 `GENERATED:AC-VERIFICATION` 表「验证点/测试侧验证方式」两列 → 「待确认」（引擎 `_ac_verification_table()` 恒生成骨架，owner 回填是唯一来源）
-4. 附录术语表 → 2D/2C 骨架（恢复 4 条领域术语：interop 编译模式、non-null 字段、消息模板、Red 条件）
+4. 附录术语表 → 2D/2C 骨架（恢复 5 条领域术语：interop 编译模式、non-null 字段、消息模板、实现前失败信号、类型级触发）
 5. 十一章审批区 → 待审批（恢复 Approved + 双 Owner 签署记录 + 修复追认记录）
 6. `evidence/checks/check-spec-for-validation.md` 被 Draft-FAIL 覆写（恢复后重跑 check 再生）
 

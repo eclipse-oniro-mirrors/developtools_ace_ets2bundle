@@ -19,6 +19,11 @@
 - [ ] Needs Changes
 - [ ] Blocked
 
+| Field | Value |
+|-------|-------|
+| Approver | @youzhi92（owner；2026-11-10 会话双批准：v1.12 文档链 + TASK-5 执行授权） |
+| Evidence | evidence/checks/task5-red-green/（v1.12 成对验证 6 份日志）+ 本文件 v1.12 增补段 + review.md v1.12 括注 |
+
 ## Execution Records
 
 > 期望值定义于 spec.md 验证映射（VM-1～VM-6）与 execution-plan Verification 表。**#1/#2 为本审查对最终工作区状态的 fresh 复跑**（实施期基线对照流程曾将 lib/ 置为 HEAD 基线产物，为排除该干扰并取得最终态证据而复跑）；#3～#5 为实施期采集（同日）。
@@ -72,3 +77,30 @@
 | 6 | TASK-4 / AC-6、AC-1.6（interop Green） | `npm run interopArkTest` | 1124 passing / 19 failing；新 2 用例转绿；IDENTICAL-19 | **1124 passing / 19 failing**；`✔ warns once per field for void expression and union variable in V1/V2 extension`（计数=2 + 文案与主链一致 + ERROR=0）；失败集与基线 IDENTICAL-19 | `green-interopArkTest.txt` | PASS |
 
 工作区纪律记录：测试污染的被跟踪 testdata/build 产物每轮按排除式清单 `git checkout --` 选择性恢复（保留 3 个 Red 资产 tracked 修改）；Green interop 轮曾出现 `EntryAbility.js` 删除态（` M` 匹配遗漏），已单独 `git checkout --` 恢复；最终 tracked 修改恰 = 5 M + 2 新建 fixture，与 execution-plan 代码范围映射 TASK-4 行一致。
+
+## v1.12 增补段（TASK-5 执行记录，2026-11-10）
+
+> 本段为 execution-plan v1.12 修订新增 TASK-5 交付后的验证执行记录；上文 v1.5/v1.8 周期记录为历史基线，不改写。执行授权：owner 2026-11-10 会话双批准（v1.12 文档链 + TASK-5 执行授权）。
+
+### v1.12 Execution Records
+
+| # | Task / AC | Command | Expected | Actual | Log | Result |
+|---|-----------|---------|----------|--------|-----|--------|
+| 1 | TASK-5 / 基线复核（主链） | `npm run etsTest` | 预存基线 2 例不变 | **359 passing / 2 failing**（ExtendOneChild、StructNameWarn，与既往记录一致） | `baseline-etsTest.txt` | PASS |
+| 2 | TASK-5 / Red（主链 message 替换后、期望更新前） | `npm run build` → `npm run etsTest` | 6 条消息断言失败 + 预存基线 2 例不变 | **355 passing / 6 failing**：1-60～1-63 四页面用例消息 findIndex 断言失败（`expected false to be true`，实际新模板 vs 期望旧模板）+ 预存 2 例；build 114 files PASS | `red-etsTest.txt` | PASS |
+| 3 | TASK-5 / Green（镜像同步 + 期望更新后，主链） | `npm run etsTest` | 全量通过；预存基线 2 例不变 | **359 passing / 2 failing**：1-60～1-63 四页面用例红转绿（WARN 计数+消息逐字符断言通过）；失败仅预存基线 2 例 | `green-etsTest.txt` | PASS |
+| 4 | TASK-5 / Green（镜像回归） | `npm run interopArkTest` | 预存基线 19 例不变；@Require 相关失败 0 | **1120 passing / 19 failing**：失败集与预存基线同构（Lazy Imports ×8 + static interop imports ×10 + module_mode ×1，全部环境相关预存）；@Require 相关失败 0 | `green-interopArkTest.txt` | PASS |
+| 5 | TASK-5 / 静态检查（只读） | `./node_modules/.bin/eslint <主链/镜像两文件> --ext .ts` | message 替换区间 0 新增 error | 103 error 全部预存（主 50/镜像 53，行号均在编辑区外：主 ≤2007、镜像 ≤2225）；替换区间（主 :2163-2164、镜像 :2179-2180）0 命中 | `green-eslint.txt` | PASS |
+| 6 | TASK-5 / 编译 | `npm run build` | 114 files 编译 PASS | **Successfully compiled 114 files with Babel**（Red 阶段独立 build 与 Green 阶段 etsTest/interopArkTest 内置 build 同 src 状态均通过） | `green-build.txt` | PASS |
+
+### v1.12 Anti-Fake Completion Check
+
+| Check | Result | Evidence |
+|-------|--------|----------|
+| 断言非恒真 | PASS | Red 态 1-60～1-63 四页面用例消息断言失败（`red-etsTest.txt`），期望更新后转绿（`green-etsTest.txt`） |
+| 三态零漂移 | PASS | 主链 359/2 → 355/6 → 359/2（差集恰 4 页面用例）；镜像回归预存 19 例三态不变 |
+| 范围一致 | PASS | 净 diff 3 项与 Files 表一致；6 fixture 页与页面注册表 diff = 0；.ts_checker_cache 运行污染已 `git checkout --` 恢复 |
+
+### v1.12 Conclusion
+
+**Approved（维持）。** 成对验证（Red→Green）fresh 证据完整，三态零漂移，预存基线（主链 2 例/镜像 19 例）不变，@Require 相关失败 0。Approver：@youzhi92（owner 2026-11-10 会话批准）；Evidence：`evidence/checks/task5-red-green/`（6 份日志）。

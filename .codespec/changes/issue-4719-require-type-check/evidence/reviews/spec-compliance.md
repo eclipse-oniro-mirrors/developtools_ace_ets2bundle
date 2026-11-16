@@ -20,6 +20,11 @@
 - [ ] Needs Changes
 - [ ] Blocked
 
+| Field | Value |
+|-------|-------|
+| Approver | @youzhi92（owner；2026-11-10 会话双批准：v1.12 文档链 + TASK-5 执行授权） |
+| Evidence | evidence/checks/task5-red-green/（v1.12 成对验证 6 份日志）+ 本文件 v1.12 增补段 + review.md v1.12 括注 |
+
 > 批准条件见 Conclusion；Commit 已回填（`单 commit（Change-Id Ieca81b2）`，开放问题 #1 已处置）。
 
 ## AC → Task → Code → Commit → Review
@@ -104,3 +109,27 @@
 ### v1.8 Conclusion
 
 **Approved（维持）。** TASK-4 实现与 spec AC-6/AC-1.6/AC-1.5 v1.8 扩展边界精确对应：正例（`void 0`、联合类型变量）每页恰 2 WARN 且文案逐字符，反例（收窄后联合变量、`any`/`unknown` 动态值）0 告警，既有 v1.5 行为零漂移。Commit 追溯待 owner 提交决策后以 Change-Id 承载（非阻塞，与 review.md 开放问题同口径）。
+
+## v1.12 增补段（TASK-5 消息模板改写，2026-11-10）
+
+> 本段为 execution-plan v1.12 修订新增 TASK-5 交付后的增补审查记录；上文 v1.5/v1.8 周期审查内容为历史基线，不改写。v1.12 审查基准：`spec.md`（Approved v1.12 基线，sha256 `265fa9f1…260a6`）；owner 2026-11-10 会话双批准（v1.12 文档链 + TASK-5 执行授权）。
+
+### v1.12 AC → Task → Code → Review
+
+| AC | Task | Code Ref（工作区态） | Commit | Verification Evidence | Result | Gap |
+|----|------|---------------------|--------|-----------------------|--------|-----|
+| AC-1/AC-1.1/AC-1.2（文案契约刷新） | TASK-5 | 主链 `process_custom_component.ts:2163-2164` message 两行模板替换，渲染与 spec v1.12 模板逐字符（含 expectType 段后逗号与尾部 ` in the component constructor.`）；变量名 paramName/declaredType/actualType 与 log.push 结构零改动 | 单 commit（代码+文档同 commit，2026-11-10，随 PR #7259 追加） | `evidence/checks/task5-red-green/`（三态 359/2 → 355/6 → 359/2；1-60/1-61 断言红转绿） | PASS | 无 |
+| AC-1.6/AC-6（文案契约刷新，AC-6 引用 AC-1 同一模板） | TASK-5 | 镜像 `:2179-2180` 同构替换（message 区块 diff IDENTICAL、偏移 +16 保持）；期望登记 6 条消息文本替换（4 键、条目数不变）；actual 段渲染口径不变（'undefined' 与联合文本） | 同上 | 同上（1-62/1-63 断言红转绿；`green-interopArkTest.txt` @Require 相关失败 0） | PASS | 无 |
+| 触发/级别/定位/反例契约（R-1～R-7 非文案部分，负向核对） | TASK-5 | 净 diff 仅 message 字符串与期望文本——触发判定（`isTypeDefinitelyIncludingUndefined` :2147-2148）、LogType.WARN、无 code 字段、`pos: item.getStart()` 均未触碰 | 同上 | 同上（6 页计数+定位断言 Green 全过；反例页 0 告警保持；镜像回归预存 19 例同构） | PASS | 无 |
+
+### v1.12 Anti-Fake Completion Check
+
+| Check | Result | Evidence |
+|-------|--------|----------|
+| 断言非恒真 | PASS | Red 态（期望未更新）1-60～1-63 四页面用例消息 findIndex 严格相等断言失败（`expected false to be true`，实际新模板 vs 期望旧模板）——`red-etsTest.txt` |
+| 既有用例零漂移 | PASS | 三态失败集：主链 2 → 6 → 2（差集恰 4 页面用例）；镜像回归 19 例同构（Lazy Imports ×8 + static interop ×10 + module_mode ×1）——`green-interopArkTest.txt` |
+| 实现与声明范围一致 | PASS | 净 diff 3 项与 execution-plan Files 表一致（2 src 各 +2/-2 + JSON 6 条文本）；6 验证示例页面与页面注册表 diff = 0 |
+
+### v1.12 Conclusion
+
+**Approved（维持）。** TASK-5 实现与 spec v1.12 消息模板精确对应：渲染逐字符、触发/级别/定位/反例契约零变更、既有行为零漂移、镜像同步 IDENTICAL。Approver：@youzhi92（owner 2026-11-10 会话批准）；Evidence：`evidence/checks/task5-red-green/`。

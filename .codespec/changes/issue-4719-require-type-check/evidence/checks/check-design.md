@@ -1,3 +1,13 @@
+---
+profile: arkui
+subprofiles: []
+applied_gates:
+  - id: arkui-design-entry
+    verdict: PASS
+  - id: arkui-design-exit
+    verdict: PASS
+---
+
 # check-design — issue-4719-require-type-check（Design 阶段一致性检查）
 
 > 检查时间：2026-10-29；执行：ohos-design（Agent）；profile：`arkui`（owner 约定值；subprofile `toolchain` 无对应文件——O-1 决策保留）。
@@ -29,7 +39,7 @@
 | 热路径 Performance & Memory Budget | N/A（有理由） | 编译期静态诊断，不命中 input/layout/render/animation 等运行时热路径（proposal 性能=否；spec 非功能 N/A）；编译耗时影响限于构造传参遍历内的类型判定 | proposal「不涉及项确认」+ spec 非功能性需求节 | 无 |
 | 内存分配/释放点与所有权 | N/A（有理由） | TS 工具链单函数新增，无动态内存分配点/所有权变更（非 C++ 原生代码） | 变更性质判定（compiler/src/ TypeScript 源内） | 无 |
 | 源码与 SDK 定义一致或差异已声明 | N/A（有理由） | 不涉及 SDK/API/声明文件变更 | proposal「API/SDK=否」 | 无 |
-| 存量能力长期 specs 补录（specs/.../Feat-XX-*-spec.md） | N/A（有理由） | 本仓未建立长期 `specs/` 归档体系；FuncID/FeatID TBD（O-2 owner 决策）；无存量长期规格可补录 | 目录核对（`ls specs/` 不存在）；Owner 对话确认（O-2，evidence/checks/check-proposal.md） | 归档体系建立时补齐（manifest 已记 N/A 理由） |
+| 存量能力长期 specs 补录（specs/.../Feat-XX-*-spec.md） | N/A（有理由） | 本仓未建立长期 `specs/` 归档体系；FuncID/FeatID 未分配（O-2 owner 决策；后经 v1.2 元数据补全登记）；无存量长期规格可补录 | 目录核对（`ls specs/` 不存在）；Owner 对话确认（O-2，evidence/checks/check-proposal.md） | 归档体系建立时补齐（manifest 已记 N/A 理由） |
 | 功能域 specs/design.md 增量合并 | N/A（有理由） | 同上：无功能域长期 design.md，不存在平行顶层设计风险 | 目录核对 | 同上 |
 | P0/P1 AC 映射到 Task 和验证命令 | 通过 | 特性 P1；AC-1.1/1.2/1.6→TASK-1/2（实现+镜像）、AC-1.1～1.5→TASK-3（fixture/断言）；验证命令 `npm run etsTest`/`npm run interopArkTest`（design 测试性设计 + 后续 Task 拆分） | 文档交叉核对 | 无 |
 | SpecTest 映射（feature/suite/case/expected/节点 id/命令） | N/A（有理由+替代验证） | 编译期诊断为构建期 mocha 断言，无 Host Preview/Inspector 可断言表面与节点 id；替代验证 = VM-1～VM-6 单测（fixture+期望日志+文案逐字符匹配）；manifest `spectest_feature_path` 已记 N/A | 变更性质判定 + manifest.md | 无 |
@@ -65,3 +75,12 @@ design.md 与已批准上游一致：proposal v1.1（范围/兼容性唯一涉�
 **Design 审批闭环（2026-10-29）**：用户（本会话需求方/owner）于会话明确回复「批准 Design」。design.md 设计元数据状态已更新为 `Approved`，设计审批结论生效；`.codespec/registry.md` 行状态流转 `Design → Plan`。审批人：用户（本会话需求方）；批准对象：design.md 全量内容（12 项代码事实基线、ADR-1～ADR-6、调用链 7 层分析、7 项模式复用、TASK-1～3 拆分、风险 4 项）。后续进入 ohos-plan 阶段（基于 TASK-1～3 生成 execution-plan.md）。
 
 **批准后回流补充记录（2026-10-29，spec-for-validation 旁路触发）**：进入测试输入旁路时发现 design.md 缺少测试可观察性条件节（playbook「Design 输入约束」回流规则命中：`_design_test_constraints` 在 design.md 无 `## 测试输入约束`/`## 测试交接约束` 节时投影回退提示文本）。按 playbook 规定格式追加 `## 测试输入约束` 节（5 列：AC/可观察表面/测试侧验证方式/环境设备限制/不可自动化项；覆盖 AC-1.1～AC-1.6 全部 6 条，验证方式全部以"构建 ArkTS 应用工程 + 检查构建诊断输出"的用户可见行为表述，不含开发侧自验命令与内部实现引用）。该补充不改变任何已批准设计决策（ADR-1～ADR-6、代码事实基线、Task 拆分均未触碰），仅为测试输入规格补充对外可观察表面；节内容对齐 spec.md AC 原文与 R-1～R-7 语义。补充后复验：`approval-digest` 不变（`e8fc51f2…`，仅 proposal 需求基线参与哈希）、Level B/C 无回归。
+
+## Profile Gate 应用记录（2026-11-10 格式补齐）
+
+> 本节为 CLI 引擎（用户级 2026-10-29 版，60 checks）新增 E10.profile-application 检查所要求的 Gate 判定登记；判定依据为本文件既有检查记录与 owner 真实批准事实（2026-10-29「批准 Design」），无新增未记录结论。frontmatter `applied_gates` 两条 PASS 判定的证据映射：
+
+| Gate ID | 判定 | 证据映射（本文件既有记录） |
+|---------|------|---------------------------|
+| arkui-design-entry | PASS | 交叉一致性：本文件「arkui-design-entry（交叉一致性）」表 14 行逐项核对（spec/design 规则与分层、API N/A、模块边界、不涉及项、验证映射、热路径与内存 N/A、长期补录 N/A、P0/P1 AC 映射、SpecTest N/A+替代验证、条件节判定），确认来源逐行标注 |
+| arkui-design-exit | PASS | 设计基线核验：本文件「arkui-design-exit（设计基线核验）」表 5 行（存量规格读取记录、12 项代码事实基线 path:line 核验、遗留设计三处差异处置、确认来源标注、未核验项检查）+「Design 审批闭环（2026-10-29）」owner 批准记录 |
