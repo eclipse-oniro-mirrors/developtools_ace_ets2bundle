@@ -142,6 +142,7 @@ import processStructComponentV2, { StructInfo, getDecoratorName } from './proces
 import logMessageCollection from './log_message_collection';
 import { ISdkApiValues, fetchStylesDecoratorVersionCondition } from './ui_utils';
 import { checkScrollContainerSize } from './scroll_container_size_check';
+import { validateBuilderDecorator } from './parse_builder_optimize';
 
 export class ComponentCollection {
   localStorageName: string = null;
@@ -1012,6 +1013,7 @@ function checkDecorator(sourceFileNode: ts.SourceFile, node: ts.Node,
     validateClassDecorator(sourceFileNode, node, log, classContext, decoratorName, isObservedClass,
       isObservedV1Class, isSendableClass, classNode);
     validatePropertyInStruct(structContext, node, decoratorName, sourceFileNode, log);
+    validateBuilderDecorator(node, sourceFileNode, log, decoratorName);
     return;
   }
   if (ts.isDecorator(node)) {

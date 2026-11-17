@@ -143,6 +143,7 @@ import { FileManager, isMixCompile } from './fast_build/ark_compiler/interop/int
 import { ARKTS_1_2 } from './fast_build/ark_compiler/interop/pre_define';
 import { ISdkApiValues, fetchStylesDecoratorVersionCondition } from './ui_utils';
 import { checkScrollContainerSize } from './scroll_container_size_check';
+import { validateBuilderDecorator } from './parse_builder_optimize';
 
 export class ComponentCollection {
   localStorageName: string = null;
@@ -1196,6 +1197,7 @@ function checkDecorator(sourceFileNode: ts.SourceFile, node: ts.Node,
     } else {
       validatePropertyInStruct(structContext, node, decoratorName, sourceFileNode, log);
     }
+    validateBuilderDecorator(node, sourceFileNode, log, decoratorName);
     return;
   }
   if (ts.isDecorator(node)) {

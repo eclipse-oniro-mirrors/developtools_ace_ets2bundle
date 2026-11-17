@@ -1224,9 +1224,9 @@
         "code": "10905332"
     },
     "ExtendOneChild": {
-        "message": "'@Extend' should have one and only one parameter.",
+        "message": "The VersionCondition type only receives an object literal.",
         "type": "ERROR",
-        "code": "10905108"
+        "code": "10905389"
     },
     "ExtendInnerComponents": {
         "message": "'testExtend' parameter cannot be passed in the '@Extend' decorator.",
@@ -1410,11 +1410,17 @@
         "type": "ERROR",
         "code": "10905112"
     },
-    "checkNonspecificParents": {
-        "message": "The 'Blank' component can only be nested in the 'Row,Column,Flex' parent component.",
-        "type": "ERROR",
-        "code": "10905201"
-    },
+    "checkNonspecificParents": [
+        {
+            "message": "The 'Blank' component can only be nested in the 'Row,Column,Flex' parent component.",
+            "type": "ERROR",
+            "code": "10905201"
+        },
+        {
+            "message": "You are advised to initialize the width and height attributes of the List component.",
+            "type": "WARN"
+        }
+    ],
     "@Trace": [
         {
             "message": "The '@Trace' decorator can decorate only member variables of a class.",
@@ -2115,21 +2121,51 @@
             "type": "WARN"
         }
     ],
-    "validateForEachParser": {
-        "message": "The property 'props' must specify a type.",
-        "type": "ERROR",
-        "code": "10905305"
-    },
-    "validateRepeatParser": {
-        "message": "The property 'props' must specify a type.",
-        "type": "ERROR",
-        "code": "10905328"
-    },
-    "validateLazyForEachParser": {
-        "message": "The property 'props' must specify a type.",
-        "type": "ERROR",
-        "code": "10905305"
-    },
+    "validateForEachParser": [
+        {
+            "message": "The property 'props' must specify a type.",
+            "type": "ERROR",
+            "code": "10905305"
+        },
+        {
+            "message": "You are advised to initialize the width and height attributes of the List component.",
+            "type": "WARN"
+        },
+        {
+            "message": "You are advised to initialize the width and height attributes of the List component.",
+            "type": "WARN"
+        },
+        {
+            "message": "You are advised to initialize the width and height attributes of the List component.",
+            "type": "WARN"
+        },
+        {
+            "message": "You are advised to initialize the width and height attributes of the List component.",
+            "type": "WARN"
+        }
+    ],
+    "validateRepeatParser": [
+        {
+            "message": "The property 'props' must specify a type.",
+            "type": "ERROR",
+            "code": "10905328"
+        },
+        {
+            "message": "You are advised to initialize the width and height attributes of the List component.",
+            "type": "WARN"
+        }
+    ],
+    "validateLazyForEachParser": [
+        {
+            "message": "The property 'props' must specify a type.",
+            "type": "ERROR",
+            "code": "10905305"
+        },
+        {
+            "message": "You are advised to initialize the width and height attributes of the List component.",
+            "type": "WARN"
+        }
+    ],
     "validateStaticBlock": [
         {
             "message": "Static code blocks not supported in structs.",
@@ -2470,6 +2506,18 @@
         }
     ],
     "validateReusableV2InRepeat": [
+        {
+            "message": "You are advised to initialize the width and height attributes of the List component.",
+            "type": "WARN"
+        },
+        {
+            "message": "You are advised to initialize the width and height attributes of the List component.",
+            "type": "WARN"
+        },
+        {
+            "message": "You are advised to initialize the width and height attributes of the List component.",
+            "type": "WARN"
+        },
         {
             "message": "The template attribute of the Repeat component cannot contain any custom component decorated with '@ReusableV2'.",
             "type": "ERROR",
