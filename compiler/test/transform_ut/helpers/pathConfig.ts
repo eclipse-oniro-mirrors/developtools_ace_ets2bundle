@@ -253,6 +253,7 @@ export const UT_VALIDATE_PAGES: string[] = [
   'Decorators/builder_decorator/builder_decorator_lenient_literal',
   'Decorators/builder_decorator/builder_decorator_d4_has_param',
   'Decorators/builder_decorator/builder_decorator_multi_violation',
+  'Decorators/builder_decorator/builder_placeholder_list',
 
   'Decorators/process_component_build/@BuilderParam',
   'Decorators/process_component_build/arkUIComponent',
