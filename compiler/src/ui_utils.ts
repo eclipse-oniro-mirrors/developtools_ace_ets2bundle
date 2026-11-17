@@ -351,7 +351,7 @@ function checkVersionConditionFormat(
     });
     return undefined;
   }
-
+  checkDuplicatePropertyNames(versionConditionObj, log);
   const apiVersionValues: ISdkApiValues = {
     minApiVersionValue: undefined,
     maxApiVersionValue: undefined
@@ -460,6 +460,48 @@ function checkVersionConditionValueExistence(
     return false;
   }
   return true;
+}
+
+function checkDuplicatePropertyNames(
+  versionConditionObj: ts.ObjectLiteralExpression,
+  log: LogInfo[]
+): void {
+  if (!versionConditionObj.properties ||
+    !versionConditionObj.properties.length ||
+    versionConditionObj.properties.length === 0
+  ) {
+    return;
+  }
+  const minApiProps: ts.PropertyAssignment[] = [];
+  const maxApiProps: ts.PropertyAssignment[] = [];
+  let propertyName: string | undefined;
+  versionConditionObj.forEachChild(versionConditionProp => {
+    if (!ts.isPropertyAssignment(versionConditionProp)) {
+      return;
+    }
+    propertyName = ts.isIdentifier(versionConditionProp.name) || ts.isStringLiteral(versionConditionProp.name) ?
+      versionConditionProp.name.text :
+      undefined;
+    if (propertyName === MIN_API_VERSION) {
+      minApiProps.push(versionConditionProp);
+      return;
+    }
+    (propertyName === MAX_API_VERSION) && maxApiProps.push(versionConditionProp);
+  });
+  (minApiProps.length > 1 || maxApiProps.length > 1) &&
+    validateDuplicatePropertyNames(versionConditionObj, log);
+}
+
+function validateDuplicatePropertyNames(
+  node: ts.ObjectLiteralExpression,
+  log: LogInfo[]
+): void {
+  log.push({
+    type: LogType.ERROR,
+    message: `An object literal cannot have multiple properties with the same name.`,
+    pos: node.getStart(),
+    code: '10905392'
+  });
 }
 
 function getSdkMapPath(): string[] | undefined {
