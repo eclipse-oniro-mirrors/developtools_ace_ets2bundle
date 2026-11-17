@@ -358,6 +358,48 @@ mocha.describe('InteropContext', () => {
         }
     });
 
+    for (const { suffixes, expectedSuffix } of [
+        { suffixes: [], expectedSuffix: '.d.ets' },
+        { suffixes: ['.d.ets'], expectedSuffix: '.d.ets' },
+        { suffixes: ['.d.ats'], expectedSuffix: '.d.ats' },
+        { suffixes: ['.d.ets', '.d.ats'], expectedSuffix: '.d.ats' },
+        { suffixes: ['.d.ets', '.d.ats', '.override.d.ets'], expectedSuffix: '.override.d.ets' },
+        { suffixes: ['.d.ets', '.d.ats', '.override.d.ets', '.override.d.ats'], expectedSuffix: '.override.d.ats' },
+        { suffixes: ['.override.d.ets'], expectedSuffix: '.override.d.ets' },
+        { suffixes: ['.override.d.ats'], expectedSuffix: '.override.d.ats' }
+    ]) {
+        mocha.it(`writes declfile-info with ${suffixes.join(', ') || 'no declarations'}`, () => {
+            const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'interop-ats-declfile-info-'));
+            const moduleInfo: ArkTSEvolutionModule = {
+                ...FileManager.arkTSModuleMap.get('entry'),
+                packageName: 'atsDeclInfo',
+                modulePath: tempDir,
+                declgenV2OutPath: path.join(tempDir, 'declgenV2'),
+                declFilesPath: path.join(tempDir, 'declfile-info.json'),
+                dynamicFiles: [path.join(tempDir, 'Index.ets')]
+            };
+            FileManager.arkTSModuleMap.set(moduleInfo.packageName, moduleInfo);
+            try {
+                fs.mkdirSync(moduleInfo.declgenV2OutPath!, { recursive: true });
+                for (const suffix of suffixes) {
+                    fs.writeFileSync(path.join(moduleInfo.declgenV2OutPath!, 'Index' + suffix), '');
+                }
+                interopContext.writeDeclFileInfo(moduleInfo, 'entry');
+
+                const config = JSON.parse(fs.readFileSync(moduleInfo.declFilesPath!, 'utf-8'));
+                expect(config.packageName).to.equal(moduleInfo.packageName);
+                expect(config.files.Index).to.deep.equal({
+                    declPath: toUnixPath(path.join(moduleInfo.declgenV2OutPath!, 'Index' + expectedSuffix)),
+                    filePath: moduleInfo.dynamicFiles[0],
+                    ohmUrl: '@normalized:N&&&atsDeclInfo/Index&'
+                });
+            } finally {
+                FileManager.arkTSModuleMap.delete(moduleInfo.packageName);
+                fs.rmSync(tempDir, { recursive: true, force: true });
+            }
+        });
+    }
+
     mocha.after(() => {
         FileManager.cleanFileManagerObject();
     });

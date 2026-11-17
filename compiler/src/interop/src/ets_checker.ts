@@ -118,7 +118,8 @@ import { concatenateEtsOptions, getExternalComponentPaths } from './external_com
 import {
   getArkTSEvoDeclFilePath,
   queryDeclFileForInterop,
-  resolveRelativeModuleFromDecl
+  resolveRelativeModuleFromDecl,
+  resolveRelativeModuleFromSource
 } from './fast_build/ark_compiler/interop/process_arkts_evolution';
 import {
   FileManager,
@@ -1630,7 +1631,10 @@ export function resolveModuleNames(moduleNames: string[], containingFile: string
           } else {
             resolvedModules.push(result.resolvedModule);
           }
-        } else if (isMixCompile() && result.resolvedModule.resolvedFileName && /\.ets$/.test(result.resolvedModule.resolvedFileName)) {
+        } else if (isMixCompile() && result.resolvedModule.resolvedFileName &&
+          /\.(?:ets|ats)$/.test(result.resolvedModule.resolvedFileName)) {
+          // currently, we wont hit this branch, since tsc does not support ats files, 
+          // but we keep this branch for future support.
           const sourceFilePath = result.resolvedModule.resolvedFileName;
           let moduleItem: ts.ResolvedModuleFull | null | undefined;
           let cacheItem: DeclFileItem | undefined = declFilesCache.get(sourceFilePath);
@@ -1717,6 +1721,7 @@ export function resolveModuleNames(moduleNames: string[], containingFile: string
             /\.d\.ets$/.test(moduleName) ? moduleName : moduleName + EXTNAME_D_ETS);
           const arktsEvoDeclFilePath: string = isMixCompile() ?
             (resolveRelativeModuleFromDecl(moduleName, containingFile) ||
+              resolveRelativeModuleFromSource(moduleName, containingFile) ||
               getArkTSEvoDeclFilePath({ moduleRequest: moduleName, resolvedFileName: '' })) : '';
           if (ts.sys.fileExists(modulePath)) {
             resolvedModules.push(getResolveModule(modulePath, '.d.ts'));

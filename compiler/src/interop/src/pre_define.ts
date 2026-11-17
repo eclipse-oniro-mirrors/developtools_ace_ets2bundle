@@ -176,6 +176,8 @@ export const CUSTOM_DECORATOR_NAME: Set<string> = new Set([
 ]);
 
 export const EXTNAME_ETS: string = '.ets';
+export const EXTNAME_ATS: string = '.ats';
+export const EXTNAME_D_ATS: string = '.d.ats';
 export const NODE_MODULES: string = 'node_modules';
 export const PACKAGES: string = 'pkg_modules';
 export const INDEX_ETS: string = 'index.ets';
