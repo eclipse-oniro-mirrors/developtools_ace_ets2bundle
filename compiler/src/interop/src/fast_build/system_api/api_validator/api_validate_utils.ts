@@ -279,9 +279,12 @@ export function resolveNamespaceImportMember(
 
 export function resolveInitializerExpression(
   expression: ts.Expression,
-  typeChecker: ts.TypeChecker
+  typeChecker?: ts.TypeChecker
 ): ts.Expression | undefined {
   try {
+    if (!typeChecker) {
+      return undefined;
+    }
     if (ts.isIdentifier(expression)) {
       return resolveIdentifierInitializer(expression, typeChecker);
     }
@@ -575,7 +578,7 @@ export class SdkComparisonHelper {
     }
 
     // 解析比较值：若为 const/let/enum/import 引用则取其初始值，否则用原始文本。
-    const resolvedInitializer = this.resolveInitializerExpression(valueExpression);
+    const resolvedInitializer = resolveInitializerExpression(valueExpression, this.typeChecker);
     const resolvedValue = resolvedInitializer
       ? this.extractValueFromInitializer(resolvedInitializer)
       : targetValue;
