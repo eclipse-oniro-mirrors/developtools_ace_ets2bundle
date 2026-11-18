@@ -65,7 +65,8 @@ import {
   abilityPagesFullPath,
   globalProgram,
   resetMain,
-  globalModulePaths
+  globalModulePaths,
+  processedAvailableNodes
 } from '../../../main';
 import {
   appComponentCollection,
@@ -122,6 +123,8 @@ import {
 import arkoalaProgramTransform, { ArkoalaPluginOptions } from './arkoala-plugin';
 import processStructComponentV2 from '../../process_struct_componentV2';
 import { shouldETSOrTSFileTransformToJSWithoutRemove } from '../ark_compiler/utils';
+import { isApiAvailableStatement } from '../system_api/api_check_utils';
+import { isPointVersion, processAvailableStatement } from '../../process_available_statement';
 import { MemoryMonitor } from '../meomry_monitor/rollup-plugin-memory-monitor';
 import { MemoryDefine } from '../meomry_monitor/memory_define';
 import { ModuleSourceFile } from '../ark_compiler/module/module_source_file';
@@ -513,7 +516,7 @@ async function transform(code: string, id: string) {
     const result: ts.TranspileOutput = ts.transpileModule(newContent, {
       compilerOptions: compilerOptions,
       fileName: id,
-      transformers: { before: [processUISyntax(null, false, undefined, id, null, metaInfo)] }
+      transformers: { before: [processUISyntax(null, false, undefined, id, this.share, metaInfo)] }
     });
 
     resetCollection();
@@ -572,7 +575,11 @@ async function transform(code: string, id: string) {
   const metaInfo: Object = this.getModuleInfo(id).meta;
   ProjectCollections.projectWhiteListManager?.setCurrentCollector(id);
   const eventValidateEts = createAndStartEvent(eventEtsTransformForEsmodule, 'validateEts');
-  validateEts(code, id, this.getModuleInfo(id).isEntry, logger, targetSourceFile, hvigorLogger, metaInfo);
+  validateEts(code, id, this.getModuleInfo(id).isEntry, logger, targetSourceFile, hvigorLogger, metaInfo,
+    useCheckerlessImportTransform);
+  if (useCheckerlessImportTransform) {
+    validateTs(code, id, this.getModuleInfo(id).isEntry, logger, targetSourceFile, hvigorLogger);
+  }
   stopEvent(eventValidateEts);
   const emitResult: EmitResult = { outputText: '', sourceMapText: '' };
   const writeFile: ts.WriteFileCallback = (fileName: string, data: string) => {
@@ -791,16 +798,50 @@ function setPkgNameForFile(moduleInfo: Object): void {
 }
 
 function validateEts(code: string, id: string, isEntry: boolean, logger: Object, sourceFile: ts.SourceFile, 
-  hvigorLogger: Object | undefined = undefined, metaInfo: Object = undefined): void {
+  hvigorLogger: Object | undefined = undefined, metaInfo: Object = undefined,
+  useCheckerlessImportTransform: boolean = false): void {
   if (/\.ets$/.test(id)) {
     clearCollection();
     const fileQuery: string = isEntry && !abilityPagesFullPath.has(path.resolve(id).toLowerCase()) ? '?entry' : '';
-    const log: LogInfo[] = validateUISyntax(code, code, id, fileQuery, sourceFile);
+    const log: LogInfo[] = validateUISyntax(code, code, id, fileQuery, sourceFile, useCheckerlessImportTransform);
     parseIntent.collectIntentFactsFromSourceFile(sourceFile, id, log, metaInfo);
     if (log.length && !projectConfig.ignoreWarning) {
       emitLogInfo(logger, log, true, id, hvigorLogger);
     }
   }
+}
+
+function validateTs(code: string, id: string, isEntry: boolean, logger: Object,
+  sourceFile: ts.SourceFile, hvigorLogger: Object | undefined = undefined): void {
+  if (!/\.ts$/.test(id) || /\.d\.ts$/.test(id)) {
+    return;
+  }
+  if (!code || !code.includes('.apiAvailable')) {
+    return;
+  }
+  if (isPointVersion(projectConfig.originCompatibleSdkVersion)) {
+    return;
+  }
+  if (!sourceFile) {
+    return;
+  }
+  cacheAvailableNodes(sourceFile);
+}
+
+function cacheAvailableNodes(node: ts.Node): void {
+  if (!processedAvailableNodes) {
+    return;
+  }
+  if (isApiAvailableStatement(node)) {
+    const key: string = node.getSourceFile().fileName + '_' + node.pos + '_' + node.end;
+    if (!processedAvailableNodes.has(key)) {
+      const result = processAvailableStatement(node);
+      if (result !== undefined) {
+        processedAvailableNodes.set(key, result);
+      }
+    }
+  }
+  ts.forEachChild(node, cacheAvailableNodes);
 }
 
 function jsBundlePreProcess(code: string, id: string, isEntry: boolean, logger: Object,

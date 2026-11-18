@@ -123,7 +123,7 @@ import {
   parseBuilderDecoratorOptions,
   BuilderDecoratorOptions
 } from './utils';
-import { globalProgram, projectConfig, abilityPagesFullPath } from '../main';
+import { globalProgram, projectConfig, abilityPagesFullPath, processedAvailableNodes } from '../main';
 import {
   collectExtend,
   isExtendFunction,
@@ -144,6 +144,12 @@ import { ARKTS_1_2 } from './fast_build/ark_compiler/interop/pre_define';
 import { ISdkApiValues, fetchStylesDecoratorVersionCondition } from './ui_utils';
 import { checkScrollContainerSize } from './scroll_container_size_check';
 import { validateBuilderDecorator } from './parse_builder_optimize';
+import { createHelperFunctionDeclaration, isPointVersion, processAvailableStatement } from './process_available_statement';
+import {
+  checkTypeReference,
+  validateModuleSpecifier,
+  isApiAvailableStatement
+} from './fast_build/system_api/api_check_utils';
 
 export class ComponentCollection {
   localStorageName: string = null;
@@ -263,7 +269,8 @@ const CUSTOM_ENV_KEY: string = 'CustomEnvKey';
 const CREATE: string = 'create';
 
 export function validateUISyntax(source: string, content: string, filePath: string,
-  fileQuery: string, sourceFile: ts.SourceFile = null): LogInfo[] {
+  fileQuery: string, sourceFile: ts.SourceFile = null,
+  useCheckerlessImportTransform: boolean = false): LogInfo[] {
   let log: LogInfo[] = [];
   if (process.env.compileMode === 'moduleJson' ||
     path.resolve(filePath) !== path.resolve(projectConfig.projectPath || '', 'app.ets')) {
@@ -275,7 +282,7 @@ export function validateUISyntax(source: string, content: string, filePath: stri
     }
     const allComponentNames: Set<string> =
       new Set([...INNER_COMPONENT_NAMES, ...componentCollection.customComponents]);
-    checkUISyntax(filePath, allComponentNames, content, log, sourceFile, fileQuery);
+    checkUISyntax(filePath, allComponentNames, content, log, sourceFile, fileQuery, useCheckerlessImportTransform);
     componentCollection.customComponents.forEach(item => componentInfo.componentNames.add(item));
   }
 
@@ -556,11 +563,17 @@ function collectLocalStorageName(node: ts.Decorator): void {
   }
 }
 
+let needProcessAvailable: boolean = false;
+let useCheckerlessImportTransform: boolean = false;
+
 function checkUISyntax(filePath: string, allComponentNames: Set<string>, content: string,
-  log: LogInfo[], sourceFile: ts.SourceFile | null, fileQuery: string): void {
+  log: LogInfo[], sourceFile: ts.SourceFile | null, fileQuery: string,
+  checkerlessImportTransform: boolean): void {
   if (!sourceFile) {
     sourceFile = ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.ETS);
   }
+  needProcessAvailable = content.includes('.apiAvailable');
+  useCheckerlessImportTransform = checkerlessImportTransform;
   visitAllNode(sourceFile, sourceFile, allComponentNames, log, false, false, false, false, fileQuery, false, false,
     undefined, undefined);
 }
@@ -603,6 +616,9 @@ function visitAllNode(node: ts.Node, sourceFileNode: ts.SourceFile, allComponent
       return;
     }
   }
+  if (useCheckerlessImportTransform) {
+    processAvailableNode(node);
+  }
   checkDecoratorCount(node, sourceFileNode, log);
   checkDecorator(sourceFileNode, node, log, structContext, classContext, isObservedClass, isComponentV2,
     isObservedV1Class, isSendableClass, classNode, structNode);
@@ -616,6 +632,23 @@ function visitAllNode(node: ts.Node, sourceFileNode: ts.SourceFile, allComponent
   isSendableClass = false;
   classNode = undefined;
   structNode = undefined;
+}
+
+function processAvailableNode(node: ts.Node): void {
+  if (!processedAvailableNodes) {
+    return;
+  }
+  if (needProcessAvailable && !isPointVersion(projectConfig.originCompatibleSdkVersion) && isApiAvailableStatement(node)) {
+    const key: string = node.getSourceFile().fileName + '_' + node.pos + '_' + node.end;
+    if (processedAvailableNodes.has(key)) {
+      return;
+    }
+    const result = processAvailableStatement(node);
+    if (result !== undefined) {
+      processedAvailableNodes.set(key, result);
+    }
+  }
+  return;
 }
 
 function validateObservedProperty(node: ts.PropertyDeclaration, isComponentV2: boolean, log: LogInfo[],

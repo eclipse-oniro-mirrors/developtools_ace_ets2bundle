@@ -153,8 +153,10 @@ import {
   projectConfig,
   partialUpdateConfig,
   rawfileResources,
-  globalProgram
+  globalProgram,
+  processedAvailableNodes
 } from '../main';
+import { isEarlyReleaseCheckerEnabled } from './checkerless_import_transform';
 import {
   createCustomComponentNewExpression,
   createViewCreate
@@ -215,6 +217,7 @@ export function processUISyntax(program: ts.Program, ut = false,
     let ReusePool: { hasReusePool: boolean } = { hasReusePool: false };
     let needProcessAvailable: boolean = false;
     let needsAvailableHelper = false;
+    let useCheckerlessImportTransform: boolean = isEarlyReleaseCheckerEnabled(share?.projectConfig);
     return (node: ts.SourceFile) => {
       eventProcessUISyntax = createAndStartEvent(parentEvent, 'processUISyntax');
       pagesDir = path.resolve(path.dirname(node.fileName));
@@ -487,11 +490,19 @@ export function processUISyntax(program: ts.Program, ut = false,
           node.illegalDecorators = undefined;
         }
         // 若CompatibleSdkVersion为点分格式，且首位大于等于26时，不进行转换
-      } else if (needProcessAvailable && !isPointVersion(projectConfig.originCompatibleSdkVersion) && isApiAvailableStatement(node)) {
-        const result = processAvailableStatement(node);
-        if (result !== undefined) {
-          node = result;
-          needsAvailableHelper = true;
+      } else if (needProcessAvailable && !isPointVersion(projectConfig.originCompatibleSdkVersion) && isRealNode(node)) {
+        if (useCheckerlessImportTransform) {
+          const key: string = node.getSourceFile().fileName + '_' + node.pos + '_' + node.end;
+          if (processedAvailableNodes && processedAvailableNodes.has(key)) {
+            node = processedAvailableNodes.get(key)!;
+            needsAvailableHelper = true;
+          }
+        } else if (isApiAvailableStatement(node)) {
+          const result = processAvailableStatement(node);
+          if (result !== undefined) {
+            node = result;
+            needsAvailableHelper = true;
+          }
         }
       }
       return ts.visitEachChild(node, processAllNodes, context);
@@ -506,14 +517,35 @@ export function processUISyntax(program: ts.Program, ut = false,
       } else if (ts.isTypeReferenceNode(node)) {
         checkTypeReference(node, transformLog);
         // 若CompatibleSdkVersion为点分格式，且首位大于等于26时，不进行转换
-      } else if (needProcessAvailable && !isPointVersion(projectConfig.originCompatibleSdkVersion) && isApiAvailableStatement(node)) {
-        const result = processAvailableStatement(node);
-        if (result !== undefined) {
-          node = result;
-          needsAvailableHelper = true;
+      } else if (needProcessAvailable && !isPointVersion(projectConfig.originCompatibleSdkVersion) && isRealNode(node)) {
+        if (useCheckerlessImportTransform) {
+          const key: string = node.getSourceFile().fileName + '_' + node.pos + '_' + node.end;
+          if (processedAvailableNodes && processedAvailableNodes.has(key)) {
+            node = processedAvailableNodes.get(key)!;
+            needsAvailableHelper = true;
+          }
+        } else {
+          const result = processAvailableStatement(node);
+          if (result !== undefined) {
+            node = result;
+            needsAvailableHelper = true;
+          }
         }
       }
       return ts.visitEachChild(node, processResourceNode, context);
+    }
+
+    function isRealNode(node: ts.Node): boolean {
+      if (node.flags && node.flags & ts.NodeFlags.Synthesized) {
+        return false;
+      }
+      if (node.pos < 0 || node.end < 0) {
+        return false;
+      }
+      if (node.kind === ts.SyntaxKind.Missing) {
+        return false;
+      }
+      return true;
     }
 
     function isWrapBuilderFunction(node: ts.Node): boolean {
