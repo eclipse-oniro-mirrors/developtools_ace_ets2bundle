@@ -36,11 +36,10 @@ function inspect(source) {
     }
     if (ts.isVariableStatement(node) && node.modifiers &&
         node.modifiers.some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword)) {
-      for (const declaration of node.declarationList.declarations) {
-        if (ts.isIdentifier(declaration.name) && declaration.name.text.startsWith('__staticInteropConcurrent_')) {
-          bridges.push(declaration.name.text);
-        }
-      }
+      const declarations = node.declarationList.declarations.filter(declaration =>
+        ts.isIdentifier(declaration.name) &&
+        declaration.name.text.startsWith('__staticInteropConcurrent_'));
+      bridges.push(...declarations.map(declaration => declaration.name.text));
     }
     if (ts.isModuleDeclaration(node) && node.name &&
         node.name.text.startsWith('__staticInteropConcurrent_')) {
