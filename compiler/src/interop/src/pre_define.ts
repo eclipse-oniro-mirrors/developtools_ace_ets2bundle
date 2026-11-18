@@ -14,6 +14,7 @@
  */
 
 import path from 'path';
+import fs from 'fs';
 
 export const NATIVE_MODULE: Set<string> = new Set(
   ['system.app', 'ohos.app', 'system.router', 'system.curves', 'ohos.curves', 'system.matrix4', 'ohos.matrix4']);
@@ -775,3 +776,14 @@ export const WRAPPED_BUILDER_NON_NULL_MESSAGE: string =
   WRAPPED_BUILDER_MESSAGE_TEMPLATE.replace('%s', 'by a non-null assertion');
 export const WRAPPED_BUILDER_TYPE_ASSERTION_MESSAGE: string =
   WRAPPED_BUILDER_MESSAGE_TEMPLATE.replace('%s', 'by a type assertion');
+
+// Local development and source-tree HAP builds retain their declarations directory.
+// Published SDKs provide the declarations in the SDK component directory.
+export function getComponentDirectory(loaderRoot: string = path.resolve(__dirname, '..')): string {
+  return path.resolve(loaderRoot, '../../component');
+}
+
+export function getDeclarationsDirectory(loaderRoot: string = path.resolve(__dirname, '..')): string {
+  const local = path.resolve(loaderRoot, 'declarations');
+  return fs.existsSync(local) ? local : getComponentDirectory(loaderRoot);
+}

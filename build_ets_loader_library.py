@@ -81,31 +81,31 @@ def do_build(build_cmd, uglify_cmd, copy_json_cmd, build_declarations_file_cmd, 
         build_utils.check_output(cmd)
 
 
-def main():
-    options = parse_args()
-    if options.sdk_build_arkts == 'true':
-        options.ets_loader_src_dir = os.path.join(options.ets_loader_src_dir, 'interop/src')
-        options.copy_src_dir = os.path.join(options.copy_src_dir, 'interop/src')
-    
+def get_babel_cmd(options):
     build_cmd = [
         options.node, options.babel_js, options.ets_loader_src_dir
     ]
     build_cmd.extend(['--out-dir', options.output_dir])
     build_cmd.extend(['--extensions', '.ts'])
     build_cmd.extend(['--config-file', options.babel_config_js])
-    depfile_deps = [options.node, options.babel_js, options.babel_config_js]
-    depfile_deps.extend(build_utils.get_all_files(options.ets_loader_src_dir))
-
-    uglify_cmd = [options.node, options.uglify_source_js, options.output_dir]
-    depfile_deps.append(options.uglify_source_js)
-
-    copy_json_cmd = [options.node, options.copy_json_files_js, options.copy_src_dir, options.copy_dest_dir]
-    depfile_deps.append(options.copy_json_files_js)
     if options.sdk_build_arkts == 'false':
         build_cmd.extend(['--ignore', os.path.join(options.ets_loader_src_dir, 'interop')])
-        copy_json_cmd.extend(['--ignore', os.path.join(options.copy_src_dir, 'interop')])
+    return build_cmd
 
-    build_declarations_file_cmd = [
+
+def get_uglify_cmd(options):
+    return [options.node, options.uglify_source_js, options.output_dir]
+
+
+def get_copy_json_cmd(options):
+    copy_json_cmd = [options.node, options.copy_json_files_js, options.copy_src_dir, options.copy_dest_dir]
+    if options.sdk_build_arkts == 'false':
+        copy_json_cmd.extend(['--ignore', os.path.join(options.copy_src_dir, 'interop')])
+    return copy_json_cmd
+
+
+def get_declarations_cmd(options):
+    return [
         options.node,
         options.build_declarations_file_js,
         options.declarations_file_dir,
@@ -113,9 +113,10 @@ def main():
         options.output_dir,
         options.build_public_sdk
     ]
-    depfile_deps.append(options.build_declarations_file_js)
 
-    build_kit_configs_file_cmd = [
+
+def get_kit_configs_cmd(options):
+    return [
         options.node,
         options.build_kit_configs_file_js,
         options.kit_configs_file_dir,
@@ -124,20 +125,49 @@ def main():
         options.arkts_apis_file_dir,
         options.output_dir
     ]
+
+
+def get_depfile_deps(options):
+    depfile_deps = [options.node, options.babel_js, options.babel_config_js]
+    depfile_deps.extend(build_utils.get_all_files(options.ets_loader_src_dir))
+    depfile_deps.append(options.uglify_source_js)
+    depfile_deps.append(options.copy_json_files_js)
+    depfile_deps.append(options.build_declarations_file_js)
     depfile_deps.append(options.build_kit_configs_file_js)
+    return depfile_deps
+
+
+def get_output_paths(options):
+    return ([
+        options.output_dir,
+        options.output_declarations_dir,
+        os.path.join(options.output_declarations_dir, "global.d.ts"),
+        os.path.join(options.output_declarations_dir, "featureability.d.ts"),
+        options.output_component_config_file,
+        options.output_form_config_file,
+        options.output_build_config_file,
+        options.output_kit_configs_dir])
+
+
+def main():
+    options = parse_args()
+    if options.sdk_build_arkts == 'true':
+        options.ets_loader_src_dir = os.path.join(options.ets_loader_src_dir, 'interop/src')
+        options.copy_src_dir = os.path.join(options.copy_src_dir, 'interop/src')
+
+    build_cmd = get_babel_cmd(options)
+    uglify_cmd = get_uglify_cmd(options)
+    copy_json_cmd = get_copy_json_cmd(options)
+    build_declarations_file_cmd = get_declarations_cmd(options)
+    build_kit_configs_file_cmd = get_kit_configs_cmd(options)
+    depfile_deps = get_depfile_deps(options)
 
     build_utils.call_and_write_depfile_if_stale(
         lambda: do_build(build_cmd, uglify_cmd, copy_json_cmd, build_declarations_file_cmd, build_kit_configs_file_cmd),
         options,
         depfile_deps=depfile_deps,
         input_paths=depfile_deps,
-        output_paths=([
-            options.output_dir,
-            options.output_declarations_dir,
-            options.output_component_config_file,
-            options.output_form_config_file,
-            options.output_build_config_file,
-            options.output_kit_configs_dir]))
+        output_paths=get_output_paths(options))
 
 if __name__ == '__main__':
     sys.exit(main())

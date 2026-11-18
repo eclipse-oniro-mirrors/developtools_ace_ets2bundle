@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+import { getDeclarationsDirectory, getComponentDirectory } from '../../../pre_define';
+
 import fs from 'fs';
 import path from 'path';
 import * as ts from 'typescript';
@@ -718,9 +720,9 @@ export function collectSDKInfo(share: Object): {
     path.resolve(staticInteroSDKBasePath, './bridge/arkts')
   ].map(toUnixPath));
 
-  const declarationsPath: string = path.resolve(share.projectConfig.etsLoaderPath, './declarations').replace(/\\/g, '/');
+  const declarationsPath: string = getDeclarationsDirectory(share.projectConfig.etsLoaderPath).replace(/\\/g, '/');
   const componentPath: string = path.resolve(share.projectConfig.etsLoaderPath, './components').replace(/\\/g, '/');
-  const etsComponentPath: string = path.resolve(share.projectConfig.etsLoaderPath, '../../component').replace(/\\/g, '/');
+  const etsComponentPath: string = getComponentDirectory(share.projectConfig.etsLoaderPath).replace(/\\/g, '/');
 
   if (process.env.externalApiPaths) {
     const externalApiPaths = path.resolve(process.env.externalApiPaths, '../');
