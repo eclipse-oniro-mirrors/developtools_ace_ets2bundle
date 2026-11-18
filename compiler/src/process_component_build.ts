@@ -152,7 +152,9 @@ import {
   HOVER,
   WRAPPED_BUILDER_PARENTHESIZED_MESSAGE,
   WRAPPED_BUILDER_NON_NULL_MESSAGE,
-  WRAPPED_BUILDER_TYPE_ASSERTION_MESSAGE
+  WRAPPED_BUILDER_TYPE_ASSERTION_MESSAGE,
+  SAFEAREAINSET,
+  SAFEAREAINSET_NAME_RANGE
 } from './pre_define';
 import {
   INNER_COMPONENT_NAMES,
@@ -174,7 +176,9 @@ import {
   STYLES_ATTRIBUTE,
   INNER_CUSTOM_LOCALBUILDER_METHOD,
   COMMON_ATTRS,
-  EXT_WHITE_LIST
+  EXT_WHITE_LIST,
+  INNER_STYLE_VERSION,
+  GLOBAL_STYLE_VERSION
 } from './component_map';
 import {
   componentCollection,
@@ -219,6 +223,7 @@ import {
   concatenateEtsOptions,
   getExternalComponentPaths
 } from './external_component_map';
+import { ISdkApiValues, updateStylesStatementsWithSdkVersions } from './ui_utils';
 
 export function processComponentBuild(node: ts.MethodDeclaration,
   log: LogInfo[]): ts.MethodDeclaration {
@@ -1086,7 +1091,10 @@ function recurseRepeatExpression(node: ts.CallExpression | ts.PropertyAccessExpr
   ts.PropertyAccessExpression | ts.CallExpression {
   if (ts.isCallExpression(node) && node.expression && ts.isIdentifier(node.expression) &&
     node.expression.getText() === COMPONENT_REPEAT) {
-    return ts.factory.createCallExpression(node.expression, node.typeArguments, [...node.arguments, ts.factory.createThis()]);
+    // the runtime Repeat signature is (arr, owningView, options): the owning view is
+    // inserted as the second argument, user-given options (e.g. RepeatOptions) follow it
+    return ts.factory.createCallExpression(node.expression, node.typeArguments,
+      [...node.arguments.slice(0, 1), ts.factory.createThis(), ...node.arguments.slice(1)]);
   } else if (ts.isPropertyAccessExpression(node)) {
     return ts.factory.updatePropertyAccessExpression(node,
       recurseRepeatExpression(node.expression, log, isBuilder, isGlobalBuilder, isTransition, isInRepeatTemplate), node.name);
@@ -2659,19 +2667,33 @@ function parseBuilderNode(node: ts.Node, propertyName: string):
       return getParsedBuilderAttrArgumentWithParams(node);
     }
   } else if (ts.isObjectLiteralExpression(node)) {
-    return processObjectPropertyBuilder(node);
+    return processObjectPropertyBuilder(node, propertyName === SAFEAREAINSET ?
+      propertyName : undefined);
   } else if (ts.isPropertyAccessExpression(node)) {
     return node;
   }
   return undefined;
 }
 
-export function processObjectPropertyBuilder(node: ts.ObjectLiteralExpression): ts.ObjectLiteralExpression {
+function checkObjectPropertyBuilderName(
+  currentPropertyName: string,
+  rootAttributeName?: string
+): boolean {
+  if (!rootAttributeName) {
+    return [CUSTOM_DIALOG_CONTROLLER_BUILDER, HEADER, INDICATORBUILDER, FOOTER, START, END, PREVIEW, TITLE].includes(currentPropertyName);
+  }
+  return (rootAttributeName === SAFEAREAINSET) && SAFEAREAINSET_NAME_RANGE.has(currentPropertyName);
+}
+
+export function processObjectPropertyBuilder(
+  node: ts.ObjectLiteralExpression,
+  rootAttributeName?: string
+): ts.ObjectLiteralExpression {
   const newProperties: ts.PropertyAssignment[] = [];
   node.properties.forEach((property: ts.PropertyAssignment) => {
     if (property.name && ts.isIdentifier(property.name) &&
-      [CUSTOM_DIALOG_CONTROLLER_BUILDER, HEADER, INDICATORBUILDER, FOOTER, START, END, PREVIEW, TITLE].includes(
-        property.name.escapedText.toString()) && property.initializer) {
+      checkObjectPropertyBuilderName(property.name.escapedText.toString(), rootAttributeName) &&
+      property.initializer) {
       warnIfWrappedBuilderPropertyInitializer(property.initializer);
       if (isPropertyAccessExpressionNode(property.initializer) || ts.isIdentifier(property.initializer) &&
         storedFileInfo.builderLikeCollection.has(property.initializer.escapedText.toString())) {
@@ -2689,7 +2711,7 @@ export function processObjectPropertyBuilder(node: ts.ObjectLiteralExpression): 
         newProperties.push(transformBuilderCallExpression(property));
       } else if (ts.isObjectLiteralExpression(property.initializer)) {
         newProperties.push(ts.factory.updatePropertyAssignment(property, property.name,
-          processObjectPropertyBuilder(property.initializer)));
+          processObjectPropertyBuilder(property.initializer, rootAttributeName)));
       } else {
         newProperties.push(property);
       }
@@ -3151,7 +3173,16 @@ function addComponentAttr(temp, node: ts.Identifier, lastStatement,
   } else if (GLOBAL_STYLE_FUNCTION.has(propName) || INNER_STYLE_FUNCTION.has(propName)) {
     const styleBlock: ts.Block =
         INNER_STYLE_FUNCTION.get(propName) || GLOBAL_STYLE_FUNCTION.get(propName);
-    if (styleBlock.statements.length > 0) {
+    const isInnerStyles: boolean = INNER_STYLE_FUNCTION.has(propName);
+    const sdkApiVersions: ISdkApiValues | undefined = isInnerStyles ? INNER_STYLE_VERSION.get(propName) :
+      GLOBAL_STYLE_VERSION.get(propName);
+    if (styleBlock.statements.length > 0 && !!sdkApiVersions) {
+      const tempStatements: ts.Statement[] = [];
+      bindComponentAttr(styleBlock.statements[0] as ts.ExpressionStatement, identifierNode,
+        tempStatements, log, true, true);
+      const ifVersionStatement: ts.IfStatement | undefined = updateStylesStatementsWithSdkVersions(tempStatements, sdkApiVersions);
+      ifVersionStatement && (statements.push(ifVersionStatement)) && (storedFileInfo.hasAttributeExtension = true);
+    } else if (styleBlock.statements.length > 0) {
       bindComponentAttr(styleBlock.statements[0] as ts.ExpressionStatement, identifierNode,
         statements, log, false, true, newImmutableStatements);
       if (isRecycleComponent || (hasInitialRenderCondition() && permitInitialRender)) {
@@ -3478,20 +3509,39 @@ function traverseStateStylesAttr(temp, statements: ts.Statement[],
       item.initializer.expression.getText() === THIS &&
       INNER_STYLE_FUNCTION.get(item.initializer.name.getText())) {
       const name: string = item.initializer.name.getText();
-      bindComponentAttr(INNER_STYLE_FUNCTION.get(name).statements[0] as ts.ExpressionStatement,
-        identifierNode, statements, log, false, true, newImmutableStatements);
-      if (isRecycleComponent || (hasInitialRenderCondition() && permitInitialRender)) {
+      const sdkApiVersions: ISdkApiValues | undefined = INNER_STYLE_VERSION.get(name);
+      if (sdkApiVersions) {
+        const tempStatements: ts.Statement[] = [];
         bindComponentAttr(INNER_STYLE_FUNCTION.get(name).statements[0] as ts.ExpressionStatement,
-          identifierNode, updateStatements, log, false, true, newImmutableStatements);
+          identifierNode, tempStatements, log, true, true);
+        const ifVersionStatement: ts.IfStatement | undefined = updateStylesStatementsWithSdkVersions(tempStatements, sdkApiVersions);
+        ifVersionStatement && (statements.push(ifVersionStatement)) && (storedFileInfo.hasAttributeExtension = true);
+      } else {
+        bindComponentAttr(INNER_STYLE_FUNCTION.get(name).statements[0] as ts.ExpressionStatement,
+          identifierNode, statements, log, false, true, newImmutableStatements);
+        if (isRecycleComponent || (hasInitialRenderCondition() && permitInitialRender)) {
+          bindComponentAttr(INNER_STYLE_FUNCTION.get(name).statements[0] as ts.ExpressionStatement,
+            identifierNode, updateStatements, log, false, true, newImmutableStatements);
+        }
       }
     } else if (ts.isIdentifier(item.initializer) &&
       GLOBAL_STYLE_FUNCTION.get(item.initializer.getText())) {
       const name: string = item.initializer.getText();
-      bindComponentAttr(GLOBAL_STYLE_FUNCTION.get(name).statements[0] as ts.ExpressionStatement,
-        identifierNode, statements, log, false, true, newImmutableStatements);
-      if (isRecycleComponent || (hasInitialRenderCondition() && permitInitialRender)) {
+      const sdkApiVersions: ISdkApiValues | undefined = GLOBAL_STYLE_VERSION.get(name);
+      if (sdkApiVersions) {
+        const tempStatements: ts.Statement[] = [];
         bindComponentAttr(GLOBAL_STYLE_FUNCTION.get(name).statements[0] as ts.ExpressionStatement,
-          identifierNode, updateStatements, log, false, true, newImmutableStatements);
+          identifierNode, tempStatements, log, true, true);
+        const ifVersionStatement: ts.IfStatement | undefined = updateStylesStatementsWithSdkVersions(tempStatements, sdkApiVersions);
+        ifVersionStatement && (statements.push(ifVersionStatement)) && (storedFileInfo.hasAttributeExtension = true);
+      }
+      else {
+        bindComponentAttr(GLOBAL_STYLE_FUNCTION.get(name).statements[0] as ts.ExpressionStatement,
+          identifierNode, statements, log, false, true, newImmutableStatements);
+        if (isRecycleComponent || (hasInitialRenderCondition() && permitInitialRender)) {
+          bindComponentAttr(GLOBAL_STYLE_FUNCTION.get(name).statements[0] as ts.ExpressionStatement,
+            identifierNode, updateStatements, log, false, true, newImmutableStatements);
+        }
       }
     } else if (ts.isObjectLiteralExpression(item.initializer) &&
       item.initializer.properties.length === 1 &&

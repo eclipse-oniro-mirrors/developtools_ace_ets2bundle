@@ -113,7 +113,8 @@ export function apiTransform() {
     beforeBuildEnd(): void {
       this.share.allFiles = allFiles;
       const shouldMergeHarWidget: boolean = projectConfig.harWidgetMerge && projectConfig.harWidgetPaths.length > 0;
-      if (process.env.watchMode !== 'true' && !projectConfig.xtsMode && (needComponentCollection || shouldMergeHarWidget)) {
+      const hapHasNoCards: boolean = Object.keys(projectConfig.cardEntryObj).length === 0;
+      if (process.env.watchMode !== 'true' && !projectConfig.xtsMode && (needComponentCollection || (shouldMergeHarWidget && hapHasNoCards))) {
         let widgetPath: string;
         if (projectConfig.widgetCompile || shouldMergeHarWidget) {
           widgetPath = path.resolve(projectConfig.aceModuleBuild, 'widget');

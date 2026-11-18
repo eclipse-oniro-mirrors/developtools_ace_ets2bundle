@@ -39,6 +39,8 @@ import {
   EXTEND_DECORATORS,
   COMPONENT_EXTEND_DECORATOR,
   COMPONENT_ANIMATABLE_EXTEND_DECORATOR,
+  COMPONENT_BUILDER_DECORATOR,
+  BUILDER_DECORATOR_OPTION_IS_PLACEHOLDER,
   COMPONENT_CONSTRUCTOR_LOCALSTORAGE_TYPE_PU,
   GET_SHARED,
   COMPONENT_CONSTRUCTOR_UNDEFINED,
@@ -54,6 +56,7 @@ import {
   HvigorErrorInfo
 } from './hvigor_error_code/hvigor_error_info';
 import { EXT_WHITE_LIST } from './component_map';
+import { getDecoratorNameFromAst } from './process_struct_componentV2';
 
 export enum LogType {
   ERROR = 'ERROR',
@@ -234,16 +237,16 @@ export function hasDecorator(node: ts.MethodDeclaration | ts.FunctionDeclaration
       AnimatableExtend: false
     };
     for (let i = 0; i < decorators.length; i++) {
-      const originalDecortor: string = decorators[i].getText().replace(/\(.*\)$/, '').replace(/\s*/g, '').trim();
+      const originalDecorator: string = getDecoratorNameFromAst(decorators[i]);
       if (log && EXTEND_DECORATORS.includes(decortorName)) {
-        if (originalDecortor === COMPONENT_EXTEND_DECORATOR) {
+        if (originalDecorator === COMPONENT_EXTEND_DECORATOR) {
           extendResult.Extend = true;
         }
-        if (originalDecortor === COMPONENT_ANIMATABLE_EXTEND_DECORATOR) {
+        if (originalDecorator === COMPONENT_ANIMATABLE_EXTEND_DECORATOR) {
           extendResult.AnimatableExtend = true;
         }
       } else {
-        if (originalDecortor === decortorName) {
+        if (originalDecorator === decortorName) {
           if (customBuilder) {
             customBuilder.push(...decorators.slice(i + 1), ...decorators.slice(0, i));
           }
@@ -263,6 +266,97 @@ export function hasDecorator(node: ts.MethodDeclaration | ts.FunctionDeclaration
       (decortorName === COMPONENT_ANIMATABLE_EXTEND_DECORATOR && extendResult.AnimatableExtend);
   }
   return false;
+}
+
+export interface BuilderDecoratorOptions {
+  isPlaceholder: boolean;
+  present: boolean;
+  valueInvalid: boolean;
+}
+
+function getDecoratorExpressionName(expression: ts.Expression): string {
+  if (ts.isIdentifier(expression)) {
+    return expression.escapedText.toString();
+  }
+  if (ts.isCallExpression(expression) && ts.isIdentifier(expression.expression)) {
+    return expression.expression.escapedText.toString();
+  }
+  return '';
+}
+
+export function isBuilderDecorator(decorator: ts.Decorator): boolean {
+  return `@${getDecoratorExpressionName(decorator.expression)}` === COMPONENT_BUILDER_DECORATOR;
+}
+
+function isDecoratorOptionKey(name: ts.PropertyName, key: string): boolean {
+  if (ts.isIdentifier(name)) {
+    return name.escapedText.toString() === key;
+  }
+  if (ts.isStringLiteral(name)) {
+    return name.text === key;
+  }
+  return false;
+}
+
+/**
+ * Locates the @Builder decorator in `decorators`, or undefined when there is none.
+ */
+export function findBuilderDecorator(decorators: readonly ts.Decorator[]): ts.Decorator | undefined {
+  if (!decorators || !decorators.length) {
+    return undefined;
+  }
+  return Array.from(decorators).find((item: ts.Decorator) => isBuilderDecorator(item));
+}
+
+/**
+ * Parses the options of an @Builder decorator (shared by validate and transform).
+ */
+export function parseBuilderDecoratorOptions(decorators: readonly ts.Decorator[]):
+  BuilderDecoratorOptions | undefined {
+  const builderDecorator: ts.Decorator | undefined = findBuilderDecorator(decorators);
+  if (!builderDecorator || !ts.isCallExpression(builderDecorator.expression)) {
+    return { present: false, isPlaceholder: false, valueInvalid: false };
+  }
+  const args: readonly ts.Expression[] = builderDecorator.expression.arguments;
+  if (args.length === 0) {
+    // empty call '@Builder()': original usage, no diagnostic
+    return { present: false, isPlaceholder: false, valueInvalid: false };
+  }
+  if (args.length !== 1 || !ts.isObjectLiteralExpression(args[0])) {
+    return undefined;
+  }
+  const properties: ts.NodeArray<ts.ObjectLiteralElementLike> = args[0].properties;
+  let placeholderValue: boolean | undefined = undefined;
+  let hasInvalidPlaceholder: boolean = false;
+  for (let i = 0; i < properties.length; i++) {
+    const property: ts.ObjectLiteralElementLike = properties[i];
+    if (!ts.isPropertyAssignment(property) ||
+      !isDecoratorOptionKey(property.name, BUILDER_DECORATOR_OPTION_IS_PLACEHOLDER)) {
+      continue;
+    }
+    if (property.initializer.kind === ts.SyntaxKind.TrueKeyword ||
+      property.initializer.kind === ts.SyntaxKind.FalseKeyword) {
+      if (placeholderValue === undefined) {
+        placeholderValue = property.initializer.kind === ts.SyntaxKind.TrueKeyword;
+      }
+    } else {
+      hasInvalidPlaceholder = true;
+    }
+  }
+  if (hasInvalidPlaceholder) {
+    // non-empty literal with an isPlaceholder whose value is not a boolean literal:
+    // variables, enums, numbers, strings etc. are rejected (D-3)
+    return { present: false, isPlaceholder: false, valueInvalid: true };
+  }
+  if (placeholderValue !== undefined) {
+    return { present: true, isPlaceholder: placeholderValue, valueInvalid: false };
+  }
+  if (properties.length > 0) {
+    // non-empty literal without any isPlaceholder property: key missing or misspelled (D-3)
+    return { present: false, isPlaceholder: false, valueInvalid: true };
+  }
+  // empty object literal '@Builder({})': regarded as isPlaceholder false, no diagnostic
+  return { present: false, isPlaceholder: false, valueInvalid: false };
 }
 
 const STATEMENT_EXPECT: number = 1128;
@@ -584,7 +678,7 @@ export function validateFilePathLength(filePath: string, logger: Object): boolea
   }
 }
 
-export function validateFilePathLengths(filePaths: Array<string>, logger: any): boolean {
+export function validateFilePathLengths(filePaths: Array<string>, logger: Object): boolean {
   filePaths.forEach((filePath) => {
     if (!validateFilePathLength(filePath, logger)) {
       return false;
@@ -826,6 +920,7 @@ export class ProcessFileInfo {
     };
   routerInfo: Map<string, Array<RouterInfo>> = new Map();
   hasLocalBuilderInFile: boolean = false;
+  hasAttributeExtension: boolean = false;
 
   addGlobalCacheInfo(resourceListCacheInfo: string[],
     resourceToFileCacheInfo: { [resource: string]: Set<string> },
@@ -1598,4 +1693,24 @@ export function equalToHiddenNavComplementation(
     return false;
   }
   return (EXT_WHITE_LIST.length >= 2) && (componentName === EXT_WHITE_LIST[0]);
+}
+/**
+ * Get the directory path of api/arkts/kits in the SDK used for compilation.
+ * For an ArkUI-X project the directory is located in the ArkUI-X SDK:
+ * <arkUIXSdkRootPath>/openharmony/ets/<subDir>, otherwise in the SDK where
+ * the ets_loader is deployed.
+ * @param {string} subDir - sub directory name under the SDK ets root
+ * @param {Object} shareProjectConfig - the shared projectConfig
+ * @param {string} relativeSdkRootPath - path from this module to the SDK ets root
+ * @returns {string} - the absolute path of the directory
+ */
+export function getEtsSdkDirPath(
+  subDir: string,
+  shareProjectConfig: Object,
+  relativeSdkRootPath: string
+): string {
+  if (shareProjectConfig.isCrossplatform && shareProjectConfig.arkUIXSdkRootPath) {
+    return path.resolve(shareProjectConfig.arkUIXSdkRootPath, 'openharmony', 'ets', subDir);
+  }
+  return path.resolve(__dirname, relativeSdkRootPath, subDir);
 }

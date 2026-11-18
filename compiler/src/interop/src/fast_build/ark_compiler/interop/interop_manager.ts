@@ -15,6 +15,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import * as ts from 'typescript';
 
 const JSON5 = require('json5');
 
@@ -58,7 +59,9 @@ import {
   ARKTS_1_2,
   ARKTS_HYBRID
 } from './pre_define';
-import { readFirstLineSync } from './utils';
+import { EXTNAME_D_ETS } from '../common/ark_define';
+import { EXTNAME_D_ATS } from '../../../pre_define';
+import { isStaticSourceFile } from './utils';
 
 export const entryFileLanguageInfo = new Map();
 export let workerFile = null;
@@ -455,8 +458,7 @@ export class FileManager {
       return moduleMatch;
     }
 
-    const firstLine = readFirstLineSync(filePath);
-    if (firstLine.includes('use static')) {
+    if (isStaticSourceFile(filePath)) {
       return {
         languageVersion: ARKTS_1_2,
         pkgName: ''
@@ -758,7 +760,7 @@ export function processAbilityPagesFullPath(abilityPagesFullPath: Set<string>): 
     return;
   }
 
-  const extensions = ['.ts', '.ets'];
+  const extensions = ['.ts', '.ets', '.ats'];
 
   for (const filePath of Array.from(abilityPagesFullPath)) {
     let realPath: string | null = null;
@@ -775,8 +777,7 @@ export function processAbilityPagesFullPath(abilityPagesFullPath: Set<string>): 
       continue;
     }
 
-    const firstLine = readFirstLineSync(realPath);
-    if (firstLine.includes('use static')) {
+    if (isStaticSourceFile(realPath)) {
       abilityPagesFullPath.delete(filePath);
     }
   }
@@ -1184,4 +1185,47 @@ export function destroyInterop(): void {
   FileManager.cleanFileManagerObject();
   entryFileLanguageInfo.clear();
   mixCompile = undefined;
+}
+
+const OVERRIDE_DECL_SUFFIX: string = '.override';
+
+/** Selects a declgenV2 declaration, preferring overrides and ATS suffixes. */
+export function getDeclgenV2DeclPath(declBasePath: string): string {
+  const candidates: string[] = [
+    OVERRIDE_DECL_SUFFIX + EXTNAME_D_ATS,
+    OVERRIDE_DECL_SUFFIX + EXTNAME_D_ETS,
+    EXTNAME_D_ATS,
+    EXTNAME_D_ETS
+  ].map(suffix => declBasePath + suffix);
+  return candidates.find(candidate => fs.existsSync(candidate)) || declBasePath + EXTNAME_D_ETS;
+}
+
+/**
+ * When the user provides an override declaration file next to the generated interop
+ * declaration file (for example `A.override.d.ets` overriding `A.d.ets`), the dependency
+ * resolution should be redirected to the override file. Returns the original decl path
+ * when no override file exists.
+ */
+export function getOverrideDeclPath(declPath: string): string {
+  const overrideDeclPath: string =
+    declPath.slice(0, -EXTNAME_D_ETS.length) + OVERRIDE_DECL_SUFFIX + EXTNAME_D_ETS;
+  return fs.existsSync(overrideDeclPath) ? overrideDeclPath : declPath;
+}
+
+/**
+ * Redirect a resolved module pointing to an interop declaration file (`.d.ets`) to the
+ * user-provided override declaration file (`.override.d.ets`) when it exists.
+ */
+export function redirectToOverrideDeclFile(moduleItem: ts.ResolvedModuleFull | null | undefined): ts.ResolvedModuleFull | null | undefined {
+  if (!moduleItem || !moduleItem.resolvedFileName || !moduleItem.resolvedFileName.endsWith(EXTNAME_D_ETS)) {
+    return moduleItem;
+  }
+  const overrideDeclPath: string = getOverrideDeclPath(moduleItem.resolvedFileName);
+  if (overrideDeclPath === moduleItem.resolvedFileName) {
+    return moduleItem;
+  }
+  return {
+    ...moduleItem,
+    resolvedFileName: overrideDeclPath
+  };
 }

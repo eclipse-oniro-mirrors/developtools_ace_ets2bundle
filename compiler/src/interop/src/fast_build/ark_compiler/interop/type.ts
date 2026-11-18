@@ -137,6 +137,7 @@ export interface DeclFileItem {
 export interface StaticInteropSymbol {
   kind: string;
   name: string;
+  localName?: string;
   runtimeName?: string;
   children?: Record<string, StaticInteropSymbol>;
 }

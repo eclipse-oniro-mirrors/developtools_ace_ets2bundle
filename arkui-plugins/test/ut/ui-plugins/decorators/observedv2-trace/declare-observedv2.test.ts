@@ -51,7 +51,7 @@ import { ObservedV2 as ObservedV2, Trace as Trace, Computed as Computed, Monitor
 function main() {}
 
 
-@ObservedV2() export declare class A implements IObservedObject, ISubscribedWatches {
+@ObservedV2() export declare class A implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   public addWatchSubscriber(watchId: WatchIdType): void
   
   public removeWatchSubscriber(watchId: WatchIdType): boolean
@@ -73,7 +73,8 @@ function main() {}
   public onHasTraceA(): void
   
   public constructor(hasTraceA: number)
-  
+  public addRefAnyProp(): void
+
 }
 
 

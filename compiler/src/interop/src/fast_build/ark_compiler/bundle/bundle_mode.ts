@@ -22,6 +22,7 @@ import { CommonMode } from '../common/common_mode';
 import {
   changeFileExtension,
   genCachePath,
+  getEffectiveTargetApiVersion,
   getEs2abcFileThreadNumber,
   genTemporaryModuleCacheDirectoryForBundle,
   isMasterOrPrimary,
@@ -200,7 +201,7 @@ export class BundleMode extends CommonMode {
       `"@${filesInfoPath}"`,
       '--file-threads',
       `"${fileThreads}"`,
-      `"--target-api-version=${this.projectConfig.compatibleSdkVersion}"`,
+      `"--target-api-version=${getEffectiveTargetApiVersion(this.projectConfig)}"`,
       '--opt-try-catch-func=false'
     );
     if (this.projectConfig.compatibleSdkReleaseType) {

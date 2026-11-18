@@ -104,7 +104,9 @@ import {
   COMMON_ATTRS,
   GESTURE_ATTRS,
   TRANSITION_COMMON_ATTRS,
-  FOREACH_ATTRIBUTE
+  FOREACH_ATTRIBUTE,
+  GLOBAL_STYLE_VERSION,
+  INNER_STYLE_VERSION
 } from './component_map';
 import {
   LogType,
@@ -138,6 +140,9 @@ import { collectSharedModule } from './fast_build/ark_compiler/check_shared_modu
 import constantDefine from './constant_define';
 import processStructComponentV2, { StructInfo, getDecoratorName } from './process_struct_componentV2';
 import logMessageCollection from './log_message_collection';
+import { ISdkApiValues, fetchStylesDecoratorVersionCondition } from './ui_utils';
+import { checkScrollContainerSize } from './scroll_container_size_check';
+import { validateBuilderDecorator } from './parse_builder_optimize';
 
 export class ComponentCollection {
   localStorageName: string = null;
@@ -816,6 +821,12 @@ export function methodDecoratorCollect(node: ts.MethodDeclaration | ts.FunctionD
         extendResult.componentName, node.name.getText());
     }
   } else if (hasDecorator(node, COMPONENT_STYLES_DECORATOR)) {
+    const stylesSdkApis: ISdkApiValues | undefined = fetchStylesDecoratorVersionCondition(node, transformLog.errors);
+    if (stylesSdkApis && ts.isFunctionDeclaration(node)) {
+      GLOBAL_STYLE_VERSION.set(node.name.getText(), stylesSdkApis);
+    } else if (stylesSdkApis && ts.isMethodDeclaration(node)) {
+      INNER_STYLE_VERSION.set(node.name.getText(), stylesSdkApis);
+    }
     collectStyles(node);
   }
 }
@@ -901,7 +912,7 @@ function validateMemberBuilderDecoratorArguments(node: ts.MethodDeclaration,
   if (builderDecorator && ts.isCallExpression(builderDecorator.expression) &&
     builderDecorator.expression.arguments.length) {
     addLog(LogType.ERROR,
-      'The \'@Builder\' decorator can only pass arguments when decorating a global function',
+      'Only global functions decorated with @Builder support parameter passing.',
       builderDecorator.getStart(), log, sourceFileNode,
       { code: ERROR_CODE_BUILDER_DECORATOR_ONLY_GLOBAL });
   }
@@ -921,7 +932,7 @@ function validateGlobalBuilderDecoratorArguments(node: ts.FunctionDeclaration,
     // undefined has exactly one meaning here: the decorator passes arguments that
     // are not a single options object literal
     addLog(LogType.ERROR,
-      'The \'@Builder\' decorator only supports passing a single object literal',
+      'The @Builder decorator supports passing only object literals.',
       pos, log, sourceFileNode, { code: ERROR_CODE_BUILDER_DECORATOR_LITERAL_ONLY });
     return;
   }
@@ -929,13 +940,13 @@ function validateGlobalBuilderDecoratorArguments(node: ts.FunctionDeclaration,
     // non-empty literal carries no explicit boolean isPlaceholder: key missing,
     // misspelled, or value not a boolean literal
     addLog(LogType.ERROR,
-      'The \'isPlaceholder\' option of the \'@Builder\' decorator only supports passing true/false',
+      'The \'isPlaceholder\' option of the @Builder decorator only supports passing boolean literal.',
       pos, log, sourceFileNode, { code: ERROR_CODE_BUILDER_PLACEHOLDER_BOOL_ONLY });
     return;
   }
   if (options.isPlaceholder && node.parameters.length) {
     addLog(LogType.ERROR,
-      'The \'@Builder\' function cannot have parameters when it serves as a placeholder',
+      'An @Builder function with placeholder capabilities does not support parameter passing.',
       pos, log, sourceFileNode, { code: ERROR_CODE_BUILDER_PLACEHOLDER_NO_PARAM });
   }
 }
@@ -1002,6 +1013,7 @@ function checkDecorator(sourceFileNode: ts.SourceFile, node: ts.Node,
     validateClassDecorator(sourceFileNode, node, log, classContext, decoratorName, isObservedClass,
       isObservedV1Class, isSendableClass, classNode);
     validatePropertyInStruct(structContext, node, decoratorName, sourceFileNode, log);
+    validateBuilderDecorator(node, sourceFileNode, log, decoratorName);
     return;
   }
   if (ts.isDecorator(node)) {
@@ -2058,6 +2070,7 @@ export function checkAllNode(
     checkNoChildComponent(node, sourceFileNode, log);
     checkOneChildComponent(node, allComponentNames, sourceFileNode, log);
     checkSpecificChildComponent(node, allComponentNames, sourceFileNode, log);
+    checkScrollContainerSize(node, sourceFileNode, log);
   }
 }
 

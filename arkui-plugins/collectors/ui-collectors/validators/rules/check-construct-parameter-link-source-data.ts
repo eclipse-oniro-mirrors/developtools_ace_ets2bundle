@@ -16,15 +16,13 @@
 import * as arkts from '@koalaui/libarkts';
 import { BaseValidator } from '../base';
 import { CallInfo } from '../../records';
-import { DecoratorNames, LogType } from '../../../../common/predefines';
+import { LogType } from '../../../../common/predefines';
 import { getPerfName, performanceLog } from '../../../../common/debug';
 
 export const checkConstructParameterLinkSourceData = performanceLog(
     _checkConstructParameterLinkSourceData,
     getPerfName([0, 0, 0, 0, 0], 'checkConstructParameterLinkSourceData')
 );
-
-const MAX_LINK_SOURCE_DATA_NESTING_LEVEL = 2;
 
 const LINK_SOURCE_DATA_MISMATCH = (propertyName: string): string =>
     `The type of the parent component's state variable initializing the '@Link' variable '${propertyName}' must match the '@Link' variable's declared type.`;
@@ -41,6 +39,13 @@ function _checkConstructParameterLinkSourceData(
     if (!fromAnnoInfo?.hasComponent && !fromAnnoInfo?.hasCustomDialog) {
         return;
     }
+    // A struct call used as a property value (e.g. the official @CustomDialog pattern
+    // `builder: CustomDialogExample({...})`, optionally with the value wrapped in a type
+    // assertion) instantiates a slot with placeholder options: they are not parent state
+    // initializing the child's @Link variables, so the check does not apply.
+    if (isCallInPropertyValuePosition(node)) {
+        return;
+    }
     metadata.structPropertyInfos?.forEach(([propertyPtr, propertyInfo]) => {
         if (!propertyPtr || !propertyInfo) {
             return;
@@ -53,7 +58,8 @@ function _checkConstructParameterLinkSourceData(
             return;
         }
         const propertyName = property.key.name;
-        if (!propertyName || !isInitFromMismatchSourceData(property)) {
+        const propertyValue = property.value;
+        if (!propertyName || !propertyValue || isInitFromMatchSourceDataPropertyValue(propertyValue)) {
             return;
         }
         this.report({
@@ -64,23 +70,29 @@ function _checkConstructParameterLinkSourceData(
     });
 }
 
-function isInitFromMismatchSourceData(node: arkts.Property): boolean {
-    if (!node.value) {
+function isCallInPropertyValuePosition(node: arkts.CallExpression): boolean {
+    const parent = node.parent;
+    if (!parent) {
         return false;
     }
-    let curNode: arkts.AstNode = node.value;
-    let nestingLevel = 0;
-    while (curNode) {
-        if (arkts.isMemberExpression(curNode)) {
-            curNode = curNode.object!;
-            nestingLevel++;
-        } else if (arkts.isTSNonNullExpression(curNode) && curNode.expr) {
-            curNode = curNode.expr;
-        } else if (arkts.isChainExpression(curNode) && curNode.expression) {
-            curNode = curNode.expression;
-        } else {
-            break;
-        }
+    if (arkts.isProperty(parent)) {
+        return true;
     }
-    return nestingLevel >= MAX_LINK_SOURCE_DATA_NESTING_LEVEL && !!curNode && arkts.isThisExpression(curNode);
+    if (arkts.isTSAsExpression(parent)) {
+        const grandParent = parent.parent;
+        return !!grandParent && arkts.isProperty(grandParent);
+    }
+    return false;
+}
+
+function isInitFromMatchSourceDataPropertyValue(value: arkts.Expression): boolean {
+    if (arkts.isTSNonNullExpression(value)) {
+        const expr = value.expr;
+        return !!expr && isInitFromMatchSourceDataPropertyValue(expr);
+    }
+    if (arkts.isTSAsExpression(value)) {
+        const expr = value.expr;
+        return !!expr && isInitFromMatchSourceDataPropertyValue(expr);
+    }
+    return arkts.isMemberExpression(value) && !!value.object && arkts.isThisExpression(value.object);
 }

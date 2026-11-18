@@ -1,0 +1,111 @@
+
+/srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/src/interop/src/process_custom_component.ts
+   134:3    error  'globalProgram' is defined but never used                                         no-unused-vars
+   154:8    error  Function 'processCustomComponent' has too many lines (92). Maximum allowed is 50  max-lines-per-function
+   154:8    error  Function 'processCustomComponent' has a complexity of 23. Maximum allowed is 20   complexity
+   167:83   error  Trailing spaces not allowed                                                       no-trailing-spaces
+   168:1    error  Expected indentation of 6 spaces but found 4                                      indent
+   589:1    error  Function 'validateChildProperty' has too many lines (59). Maximum allowed is 50   max-lines-per-function
+   667:1    error  Expected indentation of 2 spaces but found 4                                      indent
+   676:18   error  Trailing spaces not allowed                                                       no-trailing-spaces
+   681:1    error  Expected indentation of 4 spaces but found 2                                      indent
+   757:1    error  Function 'createCustomComponent' has too many lines (97). Maximum allowed is 50   max-lines-per-function
+   757:1    error  Function 'createCustomComponent' has a complexity of 26. Maximum allowed is 20    complexity
+   759:98   error  Trailing spaces not allowed                                                       no-trailing-spaces
+   837:18   error  Unexpected trailing comma                                                         comma-dangle
+   847:102  error  Trailing spaces not allowed                                                       no-trailing-spaces
+   852:7    error  Trailing spaces not allowed                                                       no-trailing-spaces
+   857:109  error  Trailing spaces not allowed                                                       no-trailing-spaces
+   903:73   error  Trailing spaces not allowed                                                       no-trailing-spaces
+   921:55   error  Trailing spaces not allowed                                                       no-trailing-spaces
+   924:1    error  Expected indentation of 10 spaces but found 8                                     indent
+   925:1    error  Expected indentation of 10 spaces but found 8                                     indent
+   926:1    error  Expected indentation of 8 spaces but found 6                                      indent
+   934:22   error  Trailing spaces not allowed                                                       no-trailing-spaces
+   935:1    error  Expected indentation of 6 spaces but found 4                                      indent
+   935:19   error  Trailing spaces not allowed                                                       no-trailing-spaces
+   936:1    error  Expected indentation of 6 spaces but found 4                                      indent
+  1132:1    error  Expected indentation of 12 spaces but found 10                                    indent
+  1132:45   error  Unexpected trailing comma                                                         comma-dangle
+  1145:1    error  Expected indentation of 12 spaces but found 10                                    indent
+  1145:45   error  Unexpected trailing comma                                                         comma-dangle
+  1148:6    error  Missing semicolon                                                                 semi
+  1156:4    error  Missing semicolon                                                                 semi
+  1252:64   error  Trailing spaces not allowed                                                       no-trailing-spaces
+  1319:10   error  'createRecycleFlagConditionalExpression' is defined but never used                no-unused-vars
+  1342:12   error  Unexpected trailing comma                                                         comma-dangle
+  1396:42   error  Unexpected trailing comma                                                         comma-dangle
+  1401:1    error  More than 1 blank line not allowed                                                no-multiple-empty-lines
+  1429:1    error  Expected indentation of 8 spaces but found 10                                     indent
+  1469:10   error  Unexpected trailing comma                                                         comma-dangle
+  1622:3    error  'NormalComponentV1' is defined but never used                                     no-unused-vars
+  1623:3    error  'NormalComponentV2' is defined but never used                                     no-unused-vars
+  1624:3    error  'ReuseComponentV1' is defined but never used                                      no-unused-vars
+  1625:3    error  'ReuseComponentV2' is defined but never used                                      no-unused-vars
+  1626:3    error  'InvalidComponentType' is defined but never used                                  no-unused-vars
+  1630:61   error  Trailing spaces not allowed                                                       no-trailing-spaces
+  1679:113  error  Trailing spaces not allowed                                                       no-trailing-spaces
+  1698:81   error  Trailing spaces not allowed                                                       no-trailing-spaces
+  1700:1    error  Expected indentation of 6 spaces but found 8                                      indent
+  1701:1    error  Expected indentation of 6 spaces but found 8                                      indent
+  1713:1    error  Function 'checkFromParentToChild' has a complexity of 23. Maximum allowed is 20   complexity
+  1725:11   error  'parentPropertyKind' is never reassigned. Use 'const' instead                     prefer-const
+  2001:1    error  File has too many lines (2225). Maximum allowed is 2000                           max-lines
+  2023:1    error  Trailing spaces not allowed                                                       no-trailing-spaces
+  2225:2    error  Newline required at end of file but not found                                     eol-last
+
+/srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/src/process_custom_component.ts
+   134:3    error  'globalProgram' is defined but never used                                         no-unused-vars
+   152:8    error  Function 'processCustomComponent' has too many lines (92). Maximum allowed is 50  max-lines-per-function
+   152:8    error  Function 'processCustomComponent' has a complexity of 23. Maximum allowed is 20   complexity
+   165:83   error  Trailing spaces not allowed                                                       no-trailing-spaces
+   166:1    error  Expected indentation of 6 spaces but found 4                                      indent
+   580:1    error  Function 'validateChildProperty' has too many lines (59). Maximum allowed is 50   max-lines-per-function
+   658:1    error  Expected indentation of 2 spaces but found 4                                      indent
+   667:18   error  Trailing spaces not allowed                                                       no-trailing-spaces
+   672:1    error  Expected indentation of 4 spaces but found 2                                      indent
+   748:1    error  Function 'createCustomComponent' has too many lines (91). Maximum allowed is 50   max-lines-per-function
+   748:1    error  Function 'createCustomComponent' has a complexity of 21. Maximum allowed is 20    complexity
+   750:98   error  Trailing spaces not allowed                                                       no-trailing-spaces
+   822:18   error  Unexpected trailing comma                                                         comma-dangle
+   832:102  error  Trailing spaces not allowed                                                       no-trailing-spaces
+   837:7    error  Trailing spaces not allowed                                                       no-trailing-spaces
+   888:73   error  Trailing spaces not allowed                                                       no-trailing-spaces
+   906:55   error  Trailing spaces not allowed                                                       no-trailing-spaces
+   909:1    error  Expected indentation of 10 spaces but found 8                                     indent
+   910:1    error  Expected indentation of 10 spaces but found 8                                     indent
+   911:1    error  Expected indentation of 8 spaces but found 6                                      indent
+   919:22   error  Trailing spaces not allowed                                                       no-trailing-spaces
+   920:1    error  Expected indentation of 6 spaces but found 4                                      indent
+   920:19   error  Trailing spaces not allowed                                                       no-trailing-spaces
+   921:1    error  Expected indentation of 6 spaces but found 4                                      indent
+  1090:1    error  Expected indentation of 8 spaces but found 10                                     indent
+  1117:1    error  Expected indentation of 12 spaces but found 10                                    indent
+  1117:45   error  Unexpected trailing comma                                                         comma-dangle
+  1130:1    error  Expected indentation of 12 spaces but found 10                                    indent
+  1130:45   error  Unexpected trailing comma                                                         comma-dangle
+  1141:4    error  Missing semicolon                                                                 semi
+  1237:64   error  Trailing spaces not allowed                                                       no-trailing-spaces
+  1304:10   error  'createRecycleFlagConditionalExpression' is defined but never used                no-unused-vars
+  1327:12   error  Unexpected trailing comma                                                         comma-dangle
+  1381:42   error  Unexpected trailing comma                                                         comma-dangle
+  1413:1    error  Expected indentation of 8 spaces but found 10                                     indent
+  1453:10   error  Unexpected trailing comma                                                         comma-dangle
+  1606:3    error  'NormalComponentV1' is defined but never used                                     no-unused-vars
+  1607:3    error  'NormalComponentV2' is defined but never used                                     no-unused-vars
+  1608:3    error  'ReuseComponentV1' is defined but never used                                      no-unused-vars
+  1609:3    error  'ReuseComponentV2' is defined but never used                                      no-unused-vars
+  1610:3    error  'InvalidComponentType' is defined but never used                                  no-unused-vars
+  1614:61   error  Trailing spaces not allowed                                                       no-trailing-spaces
+  1663:113  error  Trailing spaces not allowed                                                       no-trailing-spaces
+  1682:81   error  Trailing spaces not allowed                                                       no-trailing-spaces
+  1684:1    error  Expected indentation of 6 spaces but found 8                                      indent
+  1685:1    error  Expected indentation of 6 spaces but found 8                                      indent
+  1697:1    error  Function 'checkFromParentToChild' has a complexity of 23. Maximum allowed is 20   complexity
+  1709:11   error  'parentPropertyKind' is never reassigned. Use 'const' instead                     prefer-const
+  2001:1    error  File has too many lines (2209). Maximum allowed is 2000                           max-lines
+  2007:1    error  Trailing spaces not allowed                                                       no-trailing-spaces
+
+✖ 103 problems (103 errors, 0 warnings)
+  75 errors and 0 warnings potentially fixable with the `--fix` option.
+

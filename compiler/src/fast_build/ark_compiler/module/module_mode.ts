@@ -70,6 +70,7 @@ import {
 } from '../common/ob_config_resolver';
 import {
   changeFileExtension,
+  getEffectiveTargetApiVersion,
   getEs2abcFileThreadNumber,
   isCommonJsPluginVirtualFile,
   isCurrentProjectFiles,
@@ -205,15 +206,15 @@ export class ModuleMode extends CommonMode {
     this.filterModuleInfos = new Map<String, ModuleInfo>();
     this.symlinkMap = rollupObject.share.symlinkMap;
     this.useNormalizedOHMUrl = this.isUsingNormalizedOHMUrl();
-    if (Object.prototype.hasOwnProperty.call(this.projectConfig, 'byteCodeHarInfo')) {
-      let byteCodeHarInfo = this.projectConfig.byteCodeHarInfo;
-      for (const packageName in byteCodeHarInfo) {
-          const abcPath = toUnixPath(byteCodeHarInfo[packageName].abcPath);
-          this.abcPaths.push(abcPath);
-      }
-    }
     this.byteCodeHar = !!this.projectConfig.byteCodeHar;
     this.customizedHar = this.isBuildCustomizedHar();
+    if (Object.prototype.hasOwnProperty.call(this.projectConfig, 'byteCodeHarInfo')) {
+      const byteCodeHarInfo = this.projectConfig.byteCodeHarInfo;
+      for (const packageName in byteCodeHarInfo) {
+        this.abcPaths.push(...this.getByteCodeHarAbcPaths(byteCodeHarInfo[packageName]));
+      }
+      this.abcPaths = Array.from(new Set(this.abcPaths));
+    }
     if (this.useNormalizedOHMUrl) {
       this.compileContextInfoPath = this.generateCompileContextInfo(rollupObject);
     }
@@ -228,6 +229,15 @@ export class ModuleMode extends CommonMode {
         this.logger.error('beforeObfuscate is not function');
       }
     }
+  }
+
+  private getByteCodeHarAbcPaths(abcInfo: { abcPath: string; widgetAbcPath?: string }): string[] {
+    const abcPaths: Set<string> = new Set([toUnixPath(abcInfo.abcPath)]);
+    const isBundleHar: boolean = this.byteCodeHar && !!this.projectConfig.projectArkOption?.bundle?.bundledAllDependencies;
+    if (this.projectConfig.widgetCompile && !isBundleHar && !this.customizedHar && abcInfo.widgetAbcPath) {
+      abcPaths.add(toUnixPath(abcInfo.widgetAbcPath));
+    }
+    return Array.from(abcPaths);
   }
 
   private generateCompileContextInfo(rollupObject: Object): string {
@@ -605,7 +615,7 @@ export class ModuleMode extends CommonMode {
     this.cmdArgs.push('--file-threads');
     this.cmdArgs.push(`"${fileThreads}"`);
     this.cmdArgs.push('--merge-abc');
-    this.cmdArgs.push(`"--target-api-version=${this.projectConfig.compatibleSdkVersion}"`);
+    this.cmdArgs.push(`"--target-api-version=${getEffectiveTargetApiVersion(this.projectConfig)}"`);
     if (this.projectConfig.compatibleSdkVersionStage) {
       this.cmdArgs.push(`"--target-api-sub-version=${this.projectConfig.compatibleSdkVersionStage}"`);
     }
@@ -679,8 +689,9 @@ export class ModuleMode extends CommonMode {
       Object.entries(this.projectConfig.byteCodeHarInfo).forEach(([pkgName, abcInfo]) => {
         // es2abc parses file path and pkgName according to the file extension .abc.
         // Accurate version replacement requires 'pkgName' to es2abc.
-        const abcPath: string = toUnixPath(abcInfo.abcPath);
-        filesInfo += `${abcPath};;;;${pkgName};\n`;
+        this.getByteCodeHarAbcPaths(abcInfo).forEach((abcPath) => {
+          filesInfo += `${abcPath};;;;${pkgName};\n`;
+        });
       });
     }
     if(this.customizedHar) {

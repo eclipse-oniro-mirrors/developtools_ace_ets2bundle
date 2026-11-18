@@ -21,6 +21,24 @@ function placeholderWithParam(param: string) {
   Text('D4')
 }
 
+// legal: constant boolean expressions fold to literals before the checked state;
+// non-constant forms are rejected by the front-end (DV-1 scope)
+@Builder({ isPlaceholder: true && false })
+function exprValueBuilder() {
+  Text('const expr ok')
+}
+
+// negative: explicit false and empty literal stay legal
+@Builder({ isPlaceholder: false })
+function explicitFalseBuilder() {
+  Text('ok')
+}
+
+@Builder({})
+function emptyLiteralBuilder() {
+  Text('ok')
+}
+
 @Component
 struct PlaceholderInvalidDemo {
   // D-1: struct member @Builder carrying decorator arguments

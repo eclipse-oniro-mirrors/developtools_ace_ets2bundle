@@ -78,7 +78,11 @@ import {
   COMPONENTV2_PROVIDER_DECORATOR,
   COMPONENTV2_CONSUMER_DECORATOR,
   COMPONENTV2_ONCE_DECORATOR,
-  ENABLEWILDCARD
+  ENABLEWILDCARD,
+  ERROR_CODE_BUILDER_DECORATOR_ONLY_GLOBAL,
+  ERROR_CODE_BUILDER_DECORATOR_LITERAL_ONLY,
+  ERROR_CODE_BUILDER_PLACEHOLDER_BOOL_ONLY,
+  ERROR_CODE_BUILDER_PLACEHOLDER_NO_PARAM
 } from './pre_define';
 import {
   INNER_COMPONENT_NAMES,
@@ -99,7 +103,9 @@ import {
   COMMON_ATTRS,
   GESTURE_ATTRS,
   TRANSITION_COMMON_ATTRS,
-  FOREACH_ATTRIBUTE
+  FOREACH_ATTRIBUTE,
+  GLOBAL_STYLE_VERSION,
+  INNER_STYLE_VERSION
 } from './component_map';
 import {
   LogType,
@@ -112,7 +118,10 @@ import {
   CurrentProcessFile,
   getOriginPropertyType,
   isIdentifierConst,
-  isArrayEqualIgnoreOrder
+  isArrayEqualIgnoreOrder,
+  findBuilderDecorator as findBuilderDecoratorOf,
+  parseBuilderDecoratorOptions,
+  BuilderDecoratorOptions
 } from './utils';
 import { globalProgram, projectConfig, abilityPagesFullPath } from '../main';
 import {
@@ -132,6 +141,9 @@ import processStructComponentV2, { StructInfo, getDecoratorName } from './proces
 import logMessageCollection from './log_message_collection';
 import { FileManager, isMixCompile } from './fast_build/ark_compiler/interop/interop_manager';
 import { ARKTS_1_2 } from './fast_build/ark_compiler/interop/pre_define';
+import { ISdkApiValues, fetchStylesDecoratorVersionCondition } from './ui_utils';
+import { checkScrollContainerSize } from './scroll_container_size_check';
+import { validateBuilderDecorator } from './parse_builder_optimize';
 
 export class ComponentCollection {
   localStorageName: string = null;
@@ -575,7 +587,7 @@ function visitAllNode(node: ts.Node, sourceFileNode: ts.SourceFile, allComponent
     [isObservedV1Class, isObservedClass, isSendableClass] = parseClassDecorator(node, sourceFileNode, log);
   }
   if (ts.isMethodDeclaration(node) || ts.isFunctionDeclaration(node)) {
-    methodDecoratorCollect(node);
+    methodDecoratorCollect(node, log, sourceFileNode);
     if (hasDecorator(node, COMPONENT_CONCURRENT_DECORATOR)) {
       // ark compiler's feature
       checkConcurrentDecorator(node, log, sourceFileNode);
@@ -960,7 +972,8 @@ function findDuplicateDecoratorMethod(mapKeys: string[], mapValues: number[]): s
   return output;
 }
 
-export function methodDecoratorCollect(node: ts.MethodDeclaration | ts.FunctionDeclaration): void {
+export function methodDecoratorCollect(node: ts.MethodDeclaration | ts.FunctionDeclaration,
+  log: LogInfo[] | null = null, sourceFileNode: ts.SourceFile | null = null): void {
   const extendResult: ExtendResult = { decoratorName: '', componentName: '' };
   const builderCondition: builderConditionType = {
     isBuilder: false,
@@ -968,6 +981,9 @@ export function methodDecoratorCollect(node: ts.MethodDeclaration | ts.FunctionD
   };
   if (isBuilderOrLocalBuilder(node, builderCondition)) {
     if (builderCondition.isBuilder) {
+      if (log && sourceFileNode && !ts.isFunctionDeclaration(node)) {
+        validateMemberBuilderDecoratorArguments(node, log, sourceFileNode);
+      }
       CUSTOM_BUILDER_METHOD.add(node.name.getText());
       if (ts.isFunctionDeclaration(node)) {
         GLOBAL_CUSTOM_BUILDER_METHOD.add(node.name.getText());
@@ -986,6 +1002,12 @@ export function methodDecoratorCollect(node: ts.MethodDeclaration | ts.FunctionD
         extendResult.componentName, node.name.getText());
     }
   } else if (hasDecorator(node, COMPONENT_STYLES_DECORATOR)) {
+    const stylesSdkApis: ISdkApiValues | undefined = fetchStylesDecoratorVersionCondition(node, transformLog.errors);
+    if (stylesSdkApis && ts.isFunctionDeclaration(node)) {
+      GLOBAL_STYLE_VERSION.set(node.name.getText(), stylesSdkApis);
+    } else if (stylesSdkApis && ts.isMethodDeclaration(node)) {
+      INNER_STYLE_VERSION.set(node.name.getText(), stylesSdkApis);
+    }
     collectStyles(node);
   }
 }
@@ -1057,9 +1079,58 @@ function validateFunction(node: ts.MethodDeclaration | ts.FunctionDeclaration,
         addLog(LogType.ERROR, message, node.getStart(), log, sourceFileNode, { code: '10905360' }) :
         addLog(LogType.WARN, message, node.getStart(), log, sourceFileNode);
     }
+    validateGlobalBuilderDecoratorArguments(node, sourceFileNode, log);
   }
 }
 
+function findBuilderDecorator(node: ts.MethodDeclaration | ts.FunctionDeclaration): ts.Decorator | undefined {
+  return findBuilderDecoratorOf(ts.getAllDecorators(node));
+}
+
+function validateMemberBuilderDecoratorArguments(node: ts.MethodDeclaration,
+  log: LogInfo[], sourceFileNode: ts.SourceFile): void {
+  const builderDecorator: ts.Decorator | undefined = findBuilderDecorator(node);
+  if (builderDecorator && ts.isCallExpression(builderDecorator.expression) &&
+    builderDecorator.expression.arguments.length) {
+    addLog(LogType.ERROR,
+      'Only global functions decorated with @Builder support parameter passing.',
+      builderDecorator.getStart(), log, sourceFileNode,
+      { code: ERROR_CODE_BUILDER_DECORATOR_ONLY_GLOBAL });
+  }
+}
+
+function validateGlobalBuilderDecoratorArguments(node: ts.FunctionDeclaration,
+  sourceFileNode: ts.SourceFile, log: LogInfo[]): void {
+  const builderDecorator: ts.Decorator | undefined = findBuilderDecorator(node);
+  if (!builderDecorator || !ts.isCallExpression(builderDecorator.expression)) {
+    // bare '@Builder': original usage, no diagnostic
+    return;
+  }
+  const options: BuilderDecoratorOptions | undefined = parseBuilderDecoratorOptions(
+    ts.getAllDecorators(node));
+  const pos: number = builderDecorator.getStart();
+  if (!options) {
+    // undefined has exactly one meaning here: the decorator passes arguments that
+    // are not a single options object literal
+    addLog(LogType.ERROR,
+      'The @Builder decorator supports passing only object literals.',
+      pos, log, sourceFileNode, { code: ERROR_CODE_BUILDER_DECORATOR_LITERAL_ONLY });
+    return;
+  }
+  if (options.valueInvalid) {
+    // non-empty literal carries no explicit boolean isPlaceholder: key missing,
+    // misspelled, or value not a boolean literal
+    addLog(LogType.ERROR,
+      'The \'isPlaceholder\' option of the @Builder decorator only supports passing boolean literal.',
+      pos, log, sourceFileNode, { code: ERROR_CODE_BUILDER_PLACEHOLDER_BOOL_ONLY });
+    return;
+  }
+  if (options.isPlaceholder && node.parameters.length) {
+    addLog(LogType.ERROR,
+      'An @Builder function with placeholder capabilities does not support parameter passing.',
+      pos, log, sourceFileNode, { code: ERROR_CODE_BUILDER_PLACEHOLDER_NO_PARAM });
+  }
+}
 function findDuplicateDecoratorFunction(mapKeys: string[], mapValues: number[]): string {
   const duplicateDecorators: string[] = [];
   mapValues.forEach((value, index) => {
@@ -1126,6 +1197,7 @@ function checkDecorator(sourceFileNode: ts.SourceFile, node: ts.Node,
     } else {
       validatePropertyInStruct(structContext, node, decoratorName, sourceFileNode, log);
     }
+    validateBuilderDecorator(node, sourceFileNode, log, decoratorName);
     return;
   }
   if (ts.isDecorator(node)) {
@@ -1725,7 +1797,7 @@ function statusDecideSyncMonitorArgExist(status: MonitorArgsStatus, monitorArgum
 
 function statusDecideMonitorArgExist(status: MonitorArgsStatus, monitorArgument: ts.StringLiteral,
   log: LogInfo[], sourceFileNode: ts.SourceFile): void {
-  if(status === MonitorArgsStatus.PASS) {
+  if (status === MonitorArgsStatus.PASS) {
     return;
   }
   validateMonitorArgExist(monitorArgument, log, sourceFileNode);
@@ -2183,6 +2255,7 @@ export function checkAllNode(
     checkNoChildComponent(node, sourceFileNode, log);
     checkOneChildComponent(node, allComponentNames, sourceFileNode, log);
     checkSpecificChildComponent(node, allComponentNames, sourceFileNode, log);
+    checkScrollContainerSize(node, sourceFileNode, log);
   }
 }
 
@@ -3518,11 +3591,11 @@ function readStmgmtWhiteList(): void {
   if (!fs.existsSync(absolutePath)) {
     return;
   }
-  const stats: any = fs.statSync(absolutePath);
+  const stats: fs.Stats = fs.statSync(absolutePath);
   if (!stats.isFile()) {
     return;
   }
-  const fileContent: any = require(absolutePath);
+  const fileContent = require(absolutePath);
   if (fileContent) {
     stmgmtWhiteList = new Set(fileContent.attrs ?? []);
   }
@@ -3569,7 +3642,7 @@ function checkParamsMethod(
   }
   const paramsTypeNode: ts.TypeNode | undefined = node.parameters[0]?.type;
   if (!paramsTypeNode || !ts.isTypeReferenceNode(paramsTypeNode)) {
-    return paramsTypeNode?.kind === ts.SyntaxKind.ObjectKeyword;;
+    return paramsTypeNode?.kind === ts.SyntaxKind.ObjectKeyword;
   }
   const paramsName: string = paramsTypeNode.typeName.getText();
   return ['Record', 'Object', 'ESObject', 'object'].includes(paramsName);

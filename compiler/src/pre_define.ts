@@ -381,7 +381,7 @@ export const BIND_OBJECT_PROPERTY: Map<string, Set<string>> = new Map([
   ['Radio', new Set([COMPONENT_CREATE_FUNCTION])],
   ['Checkbox', new Set([COMPONENT_CREATE_FUNCTION])],
   ['Web', new Set(['bindSelectionMenu'])],
-  [ALL_COMPONENTS, new Set(['bindMenu', 'bindContextMenu', 'bindContextMenuByResponseType', 'bindContextMenuByIsShow', 'bindContextMenuWithResponse', 'bindSheet', 'dragPreview'])]
+  [ALL_COMPONENTS, new Set(['bindMenu', 'bindContextMenu', 'bindContextMenuByResponseType', 'bindContextMenuByIsShow', 'bindContextMenuWithResponse', 'bindSheet', 'dragPreview', 'safeAreaInset'])]
 ]);
 
 export const CHECKED: string = 'checked';
@@ -439,6 +439,7 @@ export const DATE: string = 'date';
 export const GRID_ITEM: string = 'GridItem';
 export const LIST_ITEM: string = 'ListItem';
 export const GRID: string = 'Grid';
+export const WATERFLOW: string = 'WaterFlow';
 export const LIST: string = 'List';
 export const ENABLE_EDIT_MODE: string = 'enableEditMode';
 export const UPDATE_FUNC_BY_ELMT_ID: string = 'updateFuncByElmtId';
@@ -531,6 +532,9 @@ export const CREATE_BIND_COMPONENT: Set<string> = new Set(['ListItemGroup', REFR
 export const HEADER: string = 'header';
 export const INDICATORBUILDER: string = 'indicatorBuilder';
 export const FOOTER: string = 'footer';
+
+export const SAFEAREAINSET: string = 'safeAreaInset';
+export const SAFEAREAINSET_NAME_RANGE: Set<string> = new Set(['top', 'end', 'bottom', 'start', 'content']);
 
 export const INTERFACE_NAME_SUFFIX: string = '_Params';
 export const OBSERVED_PROPERTY_ABSTRACT: string = 'ObservedPropertyAbstract';

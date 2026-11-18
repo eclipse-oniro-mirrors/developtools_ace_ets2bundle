@@ -14,6 +14,7 @@
  */
 
 import fs from 'fs';
+import { EXTNAME_ATS } from '../../../pre_define';
 
 export function readFirstLineSync(filePath: string): string {
   const buffer = fs.readFileSync(filePath, 'utf-8');
@@ -22,4 +23,8 @@ export function readFirstLineSync(filePath: string): string {
     return buffer.trim();
   }
   return buffer.substring(0, newlineIndex).trim();
+}
+
+export function isStaticSourceFile(filePath: string): boolean {
+  return filePath.endsWith(EXTNAME_ATS) || readFirstLineSync(filePath).includes('use static');
 }

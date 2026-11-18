@@ -101,4 +101,12 @@ mocha.describe('run_declgen_standalone module name resolver', function () {
 
     expect(resolvedModules[0]).to.be.undefined;
   });
+
+  mocha.it('1-5: does not resolve ATS sources as dynamic ETS files', function () {
+    createFile('src/main/ets/static.ats');
+    const resolvedModules = resolver(['./static.ats', './static'], containingFile);
+    for (const resolved of resolvedModules) {
+      expect(resolved).to.be.undefined;
+    }
+  });
 });

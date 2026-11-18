@@ -41,7 +41,7 @@ const parsedTransform: Plugins = {
     parsed: uiTransform().parsed
 };
 
-const D1_MESSAGE = `The '@Builder' decorator can only pass arguments when decorating a global function`;
+const D1_MESSAGE = `Only global functions decorated with @Builder support parameter passing.`;
 
 /** Reports of checkBuilderFieldDecoratorArguments (D-1 on class fields). */
 let capturedReports: string[] = [];

@@ -359,7 +359,7 @@ export default declare namespace aNamespaceWithBody {
     
   }
   
-  @ObservedV2() class ExportObservedV2 implements IObservedObject, ISubscribedWatches {
+  @ObservedV2() class ExportObservedV2 implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
     public addWatchSubscriber(watchId: WatchIdType): void
     
     public removeWatchSubscriber(watchId: WatchIdType): boolean
@@ -380,10 +380,11 @@ export default declare namespace aNamespaceWithBody {
     public onT1Changed(): void
     
     public constructor()
+    public addRefAnyProp(): void
     
   }
   
-  @ObservedV2() class ExportObservedV2Inherit implements IO, IObservedObject, ISubscribedWatches {
+  @ObservedV2() class ExportObservedV2Inherit implements IO, IObservedObject, ISubscribedWatches, IObservedAnyProp {
     public addWatchSubscriber(watchId: WatchIdType): void
     
     public removeWatchSubscriber(watchId: WatchIdType): boolean
@@ -397,10 +398,11 @@ export default declare namespace aNamespaceWithBody {
     
     public get t1(): number
     public set t1(t1: number)
+    public addRefAnyProp(): void
     
   }
   
-  @ObservedV2() class NonExportObservedV2 implements IObservedObject, ISubscribedWatches {
+  @ObservedV2() class NonExportObservedV2 implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
     public addWatchSubscriber(watchId: WatchIdType): void
     
     public removeWatchSubscriber(watchId: WatchIdType): boolean
@@ -421,10 +423,11 @@ export default declare namespace aNamespaceWithBody {
     public onT1Changed(): void
     
     public constructor()
+    public addRefAnyProp(): void
     
   }
   
-  @ObservedV2() class NonExportObservedV2Inherit implements IO, IObservedObject, ISubscribedWatches {
+  @ObservedV2() class NonExportObservedV2Inherit implements IO, IObservedObject, ISubscribedWatches, IObservedAnyProp {
     public addWatchSubscriber(watchId: WatchIdType): void
     
     public removeWatchSubscriber(watchId: WatchIdType): boolean
@@ -438,10 +441,11 @@ export default declare namespace aNamespaceWithBody {
     
     public get t1(): number
     public set t1(t1: number)
+    public addRefAnyProp(): void
     
   }
   
-  @ObservedV2() class ObservedV2WithBody implements IObservedObject, ISubscribedWatches {
+  @ObservedV2() class ObservedV2WithBody implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
     public addWatchSubscriber(watchId: WatchIdType): void
     
     public removeWatchSubscriber(watchId: WatchIdType): boolean
@@ -466,10 +470,11 @@ export default declare namespace aNamespaceWithBody {
     public constructor(t1: number) {
       this.t1 = t1;
     }
+    public addRefAnyProp(): void
     
   }
   
-  @ObservedV2() class ObservedV2InheritWithBody implements IO, IObservedObject, ISubscribedWatches {
+  @ObservedV2() class ObservedV2InheritWithBody implements IO, IObservedObject, ISubscribedWatches, IObservedAnyProp {
     public addWatchSubscriber(watchId: WatchIdType): void
     
     public removeWatchSubscriber(watchId: WatchIdType): boolean
@@ -491,10 +496,11 @@ export default declare namespace aNamespaceWithBody {
       this.t1 = t1;
       return;
     }
+    public addRefAnyProp(): void
     
   }
   
-  @ObservedV2() class ExportObservedV2InheritWithBody implements IO, IObservedObject, ISubscribedWatches {
+  @ObservedV2() class ExportObservedV2InheritWithBody implements IO, IObservedObject, ISubscribedWatches, IObservedAnyProp {
     public addWatchSubscriber(watchId: WatchIdType): void
     
     public removeWatchSubscriber(watchId: WatchIdType): boolean
@@ -516,10 +522,11 @@ export default declare namespace aNamespaceWithBody {
       this.t1 = t1;
       return;
     }
+    public addRefAnyProp(): void
     
   }
   
-  @ObservedV2() class ExportObservedV2WithBody implements IObservedObject, ISubscribedWatches {
+  @ObservedV2() class ExportObservedV2WithBody implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
     public addWatchSubscriber(watchId: WatchIdType): void
     
     public removeWatchSubscriber(watchId: WatchIdType): boolean
@@ -544,6 +551,7 @@ export default declare namespace aNamespaceWithBody {
     public constructor(t1: number) {
       this.t1 = t1;
     }
+    public addRefAnyProp(): void
     
   }
   

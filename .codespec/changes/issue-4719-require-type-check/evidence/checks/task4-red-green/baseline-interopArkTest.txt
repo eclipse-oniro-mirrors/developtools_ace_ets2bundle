@@ -1,0 +1,31 @@
+       reports an error for a star re-export from a static target:
+
+      AssertionError: expected [] to have a length of 1 but got +0
+      + expected - actual
+
+      -0
+      +1
+      
+      at Context.<anonymous> (arkTest_build/ark_compiler_ut/interop/process_static_interop_imports.test.js:290:65)
+      at process.processImmediate (node:internal/timers:483:21)
+
+  19) test module_mode file api
+       18-18: test generateCompileContext inter—app hsp deps bytecode har with bundleType appService:
+
+      AssertionError: expected false to be true
+      + expected - actual
+
+      -false
+      +true
+      
+      at Context.<anonymous> (arkTest_build/ark_compiler_ut/module/module_mode.test.js:2014:94)
+      at process.processImmediate (node:internal/timers:483:21)
+
+
+
+
+---
+[基线口径注记] 本文件为 tail-25 截取（mocha 汇总行被 19 个失败详情挤出窗口）：
+- 本次新跑确认 failing=19（最高失败序号 19，末例 module_mode 18-18，与 task3-red-green 基线失败集一致）
+- passing=1122 引 task3-red-green 三次完整捕获（interop-baseline-full.txt 等，1122 passing (58s) / 19 failing），代码态同 HEAD 321cd5dd6（src 未变更）
+- Red 复跑将做全量捕获并核对失败集 = 基线 19 + 新增 2

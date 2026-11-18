@@ -88,7 +88,10 @@ function main() {}
       }),
     } as IMonitorPathInfo)], ((_m: IMonitor) => {
       this.onStrChange(_m);
-    }), this);
+    }), ({
+      owner: this,
+      functionName: "onStrChange",
+    } as MakeMonitorOptions));
   }
 
   public __updateStruct(initializers: (__Options_Index | undefined)): void {}

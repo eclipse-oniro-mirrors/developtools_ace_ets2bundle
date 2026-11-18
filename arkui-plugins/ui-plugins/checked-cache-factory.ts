@@ -78,7 +78,7 @@ import {
 import { coerceToAstNode } from '../collectors/ui-collectors/validators/utils';
 import { getPerfName } from '../common/debug';
 import { MetaDataCollector } from '../common/metadata-collector';
-import { ARKUI_BUILDER_SOURCE_NAME, ARKUI_INTEROP_SOURCE_NAME, EntryWrapperNames, NodeCacheNames } from '../common/predefines';
+import { ARKUI_BUILDER_SOURCE_NAME, ARKUI_INTEROP_SOURCE_NAME, EntryWrapperNames, NodeCacheNames, TypeNames } from '../common/predefines';
 import { ImportCollector } from '../common/import-collector';
 import { factory as UIFactory } from './ui-factory';
 import { CacheFactory as StructCacheFactory } from './struct-translators/cache-factory';
@@ -227,6 +227,9 @@ export class RewriteFactory {
  	        return node;
         }
         if (checkIsDeclFromStructInfo(metadata.structInfo)) {
+            if (!node.typeAnnotation) {
+                node.setTypeAnnotation(UIFactory.createTypeReferenceFromString(TypeNames.ANY));
+            }
             if (!!node.value) {
                 node.setValue(undefined);
                 if (
@@ -237,6 +240,9 @@ export class RewriteFactory {
                     node.setIsImmediateInit();
                 }
             }
+            return node;
+        }
+        if (!node.typeAnnotation && !!metadata.structInfo.name) {
             return node;
         }
         arkts.Performance.getInstance().createDetailedEvent(getPerfName([1, 1, 1, 1], 'classifyPropertyFromInfo'));

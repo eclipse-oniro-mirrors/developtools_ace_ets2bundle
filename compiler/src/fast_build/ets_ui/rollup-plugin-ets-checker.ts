@@ -55,6 +55,7 @@ import {
 import { LINTER_SUBSYSTEM_CODE } from '../../hvigor_error_code/hvigor_error_info';
 import { ErrorCodeModule } from '../../hvigor_error_code/const/error_code_module';
 import { fileInfoCache } from '../../file_info_cache';
+import { validateHarWidgetCompile } from '../ark_compiler/common/process_ark_config';
 
 export let tsWatchEmitter: EventEmitter | undefined = undefined;
 export let tsWatchEndPromise: Promise<void>;
@@ -64,6 +65,7 @@ export function etsChecker() {
   return {
     name: 'etsChecker',
     buildStart() {
+      validateHarWidgetCompile(this);
       const recordInfo = MemoryMonitor.recordStage(MemoryDefine.ROLLUP_PLUGIN_BUILD_START);
       const hookEventFactory: CompileEvent = getHookEventFactory(this.share, 'etsChecker', 'buildStart');
       const eventServiceChecker = createAndStartEvent(hookEventFactory, 'serviceChecker');

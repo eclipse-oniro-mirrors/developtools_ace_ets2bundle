@@ -21,6 +21,40 @@ import { debugLog } from '../common/debug';
 import { hasDecorator, getAnnotationValue } from '../ui-plugins/property-translators/utils'
 import { DecoratorNames, DeprecatedDecoratorNames, StructDecoratorNames, GlobalReusePoolNames } from '../common/predefines';
 
+/** Replaces type parameters in a cloned alias body without changing the alias declaration. */
+class TypeParameterSubstitutionVisitor extends AbstractVisitor {
+    constructor(private substitutions: ReadonlyMap<string, arkts.TypeNode>) {
+        super();
+    }
+
+    /** Replaces matching type references with a fresh copy of the type argument. */
+    visitor(node: arkts.AstNode): arkts.AstNode {
+        // visitEachChild does not visit TSArrayType elements, so visit them explicitly.
+        if (arkts.isTSArrayType(node) && node.elementType) {
+            const elementType = this.visitor(node.elementType);
+            if (arkts.isTypeNode(elementType) && elementType !== node.elementType) {
+                return arkts.TSArrayType.updateTSArrayType(node, elementType);
+            }
+            return node;
+        }
+        if (arkts.isETSTypeReference(node)) {
+            const part = node.part;
+            if (
+                part?.name &&
+                arkts.isIdentifier(part.name) &&
+                !part.previous &&
+                !part.typeParams
+            ) {
+                const substitution = this.substitutions.get(part.name.name);
+                if (substitution) {
+                    return substitution.clone();
+                }
+            }
+        }
+        return this.visitEachChild(node);
+    }
+}
+
 export class EmitTransformer extends AbstractVisitor {
     constructor(private options?: interop.EmitTransformerOptions) {
         super();
@@ -285,7 +319,137 @@ export class EmitTransformer extends AbstractVisitor {
             return this.processClassProperty(node);
         } else if (arkts.isMethodDefinition(node)) {
             return this.processMethodDefinition(node);
+        } else if (arkts.isETSTypeReference(node)) {
+            return this.transformWrappedBuilderTypeRef(node);
+        } else if (arkts.isTSArrayType(node) && node.elementType) {
+            // Also convert WrappedBuilder types inside arrays.
+            const elementType = this.visitor(node.elementType);
+            if (arkts.isTypeNode(elementType) && elementType !== node.elementType) {
+                return arkts.TSArrayType.updateTSArrayType(node, elementType);
+            }
         }
         return node;
+    }
+
+    /**
+     * Converts WrappedBuilder<function type> to WrappedBuilder<parameter tuple>.
+     * e.g. WrappedBuilder<(value: string, size: number) => void> -> WrappedBuilder<[string, number]>.
+     * Runs after binding so aliases can be resolved. Leaves unresolved types unchanged.
+     */
+    transformWrappedBuilderTypeRef(node: arkts.ETSTypeReference): arkts.ETSTypeReference {
+        const part = node.part;
+        if (!part?.name || !arkts.isIdentifier(part?.name) || part?.name.name !== 'WrappedBuilder') {
+            return node;
+        }
+        const builderType = part.typeParams?.params?.[0];
+        if (!builderType) {
+            return node;
+        }
+
+        const types = this.getFunctionParameterTypes(builderType);
+        if (!types) {
+            return node;
+        }
+        const tuple = arkts.ETSTuple.create2ETSTuple(types);
+
+        const newTypeParams = arkts.factory.updateTSTypeParameterInstantiation(part.typeParams, [tuple]);
+        const newPart = arkts.factory.updateETSTypeReferencePart(part, part.name, newTypeParams, part.previous);
+        return arkts.factory.updateETSTypeReference(node, newPart);
+    }
+
+    /**
+     * Resolves function types and alias chains to their parameter types.
+     * Tracks aliases on the current path to stop cycles.
+     * Returns undefined on failure, or an empty array for a function with no parameters.
+     */
+    private getFunctionParameterTypes(
+        typeNode: arkts.TypeNode,
+        visitedAliases: Set<arkts.TSTypeAliasDeclaration> = new Set()
+    ): arkts.TypeNode[] | undefined {
+        if (arkts.isETSFunctionType(typeNode)) {
+            return this.getDirectFunctionParameterTypes(typeNode);
+        }
+
+        if (!arkts.isETSTypeReference(typeNode)) {
+            return undefined;
+        }
+        const part = typeNode.part;
+        if (!part?.name || !arkts.isIdentifier(part.name)) {
+            return undefined;
+        }
+        // Use the bound identifier to find local or imported aliases.
+        const declaration = arkts.getPeerIdentifierDecl(part.name.peer);
+        if (
+            !declaration ||
+            !arkts.isTSTypeAliasDeclaration(declaration) ||
+            !declaration.typeAnnotation ||
+            visitedAliases.has(declaration)
+        ) {
+            return undefined;
+        }
+
+        const substitutions = this.getAliasTypeSubstitutions(declaration, part);
+        if (!substitutions) {
+            return undefined;
+        }
+
+        const instantiatedType = new TypeParameterSubstitutionVisitor(substitutions).visitor(
+            declaration.typeAnnotation.clone()
+        );
+        if (!arkts.isTypeNode(instantiatedType)) {
+            return undefined;
+        }
+
+        visitedAliases.add(declaration);
+        const types = this.getFunctionParameterTypes(instantiatedType, visitedAliases);
+        visitedAliases.delete(declaration);
+        return types;
+    }
+
+    /** Clones parameter types in order. Returns undefined if a parameter has no type. */
+    private getDirectFunctionParameterTypes(typeNode: arkts.ETSFunctionType): arkts.TypeNode[] | undefined {
+        const types: arkts.TypeNode[] = [];
+        for (const parameter of typeNode.params) {
+            if (
+                !arkts.isETSParameterExpression(parameter) ||
+                !parameter.typeAnnotation ||
+                !arkts.isTypeNode(parameter.typeAnnotation)
+            ) {
+                return undefined;
+            }
+            types.push(parameter.typeAnnotation.clone());
+        }
+        return types;
+    }
+
+    /**
+     * Maps alias type parameters to arguments by position, using defaults when needed.
+     * Resolves references to earlier parameters in defaults, such as B = A.
+     * Returns undefined if arguments are missing or there are too many.
+     */
+    private getAliasTypeSubstitutions(
+        declaration: arkts.TSTypeAliasDeclaration,
+        part: arkts.ETSTypeReferencePart
+    ): Map<string, arkts.TypeNode> | undefined {
+        const typeParameters = declaration.typeParams?.params ?? [];
+        const typeArguments = part.typeParams?.params ?? [];
+        if (typeArguments.length > typeParameters.length) {
+            return undefined;
+        }
+        const substitutions = new Map<string, arkts.TypeNode>();
+        for (let index = 0; index < typeParameters.length; index++) {
+            const typeParameter = typeParameters[index];
+            const typeParameterName = typeParameter.name?.name;
+            let typeArgument = typeArguments[index] ?? typeParameter.defaultType;
+            if (!typeParameterName || !typeArgument) {
+                return undefined;
+            }
+            typeArgument = new TypeParameterSubstitutionVisitor(substitutions).visitor(
+                typeArgument.clone()
+            ) as arkts.TypeNode;
+            substitutions.set(typeParameterName, typeArgument);
+        }
+
+        return substitutions;
     }
 }

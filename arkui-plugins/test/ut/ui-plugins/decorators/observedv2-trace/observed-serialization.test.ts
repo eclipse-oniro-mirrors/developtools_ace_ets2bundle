@@ -58,7 +58,7 @@ function main() {}
 
 @Retention({policy:"SOURCE"}) export @interface TestDecor {}
 
-@ObservedV2() class testJSONStringifyIgnore implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class testJSONStringifyIgnore implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
 
   public addWatchSubscriber(watchId: WatchIdType): void {
@@ -163,11 +163,18 @@ function main() {}
   }
 
   public constructor() {}
+
+  public addRefAnyProp(): void {
+    this.__meta_var2.addRef();
+    this.__meta_var5.addRef();
+    this.__meta_var7.addRef();
+    this.__meta_var8.addRef();
+  }
   static {
   }
 }
 
-@ObservedV2() class testJsonRename implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class testJsonRename implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
 
   public addWatchSubscriber(watchId: WatchIdType): void {
@@ -272,6 +279,13 @@ function main() {}
   }
 
   public constructor() {}
+
+  public addRefAnyProp(): void {
+    this.__meta_var2.addRef();
+    this.__meta_var5.addRef();
+    this.__meta_var7.addRef();
+    this.__meta_var8.addRef();
+  }
   static {
   }
 }

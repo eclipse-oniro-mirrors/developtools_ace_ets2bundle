@@ -69,6 +69,7 @@ class ProjectConfig {
   compileSdkVersion: number = SDK_VERSION;
   compatibleSdkVersion: number = SDK_VERSION;
   compatibleSdkVersionStage: string = SDK_VERSION_STAGE;
+  compatibleApiMeta?: object;
   bundleName: string = BUNDLE_NAME_DEFAULT;
   etsLoaderVersion: string = ETS_LOADER_VERSION;
   etsLoaderReleaseType: string = RELEASE;

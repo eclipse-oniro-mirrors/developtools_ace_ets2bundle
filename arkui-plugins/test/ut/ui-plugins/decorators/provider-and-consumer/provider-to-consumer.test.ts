@@ -98,7 +98,7 @@ const data: Array<User> = [new User("Json", 10), new User("Eric", 15)];
 function main() {}
 
 
-@ObservedV2() class User implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class User implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
 
   public addWatchSubscriber(watchId: WatchIdType): void {
@@ -163,6 +163,11 @@ function main() {}
   public constructor(name: string, age: number) {
     this.name = name;
     this.age = age;
+  }
+
+  public addRefAnyProp(): void {
+    this.__meta_name.addRef();
+    this.__meta_age.addRef();
   }
   static {
   }

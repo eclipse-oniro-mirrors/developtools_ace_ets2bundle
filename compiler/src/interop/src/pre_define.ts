@@ -176,6 +176,8 @@ export const CUSTOM_DECORATOR_NAME: Set<string> = new Set([
 ]);
 
 export const EXTNAME_ETS: string = '.ets';
+export const EXTNAME_ATS: string = '.ats';
+export const EXTNAME_D_ATS: string = '.d.ats';
 export const NODE_MODULES: string = 'node_modules';
 export const PACKAGES: string = 'pkg_modules';
 export const INDEX_ETS: string = 'index.ets';
@@ -381,7 +383,7 @@ export const BIND_OBJECT_PROPERTY: Map<string, Set<string>> = new Map([
   ['Radio', new Set([COMPONENT_CREATE_FUNCTION])],
   ['Checkbox', new Set([COMPONENT_CREATE_FUNCTION])],
   ['Web', new Set(['bindSelectionMenu'])],
-  [ALL_COMPONENTS, new Set(['bindMenu', 'bindContextMenu', 'bindContextMenuByResponseType', 'bindContextMenuByIsShow', 'bindContextMenuWithResponse', 'bindSheet', 'dragPreview'])]
+  [ALL_COMPONENTS, new Set(['bindMenu', 'bindContextMenu', 'bindContextMenuByResponseType', 'bindContextMenuByIsShow', 'bindContextMenuWithResponse', 'bindSheet', 'dragPreview', 'safeAreaInset'])]
 ]);
 
 export const CHECKED: string = 'checked';
@@ -439,6 +441,7 @@ export const DATE: string = 'date';
 export const GRID_ITEM: string = 'GridItem';
 export const LIST_ITEM: string = 'ListItem';
 export const GRID: string = 'Grid';
+export const WATERFLOW: string = 'WaterFlow';
 export const LIST: string = 'List';
 export const ENABLE_EDIT_MODE: string = 'enableEditMode';
 export const UPDATE_FUNC_BY_ELMT_ID: string = 'updateFuncByElmtId';
@@ -530,6 +533,9 @@ export const CREATE_BIND_COMPONENT: Set<string> = new Set(['ListItemGroup', REFR
 export const HEADER: string = 'header';
 export const INDICATORBUILDER: string = 'indicatorBuilder';
 export const FOOTER: string = 'footer';
+
+export const SAFEAREAINSET: string = 'safeAreaInset';
+export const SAFEAREAINSET_NAME_RANGE: Set<string> = new Set(['top', 'end', 'bottom', 'start', 'content']);
 
 export const INTERFACE_NAME_SUFFIX: string = '_Params';
 export const OBSERVED_PROPERTY_ABSTRACT: string = 'ObservedPropertyAbstract';
@@ -752,6 +758,14 @@ export const MAX_LINK_SOURCE_DATA_NESTING_LEVEL: number = 2;
 
 export const SDK_API_VERSION_FUNCTION_NAME: string = 'sdkApiVersion';
 export const DISTRIBUTE_API_VERSION_FUNCTION_NAME: string = 'distributionOSApiVersion';
+
+export const BUILDER_DECORATOR_OPTION_IS_PLACEHOLDER: string = 'isPlaceholder';
+export const ACE_BEGIN_SCROLL_PLACEHOLDER: string = '__aceBeginScrollPlaceholder__';
+export const ACE_END_SCROLL_PLACEHOLDER: string = '__aceEndScrollPlaceholder__';
+export const ERROR_CODE_BUILDER_DECORATOR_ONLY_GLOBAL: string = '10905131';
+export const ERROR_CODE_BUILDER_DECORATOR_LITERAL_ONLY: string = '10905132';
+export const ERROR_CODE_BUILDER_PLACEHOLDER_BOOL_ONLY: string = '10905133';
+export const ERROR_CODE_BUILDER_PLACEHOLDER_NO_PARAM: string = '10905134';
 
 const WRAPPED_BUILDER_MESSAGE_TEMPLATE: string = 'The @Builder function is wrapped %s, ' +
   'which may cause the builder transformation to fail. Use the @Builder function directly.';

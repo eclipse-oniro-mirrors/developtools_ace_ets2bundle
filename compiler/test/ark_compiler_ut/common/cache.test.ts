@@ -122,4 +122,51 @@ mocha.describe('test cache file api', function () {
     const returnInfo = JSON.stringify(utCache.getMetaInfo(this.rollup.share.projectConfig));
     expect(metaInfoArr === returnInfo).to.be.true;
   });
+
+  mocha.it('3-1: test getMetaInfo with valid compatibleApiMeta', function () {
+    this.rollup.build();
+    this.rollup.share.projectConfig.compatibleSdkVersion = 26;
+    const metaInfoWithoutApiMeta: string = utCache.getMetaInfo(this.rollup.share.projectConfig);
+    this.rollup.share.projectConfig.compatibleApiMeta = { api: '26.0.1', version: 26, type: 1 };
+    const metaInfoWithApiMeta: string = utCache.getMetaInfo(this.rollup.share.projectConfig);
+    expect(metaInfoWithApiMeta === metaInfoWithoutApiMeta).to.be.false;
+    expect(metaInfoWithApiMeta.includes('26.0.1')).to.be.true;
+  });
+
+  mocha.it('3-2: test getMetaInfo with invalid compatibleApiMeta', function () {
+    this.rollup.build();
+    this.rollup.share.projectConfig.compatibleSdkVersion = 26;
+    const metaInfoWithoutApiMeta: string = utCache.getMetaInfo(this.rollup.share.projectConfig);
+    this.rollup.share.projectConfig.compatibleApiMeta = { api: 'invalid', version: 26, type: 1 };
+    expect(utCache.getMetaInfo(this.rollup.share.projectConfig) === metaInfoWithoutApiMeta).to.be.true;
+    this.rollup.share.projectConfig.compatibleApiMeta =
+      { api: `${this.rollup.share.projectConfig.compatibleSdkVersion}` };
+    expect(utCache.getMetaInfo(this.rollup.share.projectConfig) === metaInfoWithoutApiMeta).to.be.true;
+  });
+
+  mocha.it('3-3: test checkArkCompilerCacheInfo invalidates when dotted api version changes', function () {
+    this.rollup.build();
+    this.rollup.clearCache();
+    this.rollup.share.projectConfig.compatibleSdkVersion = 26;
+    this.rollup.share.projectConfig.compatibleApiMeta = { api: '26.0.1', version: 26, type: 1 };
+    checkArkCompilerCacheInfo(this.rollup);
+    expect(this.rollup.cache.get(ARK_COMPILER_META_INFO).length > 0).to.be.true;
+    expect(this.rollup.cache.get(IS_CACHE_INVALID) === true).to.be.true;
+
+    this.rollup.cache.set(IS_CACHE_INVALID, false);
+    checkArkCompilerCacheInfo(this.rollup);
+    expect(this.rollup.cache.get(IS_CACHE_INVALID) === false).to.be.true;
+
+    this.rollup.share.projectConfig.compatibleApiMeta = { api: '26.0.2', version: 26, type: 1 };
+    checkArkCompilerCacheInfo(this.rollup);
+    expect(this.rollup.cache.get(IS_CACHE_INVALID) === true).to.be.true;
+  });
+
+  mocha.it('3-4: test getMetaInfo with release version api keeps metaInfo unchanged', function () {
+    this.rollup.build();
+    this.rollup.share.projectConfig.compatibleSdkVersion = 21;
+    const metaInfoWithoutApiMeta: string = utCache.getMetaInfo(this.rollup.share.projectConfig);
+    this.rollup.share.projectConfig.compatibleApiMeta = { api: '6.0.1', version: 21, type: 1 };
+    expect(utCache.getMetaInfo(this.rollup.share.projectConfig) === metaInfoWithoutApiMeta).to.be.true;
+  });
 });

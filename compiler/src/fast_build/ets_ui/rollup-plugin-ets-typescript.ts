@@ -120,6 +120,7 @@ import parseIntent from '../../userIntents_parser/parseUserIntents';
 import { concatenateEtsOptions, getExternalComponentPaths } from '../../external_component_map';
 import { expandAllImportPaths } from '../../import_path_expand';
 import { fileInfoCache } from '../../file_info_cache';
+import { clearExtendBlockCache } from '../../scroll_container_size_check';
 
 let switchTsAst: boolean = true;
 
@@ -788,9 +789,11 @@ function resetCollection() {
   propertyCollection.clear();
   linkCollection.clear();
   EXTEND_ATTRIBUTE.clear();
+  clearExtendBlockCache();
   storedFileInfo.getCurrentArkTsFile().reuseComponentsV2.clear();
   resetComponentCollection();
   storedFileInfo.hasLocalBuilderInFile = false;
+  storedFileInfo.hasAttributeExtension = false;
 }
 
 function resetEtsTransform(): void {

@@ -16,6 +16,7 @@
 import { expect } from 'chai';
 import mocha from 'mocha';
 import path from "path";
+import * as ts from 'typescript';
 
 import fs from 'fs';
 import os from 'os';
@@ -28,7 +29,9 @@ import {
   initConfigForInterop,
   destroyInterop,
   transformModuleNameToRelativePath,
-  processAbilityPagesFullPath
+  processAbilityPagesFullPath,
+  getOverrideDeclPath,
+  redirectToOverrideDeclFile
 } from '../../../lib/fast_build/ark_compiler/interop/interop_manager';
 import { ARKTS_1_1, ARKTS_1_2, ARKTS_HYBRID } from '../../../lib/fast_build/ark_compiler/interop/pre_define';
 import { sdkConfigs, projectConfig as mainProjectConfig } from '../../../main';
@@ -1683,5 +1686,141 @@ mocha.describe('test glue code file info cache', function () {
     FileManager.initGlueCodeFileInfos(invalidCachePath);
 
     expect(() => FileManager.persistGlueCodeFileInfos()).to.throw();
+  });
+});
+
+mocha.describe('test getOverrideDeclPath api', function () {
+  let tempDir: string;
+
+  mocha.beforeEach(function () {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'override-decl-path-'));
+  });
+
+  mocha.afterEach(function () {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  mocha.it('16-1: should return the override path when the override declaration file exists', function () {
+    const declDir = path.join(tempDir, 'decl');
+    fs.mkdirSync(declDir, { recursive: true });
+    const declPath = path.join(declDir, 'a.d.ets');
+    fs.writeFileSync(declPath, 'export declare const a: number;\n', 'utf-8');
+    const overrideDeclPath = path.join(declDir, 'a.override.d.ets');
+    fs.writeFileSync(overrideDeclPath, 'export declare const a: number;\n', 'utf-8');
+
+    expect(getOverrideDeclPath(declPath)).to.equal(overrideDeclPath);
+  });
+
+  mocha.it('16-2: should keep the original decl path when no override file exists', function () {
+    const declDir = path.join(tempDir, 'decl');
+    fs.mkdirSync(declDir, { recursive: true });
+    const declPath = path.join(declDir, 'b.d.ets');
+    fs.writeFileSync(declPath, 'export declare const b: number;\n', 'utf-8');
+
+    expect(getOverrideDeclPath(declPath)).to.equal(declPath);
+  });
+
+  mocha.it('16-3: should only replace the trailing .d.ets extension', function () {
+    // A directory name containing .d.ets must not confuse the suffix replacement.
+    const declDir = path.join(tempDir, 'pkg.d.ets');
+    fs.mkdirSync(declDir, { recursive: true });
+    const declPath = path.join(declDir, 'c.d.ets');
+    fs.writeFileSync(declPath, 'export declare const c: number;\n', 'utf-8');
+    const overrideDeclPath = path.join(declDir, 'c.override.d.ets');
+    fs.writeFileSync(overrideDeclPath, 'export declare const c: number;\n', 'utf-8');
+
+    expect(getOverrideDeclPath(declPath)).to.equal(overrideDeclPath);
+    // The candidate for a non-declaration path inside the same directory stays untouched.
+    expect(getOverrideDeclPath(path.join(declDir, 'c.ets'))).to.equal(path.join(declDir, 'c.ets'));
+  });
+
+  mocha.it('16-4: should keep the original path when the candidate override file does not exist', function () {
+    const declDir = path.join(tempDir, 'decl');
+    fs.mkdirSync(declDir, { recursive: true });
+    // A .d.ts file does not end with the expected generated declaration layout; the
+    // computed candidate must not exist, so the original path is returned.
+    const dtsPath = path.join(declDir, 'model.d.ts');
+    fs.writeFileSync(dtsPath, 'export declare const model: number;\n', 'utf-8');
+
+    expect(getOverrideDeclPath(dtsPath)).to.equal(dtsPath);
+  });
+});
+
+mocha.describe('test redirectToOverrideDeclFile api', function () {
+  let tempDir: string;
+  let declDir: string;
+  let declPath: string;
+  let overrideDeclPath: string;
+
+  mocha.beforeEach(function () {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'redirect-override-decl-'));
+    declDir = path.join(tempDir, 'decl');
+    fs.mkdirSync(declDir, { recursive: true });
+    declPath = path.join(declDir, 'a.d.ets');
+    fs.writeFileSync(declPath, 'export declare const a: number;\n', 'utf-8');
+    overrideDeclPath = path.join(declDir, 'a.override.d.ets');
+  });
+
+  mocha.afterEach(function () {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  function buildModuleItem(resolvedFileName: string): ts.ResolvedModuleFull {
+    return {
+      resolvedFileName,
+      extension: ts.Extension.Dets,
+      isExternalLibraryImport: false
+    };
+  }
+
+  mocha.it('17-1: should return the module item unchanged when it is null or undefined', function () {
+    expect(redirectToOverrideDeclFile(null)).to.be.null;
+    expect(redirectToOverrideDeclFile(undefined)).to.be.undefined;
+  });
+
+  mocha.it('17-2: should return the module item unchanged when resolvedFileName is missing', function () {
+    const moduleItemWithoutFileName = { extension: ts.Extension.Dets } as ts.ResolvedModuleFull;
+    expect(redirectToOverrideDeclFile(moduleItemWithoutFileName)).to.equal(moduleItemWithoutFileName);
+  });
+
+  mocha.it('17-3: should not redirect a module whose file does not end with .d.ets', function () {
+    const sourceModuleItem = buildModuleItem(path.join(declDir, 'a.ets'));
+    expect(redirectToOverrideDeclFile(sourceModuleItem)).to.equal(sourceModuleItem);
+
+    const dtsModuleItem = buildModuleItem(path.join(declDir, 'a.d.ts'));
+    expect(redirectToOverrideDeclFile(dtsModuleItem)).to.equal(dtsModuleItem);
+  });
+
+  mocha.it('17-4: should keep the same module item object when no override file exists', function () {
+    const moduleItem = buildModuleItem(declPath);
+    const result = redirectToOverrideDeclFile(moduleItem);
+    expect(result).to.equal(moduleItem);
+    expect(result?.resolvedFileName).to.equal(declPath);
+  });
+
+  mocha.it('17-5: should redirect to the override file and preserve the other fields', function () {
+    fs.writeFileSync(overrideDeclPath, 'export declare const a: number;\n', 'utf-8');
+    const moduleItem: ts.ResolvedModuleFull = {
+      resolvedFileName: declPath,
+      extension: ts.Extension.Dets,
+      isExternalLibraryImport: true
+    };
+
+    const result = redirectToOverrideDeclFile(moduleItem);
+
+    expect(result).to.not.equal(moduleItem);
+    expect(result?.resolvedFileName).to.equal(overrideDeclPath);
+    expect(result?.extension).to.equal(ts.Extension.Dets);
+    expect(result?.isExternalLibraryImport).to.be.true;
+  });
+
+  mocha.it('17-6: should not mutate the input module item when redirecting', function () {
+    fs.writeFileSync(overrideDeclPath, 'export declare const a: number;\n', 'utf-8');
+    const moduleItem = buildModuleItem(declPath);
+
+    const result = redirectToOverrideDeclFile(moduleItem);
+
+    expect(result?.resolvedFileName).to.equal(overrideDeclPath);
+    expect(moduleItem.resolvedFileName).to.equal(declPath);
   });
 });

@@ -73,7 +73,8 @@ import {
   getRollupCache,
   setRollupCache,
   getRollupCommonCache,
-  setRollupCommonCache
+  setRollupCommonCache,
+  getEtsSdkDirPath
 } from './utils';
 import {
   isExtendFunction,
@@ -117,11 +118,14 @@ import { concatenateEtsOptions, getExternalComponentPaths } from './external_com
 import {
   getArkTSEvoDeclFilePath,
   queryDeclFileForInterop,
-  resolveRelativeModuleFromDecl
+  resolveRelativeModuleFromDecl,
+  resolveRelativeModuleFromSource
 } from './fast_build/ark_compiler/interop/process_arkts_evolution';
 import {
   FileManager,
-  isMixCompile
+  isMixCompile,
+  getOverrideDeclPath,
+  redirectToOverrideDeclFile
 } from './fast_build/ark_compiler/interop/interop_manager';
 import {
   ARKTS_1_1,
@@ -1588,8 +1592,14 @@ function isResolvedPathUnderExternalApi(target: string | undefined, externalApiP
   if (!target) {
     return false;
   }
-  const resolvedRoot: string = path.resolve(externalApiPath);
   const resolvedTarget: string = path.resolve(target);
+  if (projectConfig?.isCrossplatform && projectConfig?.arkUIXSdkRootPath) {
+    const arkUIXSdkEtsRoot: string = path.resolve(projectConfig.arkUIXSdkRootPath, 'openharmony', 'ets');
+    if (resolvedTarget.startsWith(arkUIXSdkEtsRoot + path.sep)) {
+      return false;
+    }
+  }
+  const resolvedRoot: string = path.resolve(externalApiPath);
   return resolvedTarget === resolvedRoot || resolvedTarget.startsWith(resolvedRoot + path.sep);
 }
 
@@ -1621,7 +1631,10 @@ export function resolveModuleNames(moduleNames: string[], containingFile: string
           } else {
             resolvedModules.push(result.resolvedModule);
           }
-        } else if (isMixCompile() && result.resolvedModule.resolvedFileName && /\.ets$/.test(result.resolvedModule.resolvedFileName)) {
+        } else if (isMixCompile() && result.resolvedModule.resolvedFileName &&
+          /\.(?:ets|ats)$/.test(result.resolvedModule.resolvedFileName)) {
+          // currently, we wont hit this branch, since tsc does not support ats files, 
+          // but we keep this branch for future support.
           const sourceFilePath = result.resolvedModule.resolvedFileName;
           let moduleItem: ts.ResolvedModuleFull | null | undefined;
           let cacheItem: DeclFileItem | undefined = declFilesCache.get(sourceFilePath);
@@ -1632,7 +1645,7 @@ export function resolveModuleNames(moduleNames: string[], containingFile: string
           } else {
             // query sourceFilePath first time
             let queryResult = queryDeclFileForInterop(sourceFilePath, moduleName, languageVersion, result.resolvedModule, interopDeclNotFoundModules);
-            moduleItem = queryResult;
+            moduleItem = redirectToOverrideDeclFile(queryResult);
             declFilesCache.set(sourceFilePath, {
               module: moduleItem,
               cnt: 1
@@ -1694,10 +1707,12 @@ export function resolveModuleNames(moduleNames: string[], containingFile: string
           const extension = resolveModuleInfo.isEts ? '.d.ets' : '.d.ts';
           resolvedModules.push(getResolveModule(modulePath, extension));
         } else {
-          const modulePath: string = path.resolve(__dirname, '../../../api', moduleName + '.d.ts');
-          const systemDETSModulePath: string = path.resolve(__dirname, '../../../api', moduleName + '.d.ets');
-          const kitModulePath: string = path.resolve(__dirname, '../../../kits', moduleName + '.d.ts');
-          const kitSystemDETSModulePath: string = path.resolve(__dirname, '../../../kits', moduleName + '.d.ets');
+          const apiDirPath: string = getEtsSdkDirPath('api', projectConfig, '../../../');
+          const kitsDirPath: string = getEtsSdkDirPath('kits', projectConfig, '../../../');
+          const modulePath: string = path.resolve(apiDirPath, moduleName + '.d.ts');
+          const systemDETSModulePath: string = path.resolve(apiDirPath, moduleName + '.d.ets');
+          const kitModulePath: string = path.resolve(kitsDirPath, moduleName + '.d.ts');
+          const kitSystemDETSModulePath: string = path.resolve(kitsDirPath, moduleName + '.d.ets');
           const suffix: string = /\.js$/.test(moduleName) ? '' : '.js';
           const jsModulePath: string = path.resolve(__dirname, '../node_modules', moduleName + suffix);
           const fileModulePath: string =
@@ -1706,6 +1721,7 @@ export function resolveModuleNames(moduleNames: string[], containingFile: string
             /\.d\.ets$/.test(moduleName) ? moduleName : moduleName + EXTNAME_D_ETS);
           const arktsEvoDeclFilePath: string = isMixCompile() ?
             (resolveRelativeModuleFromDecl(moduleName, containingFile) ||
+              resolveRelativeModuleFromSource(moduleName, containingFile) ||
               getArkTSEvoDeclFilePath({ moduleRequest: moduleName, resolvedFileName: '' })) : '';
           if (ts.sys.fileExists(modulePath)) {
             resolvedModules.push(getResolveModule(modulePath, '.d.ts'));
@@ -1723,7 +1739,9 @@ export function resolveModuleNames(moduleNames: string[], containingFile: string
             resolvedModules.push(getResolveModule(DETSModulePath, '.d.ets'));
           } else if (isMixCompile() && arktsEvoDeclFilePath && ts.sys.fileExists(arktsEvoDeclFilePath)) {
             const evoExt = arktsEvoDeclFilePath.endsWith(EXTNAME_D_ETS) ? EXTNAME_D_ETS : '.ets';
-            resolvedModules.push(getResolveModule(arktsEvoDeclFilePath, evoExt));
+            const targetDeclPath: string =
+              evoExt === EXTNAME_D_ETS ? getOverrideDeclPath(arktsEvoDeclFilePath) : arktsEvoDeclFilePath;
+            resolvedModules.push(getResolveModule(targetDeclPath, evoExt));
           } else {
             const srcIndex: number = projectConfig.projectPath.indexOf('src' + path.sep + 'main');
             let DETSModulePathFromModule: string;

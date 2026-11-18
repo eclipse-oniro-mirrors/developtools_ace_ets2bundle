@@ -142,7 +142,8 @@ class BuilderValidator extends ArkUISymbolValidator {
         if (!expr || !arkts.isIdentifier(expr)) {
             return false;
         }
-        return this.checkIsFromArkUI(expr.name, anno);
+        const declaration = arkts.getPeerIdentifierDecl(expr.peer);
+        return !!declaration && this.checkIsFromArkUI(expr.name, declaration);
     }
 
     protected checkIsFromArkUIFromType(decl: arkts.TypeNode | undefined): boolean {

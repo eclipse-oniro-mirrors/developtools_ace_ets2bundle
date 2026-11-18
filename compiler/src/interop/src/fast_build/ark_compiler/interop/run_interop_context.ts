@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { FileManager } from './interop_manager';
+import { FileManager, getDeclgenV2DeclPath } from './interop_manager';
 import { mkdirsSync, toUnixPath } from '../../../utils';
 import {
   ArkTSEvolutionModule,
@@ -23,7 +23,6 @@ import {
 } from './type';
 import fs from 'fs';
 import path from 'path';
-import { EXTNAME_D_ETS } from '../common/ark_define';
 
 export function run(param: Params): boolean {
   FileManager.init(param.dependentModuleMap, param.projectConfig.sdkAliasMap);
@@ -112,7 +111,7 @@ export class InteropContext {
     const normalizedFilePath: string = moduleInfo.isNative
       ? moduleInfo.moduleName
       : `${moduleInfo.packageName}/${projectFilePath}`;
-    const declPath: string = path.join(toUnixPath(declgenV2OutPath), projectFilePath) + EXTNAME_D_ETS;
+    const declPath: string = getDeclgenV2DeclPath(path.join(toUnixPath(declgenV2OutPath), projectFilePath));
     const isNativeFlag = moduleInfo.isNative ? 'Y' : 'N';
     const ohmUrl: string = `${isNativeFlag}&&&${normalizedFilePath}&`;
     this.pkgDeclFilesConfig[moduleInfo.packageName].files[projectFilePath] = {

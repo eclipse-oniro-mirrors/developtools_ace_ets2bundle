@@ -1752,6 +1752,73 @@ mocha.describe('test module_mode file api', function () {
     expect(moduleMode.cmdArgs.includes('--enable-callable-name')).to.be.true;
   });
 
+  mocha.it('10-7: test generateEs2AbcCmd with valid compatibleApiMeta', function () {
+    this.rollup.build();
+    this.rollup.share.projectConfig.oldMapFilePath = DEFAULT_ETS;
+    this.rollup.share.projectConfig.compatibleSdkVersion = 26;
+    this.rollup.share.projectConfig.compatibleApiMeta = { api: '26.0.1', version: 26, type: 1 };
+    const moduleMode = new ModuleHotreloadMode(this.rollup);
+    const targetApiVersion = `${TARGET_API_VERSION}26.0.1`;
+    moduleMode.generateEs2AbcCmd();
+    moduleMode.byteCodeHar = true;
+
+    expect(moduleMode.cmdArgs[1] === DEBUG_INFO).to.be.true;
+    moduleMode.cmdArgs.splice(1, 1);
+    expect(moduleMode.cmdArgs[1].indexOf(BUILD_INFO) > 0).to.be.true;
+    moduleMode.cmdArgs.splice(1, 1);
+    expect(moduleMode.cmdArgs[2].indexOf(BUILD_NPM) > 0).to.be.true;
+    moduleMode.cmdArgs.splice(2, 1);
+    expect(moduleMode.cmdArgs[3].indexOf(MODULES_ABC) > 0).to.be.true;
+    moduleMode.cmdArgs.splice(3, 1);
+    checkGenerateEs2AbcCmdExpect(moduleMode.cmdArgs, targetApiVersion, moduleMode.byteCodeHar);
+  });
+
+  mocha.it('10-8: test generateEs2AbcCmd with invalid compatibleApiMeta falls back to compatibleSdkVersion',
+    function () {
+      this.rollup.build();
+      this.rollup.share.projectConfig.oldMapFilePath = DEFAULT_ETS;
+      this.rollup.share.projectConfig.compatibleApiMeta = { api: 'invalid', version: 26, type: 1 };
+      const moduleMode = new ModuleHotreloadMode(this.rollup);
+      const compatibleSdkVersion =
+        `${TARGET_API_VERSION}${this.rollup.share.projectConfig.compatibleSdkVersion}`;
+      moduleMode.generateEs2AbcCmd();
+      moduleMode.byteCodeHar = true;
+
+      expect(moduleMode.cmdArgs[1] === DEBUG_INFO).to.be.true;
+      moduleMode.cmdArgs.splice(1, 1);
+      expect(moduleMode.cmdArgs[1].indexOf(BUILD_INFO) > 0).to.be.true;
+      moduleMode.cmdArgs.splice(1, 1);
+      expect(moduleMode.cmdArgs[2].indexOf(BUILD_NPM) > 0).to.be.true;
+      moduleMode.cmdArgs.splice(2, 1);
+      expect(moduleMode.cmdArgs[3].indexOf(MODULES_ABC) > 0).to.be.true;
+      moduleMode.cmdArgs.splice(3, 1);
+      checkGenerateEs2AbcCmdExpect(moduleMode.cmdArgs, compatibleSdkVersion, moduleMode.byteCodeHar);
+    });
+
+  mocha.it('10-9: test generateEs2AbcCmd with release version api falls back to compatibleSdkVersion',
+    function () {
+      this.rollup.build();
+      this.rollup.share.projectConfig.oldMapFilePath = DEFAULT_ETS;
+      this.rollup.share.projectConfig.compatibleSdkVersion = 21;
+      this.rollup.share.projectConfig.compatibleApiMeta = { api: '6.0.1', version: 21, type: 1 };
+      const moduleMode = new ModuleHotreloadMode(this.rollup);
+      const compatibleSdkVersion =
+        `${TARGET_API_VERSION}${this.rollup.share.projectConfig.compatibleSdkVersion}`;
+      moduleMode.generateEs2AbcCmd();
+      moduleMode.byteCodeHar = true;
+
+      expect(moduleMode.cmdArgs[1] === DEBUG_INFO).to.be.true;
+      moduleMode.cmdArgs.splice(1, 1);
+      expect(moduleMode.cmdArgs[1].indexOf(BUILD_INFO) > 0).to.be.true;
+      moduleMode.cmdArgs.splice(1, 1);
+      expect(moduleMode.cmdArgs[2].indexOf(BUILD_NPM) > 0).to.be.true;
+      moduleMode.cmdArgs.splice(2, 1);
+      expect(moduleMode.cmdArgs[3].indexOf(MODULES_ABC) > 0).to.be.true;
+      moduleMode.cmdArgs.splice(3, 1);
+      checkGenerateEs2AbcCmdExpect(moduleMode.cmdArgs, compatibleSdkVersion, moduleMode.byteCodeHar);
+      expect(moduleMode.cmdArgs.includes(`${TARGET_API_VERSION}6.0.1`)).to.be.false;
+    });
+
   mocha.it('11-1: test addCacheFileArgs under build debug', function () {
     this.rollup.build();
     this.rollup.share.projectConfig.oldMapFilePath = DEFAULT_ETS;

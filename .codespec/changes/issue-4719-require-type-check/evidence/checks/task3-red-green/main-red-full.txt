@@ -1,0 +1,441 @@
+
+> compilier@0.0.1 etsTest
+> npm run build && ./node_modules/.bin/babel ./test/transform_ut --ignore ./test/transform_ut/application/** --out-dir etsTest_build/transform_ut --extensions .ts && npm run run:etsTest&& npm run run:cleanEtsTest
+
+
+> compilier@0.0.1 build
+> npm run generateDeclarations && ./node_modules/.bin/babel ./src --out-dir lib --extensions .ts --ignore ./src/interop && node uglify-source.js lib && npm run copyJsonFiles
+
+
+> compilier@0.0.1 generateDeclarations
+> node ./build_declarations_file.js ../../../interface/sdk-js/api/@internal/component/ets ./declarations ./lib false
+
+Successfully compiled 114 files with Babel (3116ms).
+
+> compilier@0.0.1 copyJsonFiles
+> node copy_json_files.js ./src lib --ignore ./src/interop
+
+Successfully compiled 17 files with Babel (430ms).
+
+> compilier@0.0.1 run:etsTest
+> mocha "etsTest_build/transform_ut/**/*.test.js" --reporter-option maxDiffSize=10000
+
+
+
+  test rollup mock
+    ✔ 1-1: test rollup projectConfig
+
+  test InsightDecorator UT testcases
+    ✔ 1-1: test @InsightIntentLink/@InsightIntentLink
+    ✔ 1-2: test @InsightIntentEntry/@InsightIntentEntry
+    ✔ 1-3: test @InsightIntentFunction/@InsightIntentFunction
+    ✔ 1-4: test @InsightIntentPage/@InsightIntentPage
+    ✔ 1-5: test @InsightIntentForm/@InsightIntentForm
+    ✔ 1-6: test @InsightIntentEntity/@InsightIntentEntity
+
+  test UT testcases [non-preview mode]
+    ✔ 1-1: test import/import@CustomDialog
+    ✔ 1-2: test import/import@Observed
+    ✔ 1-3: test import/importAllEts
+    ✔ 1-4: test import/importEts
+    ✔ 1-5: test import/importExportEts
+    ✔ 1-6: test import/importExportNest
+    ✔ 1-7: test import/importSystemApi
+    ✔ 1-8: test import/importTs
+    ✔ 1-9: test inner_commponent_transform/$$_component/$$_component
+    ✔ 1-10: test inner_commponent_transform/custom_component/custom_component
+    ✔ 1-11: test inner_commponent_transform/gesture_component/longPressGesture
+    ✔ 1-12: test inner_commponent_transform/gesture_component/panGestrue
+    ✔ 1-13: test inner_commponent_transform/gesture_component/pinchGesture
+    ✔ 1-14: test inner_commponent_transform/gesture_component/rotationGesture
+    ✔ 1-15: test inner_commponent_transform/gesture_component/swipeGesture
+    ✔ 1-16: test inner_commponent_transform/gesture_component/tapGesture
+    ✔ 1-17: test inner_commponent_transform/render_component/forEach/forEach
+    ✔ 1-18: test inner_commponent_transform/render_component/forEach/forEachSecondFunction
+    ✔ 1-19: test inner_commponent_transform/render_component/forEach/forEachTwo
+    ✔ 1-20: test inner_commponent_transform/render_component/if/if
+    ✔ 1-21: test inner_commponent_transform/render_component/lazyForEach/lazyForEach
+    ✔ 1-22: test inner_commponent_transform/simple_component/button/button
+    ✔ 1-23: test inner_commponent_transform/transition_component/animateTo/animateTo
+    ✔ 1-24: test inner_commponent_transform/transition_component/pageTransition/pageTransition
+    ✔ 1-25: test render_decorator/@builder/@builder
+    ✔ 1-26: test render_decorator/@builder/@builderWithForEach
+    ✔ 1-27: test render_decorator/@builder/@builderWithLinkData
+    ✔ 1-28: test render_decorator/@builderParam/@builderParam
+    ✔ 1-29: test render_decorator/@customDialog/@customDialog
+    ✔ 1-30: test render_decorator/@extend/@extend
+    ✔ 1-31: test render_decorator/@preview/@preview
+    ✔ 1-32: test render_decorator/@styles/@styles
+    ✔ 1-33: test render_decorator/@styles/@stylesExport
+    ✔ 1-34: test ui_state_management/application_state_management/@storageLink/@storageLink
+    ✔ 1-35: test ui_state_management/application_state_management/@storageProp/@storageProp
+    ✔ 1-36: test ui_state_management/application_state_management/appStorage/appStorage
+    ✔ 1-37: test ui_state_management/application_state_management/localStorage/localStorage
+    ✔ 1-38: test ui_state_management/inner_struct_state_management/@link/@link
+    ✔ 1-39: test ui_state_management/inner_struct_state_management/@prop/@prop
+    ✔ 1-40: test ui_state_management/others/@consume_@provide/@consume_@provide
+    ✔ 1-41: test ui_state_management/others/@observed_@objectLink/@observed_@objectLink
+    ✔ 1-42: test ui_state_management/others/@watch/@watch
+
+  test UT for partial update testcases [non-preview mode]
+    ✔ 1-1: test import/import@CustomDialog
+    ✔ 1-2: test import/import@Observed
+    ✔ 1-3: test import/importAllEts
+    ✔ 1-4: test import/importEts
+    ✔ 1-5: test import/importExportEts
+    ✔ 1-6: test import/importExportNest
+    ✔ 1-7: test import/importTs
+    ✔ 1-8: test inner_component_transform/!!_component/!!_componentCheck1
+    ✔ 1-9: test inner_component_transform/!!_component/!!_componentCheck2
+    ✔ 1-10: test inner_component_transform/!!_component/!!_componentCheck3
+    ✔ 1-11: test inner_component_transform/!!_component/!!_componentCheck4
+    ✔ 1-12: test inner_component_transform/!!_component/!!_componentCheck5
+    ✔ 1-13: test inner_component_transform/!!_component/!!_componentCheck6
+    ✔ 1-14: test inner_component_transform/!!_component/!!_componentCheck7
+    ✔ 1-15: test inner_component_transform/!!_component/!!_componentCheck8
+    ✔ 1-16: test inner_component_transform/!!_component/!!_componentCheck9
+    ✔ 1-17: test inner_component_transform/$$_component/$$_component
+    ✔ 1-18: test inner_component_transform/$$_component/$$_componentCheck1
+    ✔ 1-19: test inner_component_transform/$$_component/$$_componentCheck2
+    ✔ 1-20: test inner_component_transform/$$_component/$$_componentCheck3
+    ✔ 1-21: test inner_component_transform/$$_component/$$_componentCheck4
+    ✔ 1-22: test inner_component_transform/$$_component/$$_componentCheck5
+    ✔ 1-23: test inner_component_transform/$$_component/$$_componentCheck6
+    ✔ 1-24: test inner_component_transform/$$_component/$$_componentCheck7
+    ✔ 1-25: test inner_component_transform/$$_component/$$_componentCheck8
+    ✔ 1-26: test inner_component_transform/$$_component/$$_componentCheck9
+    ✔ 1-27: test inner_component_transform/$$_component/$$_allComponent (64ms)
+    ✔ 1-28: test inner_component_transform/$$_component/$$_allComponent1 (42ms)
+    ✔ 1-29: test inner_component_transform/attrs/bindSheet
+    ✔ 1-30: test inner_component_transform/$$_component/$$_if_elseIf_else
+    ✔ 1-31: test inner_component_transform/custom_component/component_object
+    ✔ 1-32: test inner_component_transform/custom_component/custom_component
+    ✔ 1-33: test inner_component_transform/gesture_component/GestureModeParallel
+    ✔ 1-34: test inner_component_transform/gesture_component/longPressGesture
+    ✔ 1-35: test inner_component_transform/gesture_component/panGestrue
+    ✔ 1-36: test inner_component_transform/gesture_component/pinchGesture
+    ✔ 1-37: test inner_component_transform/gesture_component/rotationGesture
+    ✔ 1-38: test inner_component_transform/gesture_component/swipeGesture
+    ✔ 1-39: test inner_component_transform/gesture_component/tapGesture
+    ✔ 1-40: test inner_component_transform/render_component/foreach/foreach
+    ✔ 1-41: test inner_component_transform/render_component/foreach/forEachSecondFunction
+    ✔ 1-42: test inner_component_transform/render_component/foreach/forEachThreeParam
+    ✔ 1-43: test inner_component_transform/render_component/foreach/forEachTwo
+    ✔ 1-44: test inner_component_transform/render_component/if/id_if
+    ✔ 1-45: test inner_component_transform/render_component/if/if
+    ✔ 1-46: test inner_component_transform/render_component/item/GridItem
+    ✔ 1-47: test inner_component_transform/render_component/item/ListItem
+    ✔ 1-48: test inner_component_transform/render_component/lazyforeach/lazyforeach
+    ✔ 1-49: test inner_component_transform/render_component/lazyforeach/lazyforEachThreeParam
+    ✔ 1-50: test inner_component_transform/render_component/repeat/repeat
+    ✔ 1-51: test inner_component_transform/render_component/repeat/repeatAttr
+    ✔ 1-52: test inner_component_transform/render_component/repeat/repeatVirtualScroll
+    ✔ 1-53: test inner_component_transform/render_component/tab/tab
+    ✔ 1-54: test inner_component_transform/simple_component/button/button
+    ✔ 1-55: test inner_component_transform/simple_component/xcomponent/XComponentContainer
+    ✔ 1-56: test inner_component_transform/transition_component/animateTo/animateTo
+    ✔ 1-57: test inner_component_transform/transition_component/navDestination_component/navDestination_component
+    ✔ 1-58: test inner_component_transform/transition_component/navigation/navigation_component
+    ✔ 1-59: test inner_component_transform/transition_component/pageTransition/pageTransition
+    ✔ 1-60: test inner_component_transform/enum/enumTest
+    ✔ 1-61: test questionnaireUT/questionnaireUT1
+    ✔ 1-62: test render_decorator/@AnimatableExtend/animatableExtend
+    ✔ 1-63: test render_decorator/@builder/@builder
+    ✔ 1-64: test render_decorator/@builder/@builderDynamicUsage$$
+    ✔ 1-65: test render_decorator/@builder/@builderOrComponentAsName
+    ✔ 1-66: test render_decorator/@builder/@builderPlaceholder
+    ✔ 1-67: test render_decorator/@builder/@builderPlaceholderEmptyCall
+    ✔ 1-68: test render_decorator/@builder/@builderPlaceholderEmptyLiteral
+    ✔ 1-69: test render_decorator/@builder/@builderPlaceholderFalse
+    ✔ 1-70: test render_decorator/@builder/@builderPlaceholderMixed
+    ✔ 1-71: test render_decorator/@builder/@builderPlaceholderUnknownKeys
+    ✔ 1-72: test render_decorator/@builder/@builderPlaceholderWithParam
+    ✔ 1-73: test render_decorator/@builder/@builderSimplifyAfferent
+    ✔ 1-74: test render_decorator/@builder/@builderTransFormFirst
+    ✔ 1-75: test render_decorator/@builder/@builderTransFormFourth (45ms)
+    ✔ 1-76: test render_decorator/@builder/@builderTransFormSecond
+    ✔ 1-77: test render_decorator/@builder/@builderTransFormThird
+    ✔ 1-78: test render_decorator/@builder/@builderVisilibity$$
+    ✔ 1-79: test render_decorator/@builder/@builderWithComponent
+    ✔ 1-80: test render_decorator/@builder/@builderWithForEach
+    ✔ 1-81: test render_decorator/@builder/@builderWithLinkData
+    ✔ 1-82: test render_decorator/@builder/handleCustomBuilder
+    ✔ 1-83: test render_decorator/@builder/@builderParam
+    ✔ 1-84: test render_decorator/builder_method_shorthand/builderMethodShorthand
+    ✔ 1-85: test render_decorator/@builderParam/@builderParam
+    ✔ 1-86: test render_decorator/@builderParam/@builderParam1
+    ✔ 1-87: test render_decorator/@builderParam/@builderParamQuestionMark
+    ✔ 1-88: test render_decorator/@builderParam/@BuilderParamReturnType
+    ✔ 1-89: test render_decorator/@componentParent/@componentParent
+    ✔ 1-90: test render_decorator/@customDialog/@customDialog
+    ✔ 1-91: test render_decorator/@customDialog/actionSheet
+    ✔ 1-92: test render_decorator/@customDialog/alertDialog
+    ✔ 1-93: test render_decorator/@customDialog/calendarPickerDialog
+    ✔ 1-94: test render_decorator/@customDialog/datePickerDialog
+    ✔ 1-95: test render_decorator/@customDialog/textPickerDialog
+    ✔ 1-96: test render_decorator/@customDialog/timePickerDialog
+    ✔ 1-97: test render_decorator/@extend/@extend
+    ✔ 1-98: test render_decorator/@extend/@extendSpanComponent
+    ✔ 1-99: test render_decorator/@localBuilder/@localBuilder
+    ✔ 1-100: test render_decorator/@preview/@preview
+    ✔ 1-101: test render_decorator/@recycle/recycle_$$component
+    ✔ 1-102: test render_decorator/@recycle/recycle_extend_styles
+    ✔ 1-103: test render_decorator/@recycle/recycle_function_array
+    ✔ 1-104: test render_decorator/@recycle/recycle_gesture
+    ✔ 1-105: test render_decorator/@recycle/recycle_reuseId
+    ✔ 1-106: test render_decorator/@recycle/recycle_builderParam
+    ✔ 1-107: test render_decorator/@recycle/recycle_globalReuse_import_namespace
+    ✔ 1-108: test render_decorator/@recycle/recycle_globalReuse_import_common
+    ✔ 1-109: test render_decorator/@recycle/recycle_globalReuse_link
+    ✔ 1-110: test render_decorator/@recycle/recycleV2_import_namespace
+    ✔ 1-111: test render_decorator/@recycle/recycle
+    ✔ 1-112: test render_decorator/@styles/@styles
+    ✔ 1-113: test render_decorator/@styles/@stylesExport
+    ✔ 1-114: test render_decorator/@styles/@stylesOrComponentAsName
+    ✔ 1-115: test ui_context/build_ui_in_correct_place
+    ✔ 1-116: test ui_state_management/application_state_management/@storageLink/@storageLink
+    ✔ 1-117: test ui_state_management/application_state_management/@storageProp/@storageProp
+    ✔ 1-118: test ui_state_management/application_state_management/appStorage/appStorage
+    ✔ 1-119: test ui_state_management/application_state_management/localStorage/localStorage
+    ✔ 1-120: test ui_state_management/application_state_management/localStorage/localStorageForBoth
+    ✔ 1-121: test ui_state_management/application_state_management/localStorage/localStorageForChainCall
+    ✔ 1-122: test ui_state_management/application_state_management/localStorage/localStorageForRoute
+    ✔ 1-123: test ui_state_management/application_state_management/localStorage/localStorageForStorage
+    ✔ 1-124: test ui_state_management/application_state_management/localStorage/localStorageForThree
+    ✔ 1-125: test ui_state_management/application_state_management/localStorage/localStorageForThreeParam
+    ✔ 1-126: test ui_state_management/application_state_management/localStorage/localStorageParam
+    ✔ 1-127: test ui_state_management/application_state_management/wrapBuilder/wrapBuilder
+    ✔ 1-128: test ui_state_management/application_state_management/wrapBuilderParam/wrapBuilderParam
+    ✔ 1-129: test ui_state_management/inner_struct_state_management/@link/@link
+    ✔ 1-130: test ui_state_management/inner_struct_state_management/@objectLink/@objectLink
+    ✔ 1-131: test ui_state_management/inner_struct_state_management/@prop/@prop
+    ✔ 1-132: test ui_state_management/inner_struct_state_management/@prop/@propComplexType
+    ✔ 1-133: test ui_state_management/inner_struct_state_management/@state/@state
+    ✔ 1-134: test ui_state_management/inner_struct_state_management/@state/@state1
+    ✔ 1-135: test ui_state_management/others/@consume_@provide/@consume_@provide
+    ✔ 1-136: test ui_state_management/others/@consume_@provide/@consume_with_defaultValue
+    ✔ 1-137: test ui_state_management/others/@observed_@objectLink/@observed_@objectLink
+    ✔ 1-138: test ui_state_management/others/@observed_@objectLink/@observed_@objectLink1
+    ✔ 1-139: test ui_state_management/others/@watch/@watch
+    ✔ 1-140: test ui_state_management/others/decoratorKeyCheck/decoratorKeyCheck
+    ✔ 1-141: test ui_state_management/ObservedObject_GetRawObject/enableV2Compatibility
+    ✔ 1-142: test ui_state_management/ObservedObject_GetRawObject/makeV1Observed
+    ✔ 1-143: test ui_state_management/ObservedObject_GetRawObject/builderRefresh
+    ✔ 1-144: test v2_component_decorator/env/envTest
+    ✔ 1-145: test v2_component_decorator/event/event_base
+    ✔ 1-146: test v2_component_decorator/event/event_parent
+    ✔ 1-147: test v2_component_decorator/monitor/monitor_base
+    ✔ 1-148: test v2_component_decorator/monitor/monitor_in_observedv2
+    ✔ 1-149: test v2_component_decorator/once/once_base
+    ✔ 1-150: test v2_component_decorator/once/once_param
+    ✔ 1-151: test v2_component_decorator/param/param_base union_types
+    ✔ 1-152: test v2_component_decorator/param/param_base
+    ✔ 1-153: test v2_component_decorator/param/param_map
+    ✔ 1-154: test v2_component_decorator/provider_consumer/provider_consumer_base
+    ✔ 1-155: test v2_component_decorator/provider_consumer/provider_consumer_param
+    ✔ 1-156: test v2_component_decorator/provider_consumer/provider_consumer_trace
+    ✔ 1-157: test v2_component_decorator/builderParamStyles
+    ✔ 1-158: test v2_component_decorator/param_event_twoway_binding
+    ✔ 1-159: test v2_component_decorator/staticComponentMember
+    ✔ 1-160: test v2_component_decorator/observedv2/observedv2_trace_base
+    ✔ 1-161: test v2_component_decorator/observedv2/observedv2_trace_extends_class
+    ✔ 1-162: test v2_component_decorator/observedv2/observedv2_trace_static
+    ✔ 1-163: test v2_component_decorator/observedv2/observedv2_trace_nested_class
+    ✔ 1-164: test v2_component_decorator/observedv2/observedv2_trace_object
+    ✔ 1-165: test v2_component_decorator/observedv2/observedv2_trace_date
+    ✔ 1-166: test v2_component_decorator/local/local_base
+    ✔ 1-167: test v2_component_decorator/local/local_object
+    ✔ 1-168: test v2_component_decorator/local/local_union_types
+    ✔ 1-169: test v2_component_decorator/reusableV2/reusableV2_initialRender
+    ✔ 1-170: test v2_component_decorator/reusableV2/reusableV2_members
+    ✔ 1-171: test v2_component_decorator/reusableV2/reusableV2_component_nesting
+    ✔ 1-172: test v2_component_decorator/reusableV2/reusableV2_reuseId
+    ✔ 1-173: test resource/resourceTest
+
+  test UT for validate testcases [non-preview mode]
+    ✔ 1-1: test Decorators/builder_decorator/builder_decorator_legal
+    ✔ 1-2: test Decorators/builder_decorator/builder_decorator_d1_struct
+    ✔ 1-3: test Decorators/builder_decorator/builder_decorator_d2_non_literal
+    ✔ 1-4: test Decorators/builder_decorator/builder_decorator_d3_strict_literal
+    ✔ 1-5: test Decorators/builder_decorator/builder_decorator_lenient_literal
+    ✔ 1-6: test Decorators/builder_decorator/builder_decorator_d4_has_param
+    ✔ 1-7: test Decorators/builder_decorator/builder_decorator_multi_violation
+    ✔ 1-8: test Decorators/process_component_build/@BuilderParam
+    ✔ 1-9: test Decorators/process_component_build/arkUIComponent
+    ✔ 1-10: test Decorators/process_component_build/arkUIStandard
+    ✔ 1-11: test Decorators/process_component_build/attributeCheck
+    ✔ 1-12: test Decorators/process_component_build/buttonCheck
+    ✔ 1-13: test Decorators/process_component_build/checkNonspecificParents
+    ✔ 1-14: test Decorators/process_component_build/foreachParamCheck
+    ✔ 1-15: test Decorators/process_component_build/idCheck
+    ✔ 1-16: test Decorators/process_component_build/ifComponent
+    ✔ 1-17: test Decorators/process_component_build/rootContainerCheck
+    ✔ 1-18: test Decorators/process_component_build/stateStyles
+    ✔ 1-19: test Decorators/process_component_build/validateReuseAndReuseId
+    ✔ 1-20: test Decorators/process_component_class/@StylesParamChack
+    ✔ 1-21: test Decorators/process_component_class/processComponentMethod
+    ✔ 1-22: test Decorators/process_component_class/updateHeritageClauses
+    ✔ 1-23: test Decorators/process_component_class/validateBuildMethodCount
+    ✔ 1-24: test Decorators/process_component_class/validateDecorators
+    ✔ 1-25: test Decorators/process_component_class/validateHasController
+    ✔ 1-26: test Decorators/process_component_class/validateControllerCount
+    ✔ 1-27: test Decorators/process_component_member/@linkInitialize
+    ✔ 1-28: test Decorators/process_component_member/@objectLinkInitialize
+    ✔ 1-29: test Decorators/process_component_member/processWatch
+    ✔ 1-30: test Decorators/process_component_member/updateBuilderParamProperty
+    ✔ 1-31: test Decorators/process_component_member/validateCustomDecorator
+    ✔ 1-32: test Decorators/process_component_member/validateDuplicateDecorator
+    ✔ 1-33: test Decorators/process_component_member/validateForbiddenSpecifyDefaultValue
+    ✔ 1-34: test Decorators/process_component_member/validateForbiddenUseStateType
+    ✔ 1-35: test Decorators/process_component_member/validateHasIllegalDecoratorInEntry
+    ✔ 1-36: test Decorators/process_component_member/validateHasIllegalQuestionToken
+    ✔ 1-37: test Decorators/process_component_member/validateMultiDecorators
+    ✔ 1-38: test Decorators/process_component_member/validatePropertyDefaultValue
+    ✔ 1-39: test Decorators/process_component_member/validatePropertyNonDefaultValue
+    ✔ 1-40: test Decorators/process_component_member/validatePropertyNonType
+    ✔ 1-41: test Decorators/process_component_member/validateWatchDecorator
+    ✔ 1-42: test Decorators/process_component_member/validateWatchParam
+    ✔ 1-43: test Decorators/process_custom_component/checkAssignEnv
+    ✔ 1-44: test Decorators/process_custom_component/checkBuilder$$
+    ✔ 1-45: test Decorators/process_custom_component/v2DecoratorInitFromParent
+    ✔ 1-46: test Decorators/process_custom_component/validateForbiddenToInitViaParam
+    ✔ 1-47: test Decorators/process_custom_component/validateIllegalInitFromParent
+    ✔ 1-48: test Decorators/process_custom_component/validateInitDecorator
+    ✔ 1-49: test Decorators/process_custom_component/validateLinkVariableSourceDataEachCondition (208ms)
+    ✔ 1-50: test Decorators/process_custom_component/validateLinkVariableSourceDataEachState (148ms)
+    ✔ 1-51: test Decorators/process_custom_component/validateLinkVariableSourceDataExtend
+    ✔ 1-52: test Decorators/process_custom_component/validateLinkVariableSourceDataRealize
+    ✔ 1-53: test Decorators/process_custom_component/validateLinkVariableSourceDataObserved
+    ✔ 1-54: test Decorators/process_custom_component/validateMandatoryToInitViaParam
+    ✔ 1-55: test Decorators/process_custom_component/validateNonLinkWithDollar
+    ✔ 1-56: test Decorators/process_custom_component/validateParamTwoWayBind
+    ✔ 1-57: test Decorators/process_custom_component/validateStaticVariables
+    ✔ 1-58: test Decorators/process_custom_component/validateNestedReusableComponents
+    ✔ 1-59: test Decorators/process_custom_component/validateReusableV2InRepeat
+    1) 1-60: test Decorators/process_custom_component/validateRequireParamUndefinedType
+    2) 1-61: test Decorators/process_custom_component/validateRequireParamUndefinedTypeV2
+    ✔ 1-62: test Decorators/process_struct_componentV2/param_require_once_check
+    ✔ 1-63: test Decorators/process_struct_componentV2/v2Component_member_type_check
+    ✔ 1-64: test Decorators/process_struct_componentV2/syncmonitor_require_check
+    ✔ 1-65: test Decorators/process_ui_syntax/EntryDecoParam
+    3) 1-66: test Decorators/process_ui_syntax/ExtendOneChild
+    ✔ 1-67: test Decorators/process_ui_syntax/ExtendInnerComponents
+    ✔ 1-68: test Decorators/process_ui_syntax/ExtendUISyntax
+    ✔ 1-69: test Decorators/process_ui_syntax/MutableBuilderParam
+    ✔ 1-70: test Decorators/process_ui_syntax/NoSrc
+    ✔ 1-71: test Decorators/process_ui_syntax/NotSupportResrcParam
+    ✔ 1-72: test Decorators/process_ui_syntax/NotSupportResrcType
+    ✔ 1-73: test Decorators/process_ui_syntax/StylesNoParam
+    ✔ 1-74: test Decorators/process_ui_syntax/StylesUISyntax
+    ✔ 1-75: test Decorators/process_ui_syntax/UnknownSrc
+    ✔ 1-76: test Decorators/process_ui_syntax/UnknownSrcName
+    ✔ 1-77: test Decorators/process_ui_syntax/UnknownSrcType
+    ✔ 1-78: test Decorators/process_ui_syntax/WrappedBuilderParamWarning
+    ✔ 1-79: test Decorators/process_ui_syntax/WrapBuilderModuleParam
+    ✔ 1-80: test Decorators/process_ui_syntax/WrapBuilderParam
+    ✔ 1-81: test Decorators/v1AndV2ComponentDecorators/property_observe_validate
+    ✔ 1-82: test Decorators/v1AndV2ComponentDecorators/v2ToV1ComponentValidate
+    ✔ 1-83: test Decorators/v1AndV2ComponentDecorators/v2ToV1Link
+    ✔ 1-84: test Decorators/vaildate_ui_syntax/@localBuilder
+    ✔ 1-85: test Decorators/vaildate_ui_syntax/@Monitor
+    ✔ 1-86: test Decorators/vaildate_ui_syntax/@ReusableV2
+    ✔ 1-87: test Decorators/vaildate_ui_syntax/@Trace
+    ✔ 1-88: test Decorators/vaildate_ui_syntax/@Type
+    ✔ 1-89: test Decorators/vaildate_ui_syntax/componentV2BothWithComponent
+    ✔ 1-90: test Decorators/vaildate_ui_syntax/envDuplicateDecorators
+    ✔ 1-91: test Decorators/vaildate_ui_syntax/envInCustomDialog
+    ✔ 1-92: test Decorators/vaildate_ui_syntax/envValidateInitializerV1
+    ✔ 1-93: test Decorators/vaildate_ui_syntax/envValidateInitializerV2
+    ✔ 1-94: test Decorators/vaildate_ui_syntax/envValidateType
+    ✔ 1-95: test Decorators/vaildate_ui_syntax/envValidateArg
+    ✔ 1-96: test Decorators/vaildate_ui_syntax/ExceededEntry
+    ✔ 1-97: test Decorators/vaildate_ui_syntax/ExceededPreview
+    ✔ 1-98: test Decorators/vaildate_ui_syntax/extendAttributeDuplicate
+    ✔ 1-99: test Decorators/vaildate_ui_syntax/extendAttributeDuplicate2
+    ✔ 1-100: test Decorators/vaildate_ui_syntax/animatableExtendAttributeDuplicate
+    ✔ 1-101: test Decorators/vaildate_ui_syntax/componentReuseCheck
+    ✔ 1-102: test Decorators/vaildate_ui_syntax/MethodNoExtend
+    ✔ 1-103: test Decorators/vaildate_ui_syntax/mutiDecoratorInComponentV2
+    ✔ 1-104: test Decorators/vaildate_ui_syntax/NoChild
+    ✔ 1-105: test Decorators/vaildate_ui_syntax/NoStructDeco
+    ✔ 1-106: test Decorators/vaildate_ui_syntax/notComponent
+    ✔ 1-107: test Decorators/vaildate_ui_syntax/notConcurrent
+    ✔ 1-108: test Decorators/vaildate_ui_syntax/notConcurrentFun
+    ✔ 1-109: test Decorators/vaildate_ui_syntax/notConcurrentFunAster
+    ✔ 1-110: test Decorators/vaildate_ui_syntax/notDecorator
+    ✔ 1-111: test Decorators/vaildate_ui_syntax/notMethodDeco
+    ✔ 1-112: test Decorators/vaildate_ui_syntax/OneChild
+    ✔ 1-113: test Decorators/vaildate_ui_syntax/OneEntry
+    ✔ 1-114: test Decorators/vaildate_ui_syntax/OnlyStructDeco
+    ✔ 1-115: test Decorators/vaildate_ui_syntax/state
+    ✔ 1-116: test Decorators/vaildate_ui_syntax/StructNameInvalid
+    4) 1-117: test Decorators/vaildate_ui_syntax/StructNameWarn
+    ✔ 1-118: test Decorators/vaildate_ui_syntax/StylesDuplicate
+    ✔ 1-119: test Decorators/vaildate_ui_syntax/syncMonitorCheckWild
+    ✔ 1-120: test Decorators/vaildate_ui_syntax/syncMonitorDuplicateDecorators
+    ✔ 1-121: test Decorators/vaildate_ui_syntax/v1DecoratorInComponentV2
+    ✔ 1-122: test Decorators/vaildate_ui_syntax/v2DecoratorInClass
+    ✔ 1-123: test Decorators/vaildate_ui_syntax/v2DecoratorInComponent
+    ✔ 1-124: test Decorators/vaildate_ui_syntax/v2MemberDecorator
+    ✔ 1-125: test Decorators/vaildate_ui_syntax/vaildateDecorator
+    ✔ 1-126: test Decorators/vaildate_ui_syntax/validate_track_observed
+    ✔ 1-127: test Decorators/vaildate_ui_syntax/validateAccessQualifier
+    ✔ 1-128: test Decorators/vaildate_ui_syntax/validateDifferentMethod
+    ✔ 1-129: test Decorators/vaildate_ui_syntax/validateDuplicateMethod
+    ✔ 1-130: test Decorators/vaildate_ui_syntax/validateForEachParser
+    ✔ 1-131: test Decorators/vaildate_ui_syntax/validateRepeatParser
+    ✔ 1-132: test Decorators/vaildate_ui_syntax/validateLazyForEachParser
+    ✔ 1-133: test Decorators/vaildate_ui_syntax/validateStaticBlock
+    ✔ 1-134: test Decorators/vaildate_ui_syntax/validateNonFunctionTypeWithDecorator (124ms)
+    ✔ 1-135: test Decorators/vaildate_ui_syntax/validateNonFunctionTypeWithV1Decorator (163ms)
+    ✔ 1-136: test Decorators/vaildate_ui_syntax/componentReuseCheck
+    ✔ 1-137: test Decorators/process_import/validateModuleName
+
+
+  355 passing (10s)
+  4 failing
+
+  1) test UT for validate testcases [non-preview mode]
+       1-60: test Decorators/process_custom_component/validateRequireParamUndefinedType:
+
+      AssertionError: expected false to be true
+      + expected - actual
+
+      -false
+      +true
+      
+      at Context.<anonymous> (etsTest_build/transform_ut/ut_validate.test.js:184:77)
+
+  2) test UT for validate testcases [non-preview mode]
+       1-61: test Decorators/process_custom_component/validateRequireParamUndefinedTypeV2:
+
+      AssertionError: expected false to be true
+      + expected - actual
+
+      -false
+      +true
+      
+      at Context.<anonymous> (etsTest_build/transform_ut/ut_validate.test.js:184:77)
+
+  3) test UT for validate testcases [non-preview mode]
+       1-66: test Decorators/process_ui_syntax/ExtendOneChild:
+
+      AssertionError: expected false to be true
+      + expected - actual
+
+      -false
+      +true
+      
+      at Context.<anonymous> (etsTest_build/transform_ut/ut_validate.test.js:195:52)
+      at Array.forEach (<anonymous>)
+      at Context.<anonymous> (etsTest_build/transform_ut/ut_validate.test.js:187:20)
+
+  4) test UT for validate testcases [non-preview mode]
+       1-117: test Decorators/vaildate_ui_syntax/StructNameWarn:
+     Error: ENOENT: no such file or directory, open '/srv/workspace/openharmony_master_default_20261028115835_huawei_fe6139239/code/developtools/ace_ets2bundle/compiler/test/transform_ut/application/entry/src/main/ets/pages/utForValidate/Decorators/vaildate_ui_syntax/StructNameWarn.ets'
+      at Object.readFileSync (node:fs:449:20)
+      at Context.<anonymous> (etsTest_build/transform_ut/ut_validate.test.js:151:38)
+      at process.processImmediate (node:internal/timers:483:21)
+
+
+

@@ -685,7 +685,15 @@ function loadBuildJson() {
     projectConfig.packageJson = 'oh-package.json5';
   }
   projectConfig.harWidgetMerge = !!aceBuildJson.harWidgetMerge;
-  projectConfig.harWidgetPaths = aceBuildJson.harWidgetPaths || [];
+  projectConfig.harWidgetPaths = [];
+  if (aceBuildJson.byteCodeHarInfo) {
+    for (const harName in aceBuildJson.byteCodeHarInfo) {
+      const componentCollectionPath = aceBuildJson.byteCodeHarInfo[harName].componentCollectionPath;
+      if (componentCollectionPath) {
+        projectConfig.harWidgetPaths.push(componentCollectionPath);
+      }
+    }
+  }
   // add the oh-exports visibility file
   projectConfig.ohExports = aceBuildJson['oh-exports'] || [];
   // add intent framework entry file
@@ -804,10 +812,26 @@ function filterWorker(workerPath) {
   }
 })();
 
+/**
+ * Get the directory path of api/arkts/kits in the SDK used for compilation.
+ * For an ArkUI-X project the directory is located in the ArkUI-X SDK:
+ * <arkUIXSdkRootPath>/openharmony/ets/<subDir>, otherwise in the SDK where
+ * the ets_loader is deployed. Reads process.env because the collection runs
+ * at require time, before the projectConfig is populated.
+ * @param {string} subDir - sub directory name under the SDK ets root
+ * @returns {string} - the absolute path of the directory
+ */
+function getEtsSdkDirPathFromEnv(subDir) {
+  if (process.env.isCrossplatform === 'true' && process.env.arkUIXSdkRootPath) {
+    return path.resolve(process.env.arkUIXSdkRootPath, 'openharmony', 'ets', subDir);
+  }
+  return path.resolve(__dirname, '../../', subDir);
+}
+
 ; (function readSystemModules() {
-  const apiDirPath = path.resolve(__dirname, '../../api');
-  const arktsDirPath = path.resolve(__dirname, '../../arkts');
-  const kitsDirPath = path.resolve(__dirname, '../../kits');
+  const apiDirPath = getEtsSdkDirPathFromEnv('api');
+  const arktsDirPath = getEtsSdkDirPathFromEnv('arkts');
+  const kitsDirPath = getEtsSdkDirPathFromEnv('kits');
   const systemModulePathArray = [apiDirPath];
   if (!process.env.isFaMode) {
     systemModulePathArray.push(arktsDirPath, kitsDirPath);
@@ -1417,6 +1441,7 @@ exports.ohosSystemModulePaths = ohosSystemModulePaths;
 exports.resetMain = resetMain;
 exports.ohosSystemModuleSubDirPaths = ohosSystemModuleSubDirPaths;
 exports.allModulesPaths = allModulesPaths;
+exports.getEtsSdkDirPathFromEnv = getEtsSdkDirPathFromEnv;
 exports.resetProjectConfig = resetProjectConfig;
 exports.resetGlobalProgram = resetGlobalProgram;
 exports.setEntryArrayForObf = setEntryArrayForObf;

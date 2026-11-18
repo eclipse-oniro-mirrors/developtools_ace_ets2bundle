@@ -401,14 +401,12 @@ const jsDocNodeCheckConfigCache: Map<string, Map<string, ts.JsDocNodeCheckConfig
 const availableNodeCheckConfigCache: Map<string, string> = new Map<string, string>();
 let permissionsArray: string[] = [];
 
-
 /**
 * Parse the version number string and return an integer representing the version value.
 *
 * @param {string} s - The version number string, supporting formats including: x.y.z(w), a single number, x.y.z.
 * @returns {number} Returns an integer value representing the version; returns 0 if parsing fails.
 */
-
 function parseVersion(versionStr): number {
 
   // Regular expressions for different version formats
@@ -451,7 +449,6 @@ function parseVersion(versionStr): number {
  * @param {string} rangeEnd2 - End of second version range
  * @returns {boolean} True if ranges intersect, false otherwise
  */
-
 function isVersionRangeIntersect(rangeStart1, rangeEnd1, rangeStart2, rangeEnd2): boolean {
   // Convert version strings to numeric representations
   const range1StartNum = parseVersion(rangeStart1);
@@ -478,7 +475,6 @@ function isVersionRangeIntersect(rangeStart1, rangeEnd1, rangeStart2, rangeEnd2)
 * @returns {{start: string, end: string}|undefined} Object with start/end versions if extracted, undefined otherwise
 */
 function extractVersionRange(commentText): {start: string, end: string} | undefined {
-
   if (typeof commentText !== 'string' || !commentText) {
     return undefined;
   }
@@ -1011,9 +1007,8 @@ function isArkuiDependence(file: string): boolean {
     return exists;
   }
   const fileDir: string = path.dirname(file);
-  const declarationsPath: string = path.resolve(__dirname, '../../../declarations').replace(/\\/g, '/');
   const componentPath: string = path.resolve(__dirname, '../../../../../component').replace(/\\/g, '/');
-  exists = fileDir === declarationsPath || fileDir === componentPath;
+  exists = fileDir === componentPath;
   arkuiDependenceMap.set(file, exists);
   return exists;
 }
@@ -1589,7 +1584,6 @@ export function isCheckDistributionOSVersion(tag: string, version: string): Dist
   return distributionOSCheck;
 }
 
-
 /**
  * Gets the build version regex.
  * @param tag - The tag name.
@@ -1767,8 +1761,6 @@ export function checkPermissionValue(
   }
   return false;
 }
-
-
 
 /**
  * Checks the system API value based on JSDoc tags and configuration.
@@ -2579,7 +2571,7 @@ export function isApiAvailableVersionSpecifications(node: ts.CallExpression, typ
   if (!node.expression || (ts.isPropertyAccessExpression(node.expression) && node.expression.name?.getText() !== SDK_CONSTANTS.OPEN_SOURCE_APIAVAILABLE_INFO)) {
     return result;
   }
-  
+
   if (!node.arguments || node.arguments.length !== 1) {
     return result;
   }

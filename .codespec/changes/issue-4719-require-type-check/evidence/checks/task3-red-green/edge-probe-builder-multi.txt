@@ -1,0 +1,7 @@
+
+=== builder_use_site ===
+  WARN | '@Require' decorated 'require_value' cannot be initialized with 'undefined' through the component constructor, because its type does not include 'undefined'.
+
+=== multi_hit ===
+  WARN | '@Require' decorated 'first_value' cannot be initialized with 'undefined' through the component constructor, because its type does not include 'undefined'.
+  WARN | '@Require' decorated 'second_value' cannot be initialized with 'undefined' through the component constructor, because its type does not include 'undefined'.

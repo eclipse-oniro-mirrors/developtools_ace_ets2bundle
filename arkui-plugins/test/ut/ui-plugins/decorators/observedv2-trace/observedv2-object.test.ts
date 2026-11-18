@@ -113,7 +113,7 @@ interface I {
   
 }
 
-@ObservedV2() class CI implements I, IObservedObject, ISubscribedWatches {
+@ObservedV2() class CI implements I, IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
   public addWatchSubscriber(watchId: WatchIdType): void {
     if (((this.subscribedWatches) !== (undefined))) {
@@ -172,13 +172,17 @@ interface I {
       this.executeOnSubscribingWatches("b");
     }
   }
-  
+  public addRefAnyProp(): void {
+    this.__meta_a.addRef();
+    this.__meta_b.addRef();
+  }
+
   static {
     
   }
 }
 
-@ObservedV2() class CIRaw implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class CIRaw implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
   public addWatchSubscriber(watchId: WatchIdType): void {
     if (((this.subscribedWatches) !== (undefined))) {
@@ -239,7 +243,11 @@ interface I {
     this.a = a;
     this.b = b;
   }
-  
+  public addRefAnyProp(): void {
+    this.__meta_a.addRef();
+    this.__meta_b.addRef();
+  }
+
   static {
     
   }

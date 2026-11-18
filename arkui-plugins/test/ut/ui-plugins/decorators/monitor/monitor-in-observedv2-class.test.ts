@@ -60,7 +60,7 @@ import { Monitor as Monitor, IMonitor as IMonitor, ObservedV2 as ObservedV2, Tra
 
 function main() {}
 
-@ObservedV2() class Info implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class Info implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
 
   public addWatchSubscriber(watchId: WatchIdType): void {
@@ -178,7 +178,10 @@ function main() {}
       }),
     } as IMonitorPathInfo)], ((_m: IMonitor) => {
       this.onNameChange(_m);
-    }));
+    }), ({
+      owner: undefined,
+      functionName: "onNameChange",
+    } as MakeMonitorOptions));
     this.__monitor_onAgeChange = STATE_MGMT_FACTORY.makeMonitor([({
       path: "age",
       valueCallback: ((): Any => {
@@ -186,7 +189,10 @@ function main() {}
       }),
     } as IMonitorPathInfo)], ((_m: IMonitor) => {
       this.onAgeChange(_m);
-    }));
+    }), ({
+      owner: undefined,
+      functionName: "onAgeChange",
+    } as MakeMonitorOptions));
     this.__monitor_onChange = STATE_MGMT_FACTORY.makeMonitor([({
       path: "region",
       valueCallback: ((): Any => {
@@ -199,7 +205,15 @@ function main() {}
       }),
     } as IMonitorPathInfo)], ((_m: IMonitor) => {
       this.onChange(_m);
-    }));
+    }), ({
+      owner: undefined,
+      functionName: "onChange",
+    } as MakeMonitorOptions));
+  }
+  public addRefAnyProp(): void {
+    this.__meta_name.addRef();
+    this.__meta_region.addRef();
+    this.__meta_job.addRef();
   }
   static {
   }

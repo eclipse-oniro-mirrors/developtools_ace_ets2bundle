@@ -55,6 +55,7 @@ import {
 import { LINTER_SUBSYSTEM_CODE } from '../../hvigor_error_code/hvigor_error_info';
 import { ErrorCodeModule } from '../../hvigor_error_code/const/error_code_module';
 import { fileInfoCache } from '../../file_info_cache';
+import { validateHarWidgetCompile } from '../ark_compiler/common/process_ark_config';
 import { collectArkTSEvolutionModuleInfo } from '../ark_compiler/interop/process_arkts_evolution';
 import { isMixCompile } from '../ark_compiler/interop/interop_manager';
 export let tsWatchEmitter: EventEmitter | undefined = undefined;
@@ -65,6 +66,7 @@ export function etsChecker() {
   return {
     name: 'etsChecker',
     buildStart() {
+      validateHarWidgetCompile(this);
       if (isMixCompile()) {
         collectArkTSEvolutionModuleInfo(this);
       }

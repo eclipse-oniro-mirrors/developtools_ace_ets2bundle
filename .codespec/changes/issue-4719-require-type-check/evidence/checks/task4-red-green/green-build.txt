@@ -1,0 +1,13 @@
+
+> compilier@0.0.1 build
+> npm run generateDeclarations && ./node_modules/.bin/babel ./src --out-dir lib --extensions .ts --ignore ./src/interop && node uglify-source.js lib && npm run copyJsonFiles
+
+
+> compilier@0.0.1 generateDeclarations
+> node ./build_declarations_file.js ../../../interface/sdk-js/api/@internal/component/ets ./declarations ./lib false
+
+Successfully compiled 114 files with Babel (3165ms).
+
+> compilier@0.0.1 copyJsonFiles
+> node copy_json_files.js ./src lib --ignore ./src/interop
+

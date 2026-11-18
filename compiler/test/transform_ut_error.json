@@ -1224,9 +1224,9 @@
         "code": "10905332"
     },
     "ExtendOneChild": {
-        "message": "'@Extend' should have one and only one parameter.",
+        "message": "The VersionCondition type only receives an object literal.",
         "type": "ERROR",
-        "code": "10905108"
+        "code": "10905389"
     },
     "ExtendInnerComponents": {
         "message": "'testExtend' parameter cannot be passed in the '@Extend' decorator.",
@@ -1410,11 +1410,17 @@
         "type": "ERROR",
         "code": "10905112"
     },
-    "checkNonspecificParents": {
-        "message": "The 'Blank' component can only be nested in the 'Row,Column,Flex' parent component.",
-        "type": "ERROR",
-        "code": "10905201"
-    },
+    "checkNonspecificParents": [
+        {
+            "message": "The 'Blank' component can only be nested in the 'Row,Column,Flex' parent component.",
+            "type": "ERROR",
+            "code": "10905201"
+        },
+        {
+            "message": "You are advised to initialize the width and height attributes of the List component.",
+            "type": "WARN"
+        }
+    ],
     "@Trace": [
         {
             "message": "The '@Trace' decorator can decorate only member variables of a class.",
@@ -2115,21 +2121,51 @@
             "type": "WARN"
         }
     ],
-    "validateForEachParser": {
-        "message": "The property 'props' must specify a type.",
-        "type": "ERROR",
-        "code": "10905305"
-    },
-    "validateRepeatParser": {
-        "message": "The property 'props' must specify a type.",
-        "type": "ERROR",
-        "code": "10905328"
-    },
-    "validateLazyForEachParser": {
-        "message": "The property 'props' must specify a type.",
-        "type": "ERROR",
-        "code": "10905305"
-    },
+    "validateForEachParser": [
+        {
+            "message": "The property 'props' must specify a type.",
+            "type": "ERROR",
+            "code": "10905305"
+        },
+        {
+            "message": "You are advised to initialize the width and height attributes of the List component.",
+            "type": "WARN"
+        },
+        {
+            "message": "You are advised to initialize the width and height attributes of the List component.",
+            "type": "WARN"
+        },
+        {
+            "message": "You are advised to initialize the width and height attributes of the List component.",
+            "type": "WARN"
+        },
+        {
+            "message": "You are advised to initialize the width and height attributes of the List component.",
+            "type": "WARN"
+        }
+    ],
+    "validateRepeatParser": [
+        {
+            "message": "The property 'props' must specify a type.",
+            "type": "ERROR",
+            "code": "10905328"
+        },
+        {
+            "message": "You are advised to initialize the width and height attributes of the List component.",
+            "type": "WARN"
+        }
+    ],
+    "validateLazyForEachParser": [
+        {
+            "message": "The property 'props' must specify a type.",
+            "type": "ERROR",
+            "code": "10905305"
+        },
+        {
+            "message": "You are advised to initialize the width and height attributes of the List component.",
+            "type": "WARN"
+        }
+    ],
     "validateStaticBlock": [
         {
             "message": "Static code blocks not supported in structs.",
@@ -2470,6 +2506,18 @@
         }
     ],
     "validateReusableV2InRepeat": [
+        {
+            "message": "You are advised to initialize the width and height attributes of the List component.",
+            "type": "WARN"
+        },
+        {
+            "message": "You are advised to initialize the width and height attributes of the List component.",
+            "type": "WARN"
+        },
+        {
+            "message": "You are advised to initialize the width and height attributes of the List component.",
+            "type": "WARN"
+        },
         {
             "message": "The template attribute of the Repeat component cannot contain any custom component decorated with '@ReusableV2'.",
             "type": "ERROR",
@@ -5137,120 +5185,120 @@
     ],
     "builder_decorator_d1_struct": [
         {
-            "message": "The '@Builder' decorator can only pass arguments when decorating a global function",
+            "message": "Only global functions decorated with @Builder support parameter passing.",
             "type": "ERROR",
             "code": "10905131"
         }
     ],
     "builder_decorator_d2_non_literal": [
         {
-            "message": "The '@Builder' decorator only supports passing a single object literal",
+            "message": "The @Builder decorator supports passing only object literals.",
             "type": "ERROR",
             "code": "10905132"
         },
         {
-            "message": "The '@Builder' decorator only supports passing a single object literal",
+            "message": "The @Builder decorator supports passing only object literals.",
             "type": "ERROR",
             "code": "10905132"
         },
         {
-            "message": "The '@Builder' decorator only supports passing a single object literal",
+            "message": "The @Builder decorator supports passing only object literals.",
             "type": "ERROR",
             "code": "10905132"
         },
         {
-            "message": "The '@Builder' decorator only supports passing a single object literal",
+            "message": "The @Builder decorator supports passing only object literals.",
             "type": "ERROR",
             "code": "10905132"
         },
         {
-            "message": "The '@Builder' decorator only supports passing a single object literal",
+            "message": "The @Builder decorator supports passing only object literals.",
             "type": "ERROR",
             "code": "10905132"
         }
     ],
     "builder_decorator_d4_has_param": [
         {
-            "message": "The '@Builder' function cannot have parameters when it serves as a placeholder",
+            "message": "An @Builder function with placeholder capabilities does not support parameter passing.",
             "type": "ERROR",
             "code": "10905134"
         }
     ],
     "builder_decorator_multi_violation": [
         {
-            "message": "The '@Builder' decorator can only pass arguments when decorating a global function",
+            "message": "Only global functions decorated with @Builder support parameter passing.",
             "type": "ERROR",
             "code": "10905131"
         },
         {
-            "message": "The '@Builder' decorator only supports passing a single object literal",
+            "message": "The @Builder decorator supports passing only object literals.",
             "type": "ERROR",
             "code": "10905132"
         },
         {
-            "message": "The '@Builder' function cannot have parameters when it serves as a placeholder",
+            "message": "An @Builder function with placeholder capabilities does not support parameter passing.",
             "type": "ERROR",
             "code": "10905134"
         }
     ],
     "builder_decorator_d3_strict_literal": [
         {
-            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
+            "message": "The 'isPlaceholder' option of the @Builder decorator only supports passing boolean literal.",
             "type": "ERROR",
             "code": "10905133"
         },
         {
-            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
+            "message": "The 'isPlaceholder' option of the @Builder decorator only supports passing boolean literal.",
             "type": "ERROR",
             "code": "10905133"
         },
         {
-            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
+            "message": "The 'isPlaceholder' option of the @Builder decorator only supports passing boolean literal.",
             "type": "ERROR",
             "code": "10905133"
         },
         {
-            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
+            "message": "The 'isPlaceholder' option of the @Builder decorator only supports passing boolean literal.",
             "type": "ERROR",
             "code": "10905133"
         },
         {
-            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
+            "message": "The 'isPlaceholder' option of the @Builder decorator only supports passing boolean literal.",
             "type": "ERROR",
             "code": "10905133"
         },
         {
-            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
+            "message": "The 'isPlaceholder' option of the @Builder decorator only supports passing boolean literal.",
             "type": "ERROR",
             "code": "10905133"
         },
         {
-            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
+            "message": "The 'isPlaceholder' option of the @Builder decorator only supports passing boolean literal.",
             "type": "ERROR",
             "code": "10905133"
         },
         {
-            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
+            "message": "The 'isPlaceholder' option of the @Builder decorator only supports passing boolean literal.",
             "type": "ERROR",
             "code": "10905133"
         },
         {
-            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
+            "message": "The 'isPlaceholder' option of the @Builder decorator only supports passing boolean literal.",
             "type": "ERROR",
             "code": "10905133"
         },
         {
-            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
+            "message": "The 'isPlaceholder' option of the @Builder decorator only supports passing boolean literal.",
             "type": "ERROR",
             "code": "10905133"
         },
         {
-            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
+            "message": "The 'isPlaceholder' option of the @Builder decorator only supports passing boolean literal.",
             "type": "ERROR",
             "code": "10905133"
         },
         {
-            "message": "The 'isPlaceholder' option of the '@Builder' decorator only supports passing true/false",
+            "message": "The 'isPlaceholder' option of the @Builder decorator only supports passing boolean literal.",
             "type": "ERROR",
             "code": "10905133"
         }
@@ -5349,6 +5397,38 @@
             "message": "'@ObjectLink' cannot be used with this type. Apply it only to classes decorated by '@ObservedV2' or initialized using the return value of 'makeV1Observed'.",
             "type": "ERROR",
             "code": "10905307"
+        }
+    ],
+    "validateRequireParamUndefinedType": [
+        {
+            "message": "The type of property 'require_value' decorated with '@Require' is expected to be 'number', but is actually 'undefined' in the component constructor.",
+            "type": "WARN"
+        }
+    ],
+    "validateRequireParamUndefinedTypeV2": [
+        {
+            "message": "The type of property 'require_param_value' decorated with '@Require' is expected to be 'string', but is actually 'undefined' in the component constructor.",
+            "type": "WARN"
+        }
+    ],
+    "validateRequireParamUndefinedTypeExtension": [
+        {
+            "message": "The type of property 'void_value' decorated with '@Require' is expected to be 'number', but is actually 'undefined' in the component constructor.",
+            "type": "WARN"
+        },
+        {
+            "message": "The type of property 'union_variable_value' decorated with '@Require' is expected to be 'number', but is actually 'number | undefined' in the component constructor.",
+            "type": "WARN"
+        }
+    ],
+    "validateRequireParamUndefinedTypeExtensionV2": [
+        {
+            "message": "The type of property 'void_param_value' decorated with '@Require' is expected to be 'string', but is actually 'undefined' in the component constructor.",
+            "type": "WARN"
+        },
+        {
+            "message": "The type of property 'union_param_value' decorated with '@Require' is expected to be 'string', but is actually 'string | undefined' in the component constructor.",
+            "type": "WARN"
         }
     ]
 }

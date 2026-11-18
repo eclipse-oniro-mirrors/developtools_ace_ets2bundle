@@ -47,6 +47,7 @@ export * from './check-no-duplicate-preview';
 export * from './check-no-prop-link-objectlink-in-entry';
 export * from './check-no-same-as-built-in-attribute';
 export * from './check-no-variables-change-in-build';
+export * from './check-objectlink-function-type';
 export * from './check-objectlink-use-literal';
 export * from './check-observed-heritage-compatible';
 export * from './check-observed-observedV2';

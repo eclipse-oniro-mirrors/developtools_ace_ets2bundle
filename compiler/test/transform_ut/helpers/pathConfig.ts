@@ -253,6 +253,7 @@ export const UT_VALIDATE_PAGES: string[] = [
   'Decorators/builder_decorator/builder_decorator_lenient_literal',
   'Decorators/builder_decorator/builder_decorator_d4_has_param',
   'Decorators/builder_decorator/builder_decorator_multi_violation',
+  'Decorators/builder_decorator/builder_placeholder_list',
 
   'Decorators/process_component_build/@BuilderParam',
   'Decorators/process_component_build/arkUIComponent',
@@ -309,6 +310,10 @@ export const UT_VALIDATE_PAGES: string[] = [
   'Decorators/process_custom_component/validateStaticVariables',
   'Decorators/process_custom_component/validateNestedReusableComponents',
   'Decorators/process_custom_component/validateReusableV2InRepeat',
+  'Decorators/process_custom_component/validateRequireParamUndefinedType',
+  'Decorators/process_custom_component/validateRequireParamUndefinedTypeV2',
+  'Decorators/process_custom_component/validateRequireParamUndefinedTypeExtension',
+  'Decorators/process_custom_component/validateRequireParamUndefinedTypeExtensionV2',
 
   'Decorators/process_struct_componentV2/param_require_once_check',
   'Decorators/process_struct_componentV2/v2Component_member_type_check',

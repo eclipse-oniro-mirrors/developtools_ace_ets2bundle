@@ -1,0 +1,15 @@
+# TASK-5 build 证据（Red 阶段主链 build 与 Green 阶段 etsTest 内置 build 为同一 src 状态；镜像编译见 green-interopArkTest.txt 的 interopBuild 输出）
+# Red 阶段独立 build 输出（主链已改、镜像未改时点）：
+
+> compilier@0.0.1 build
+> npm run generateDeclarations && ./node_modules/.bin/babel ./src --out-dir lib --extensions .ts --ignore ./src/interop && node uglify-source.js lib && npm run copyJsonFiles
+
+
+> compilier@0.0.1 generateDeclarations
+> node ./build_declarations_file.js ../../../interface/sdk-js/api/@internal/component/ets ./declarations ./lib false
+
+Successfully compiled 114 files with Babel (4287ms).
+
+> compilier@0.0.1 copyJsonFiles
+> node copy_json_files.js ./src lib --ignore ./src/interop
+

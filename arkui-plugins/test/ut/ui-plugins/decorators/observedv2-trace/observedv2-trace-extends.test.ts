@@ -56,7 +56,7 @@ import { ObservedV2 as ObservedV2, Trace as Trace } from "@ohos.arkui.stateManag
 
 function main() {}
 
-@ObservedV2() class A implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class A implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
 
   public addWatchSubscriber(watchId: WatchIdType): void {
@@ -105,6 +105,10 @@ function main() {}
 
   public constructor() {}
 
+  public addRefAnyProp(): void {
+    this.__meta_traceA.addRef();
+  }
+
   static {
   }
 
@@ -117,7 +121,7 @@ class G extends A {
 
 }
 
-@ObservedV2() class H extends G implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class H extends G implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
 
   public addWatchSubscriber(watchId: WatchIdType): void {
@@ -146,6 +150,10 @@ class G extends A {
   }
 
   public constructor() {}
+
+  public addRefAnyProp(): void {
+    super.addRefAnyProp();
+  }
 
   static {
   }

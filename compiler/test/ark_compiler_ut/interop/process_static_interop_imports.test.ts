@@ -22,6 +22,7 @@ import { expect } from 'chai';
 
 import { FileManager } from '../../../lib/fast_build/ark_compiler/interop/interop_manager';
 import { ARKTS_HYBRID } from '../../../lib/fast_build/ark_compiler/interop/pre_define';
+import { arkTSHybridModuleMap } from '../../../lib/fast_build/ark_compiler/interop/process_arkts_evolution';
 
 const etsChecker = require('../../../lib/ets_checker');
 
@@ -29,6 +30,8 @@ mocha.describe('process static interop imports tests', function() {
   const projectRootPath: string = fs.mkdtempSync(path.join(os.tmpdir(), 'static-interop-imports-'));
   const pagesPath: string = path.join(projectRootPath, 'entry/src/main/ets/pages');
   const importerId: string = path.join(pagesPath, 'index.ets');
+  const atsFiles: string[] = ['source.ats', 'declaration.d.ats', 'sourcePkg/Index.ats', 'declarationPkg/Index.d.ats']
+    .map(name => path.join(pagesPath, name));
   let originalResolveModuleName: Function;
 
   mocha.before(function() {
@@ -40,9 +43,16 @@ mocha.describe('process static interop imports tests', function() {
     fs.writeFileSync(testStaticFilePath, 'export const test = 1;');
     fs.writeFileSync(customFilePath, 'export default function value() {}');
     fs.writeFileSync(otherFilePath, 'export const test = 1;');
+    atsFiles.forEach(file => {
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      fs.writeFileSync(file, 'export declare class Foo {}');
+    });
     const metadataPath: string = path.join(projectRootPath, 'staticInteropMetadata.json');
     fs.writeFileSync(metadataPath, JSON.stringify({
       files: {
+        ...Object.fromEntries(atsFiles.map(file => [file.replace(/\\/g, '/'), {
+          root: { Foo: { kind: 'class', name: 'Foo', runtimeName: 'Lstatic/Foo;' } }
+        }])),
         [testStaticFilePath.replace(/\\/g, '/')]: {
           root: {
             test: {
@@ -58,7 +68,12 @@ mocha.describe('process static interop imports tests', function() {
         },
         [customFilePath.replace(/\\/g, '/')]: {
           root: {
-            default: { kind: 'function', name: 'default', runtimeName: 'Lentry/src/main/ets/pages/custom/ETSGLOBAL;' }
+            default: {
+              kind: 'function',
+              name: 'default',
+              localName: 'value',
+              runtimeName: 'Lentry/src/main/ets/pages/custom/ETSGLOBAL;'
+            }
           }
         }
       }
@@ -70,10 +85,11 @@ mocha.describe('process static interop imports tests', function() {
       moduleName: 'staticTest',
       modulePath: projectRootPath,
       dynamicFiles: [otherFilePath],
-      staticFiles: [testStaticFilePath, customFilePath],
+      staticFiles: [testStaticFilePath, customFilePath, ...atsFiles],
       cachePath: path.join(projectRootPath, 'cache'),
       byteCodeHarInfo: {}
     });
+    FileManager.cleanFileManagerObject();
     FileManager.initForTest(dependentModuleMap, undefined, undefined, undefined, undefined, projectRootPath);
     FileManager.initStaticInteropMetadata({
       projectConfig: {
@@ -107,13 +123,13 @@ mocha.describe('process static interop imports tests', function() {
     } as ts.ResolvedModuleWithFailedLookupLocations;
   }
 
-  function transform(code: string): string {
+  function transform(code: string, containingFile: string = importerId): string {
     const { processStaticInteropImports } = require(
       '../../../lib/fast_build/ark_compiler/interop/process_static_interop_imports');
     const sourceFile: ts.SourceFile = ts.createSourceFile(
-      importerId, code, ts.ScriptTarget.ES2021, true, ts.ScriptKind.ETS);
+      containingFile, code, ts.ScriptTarget.ES2021, true, ts.ScriptKind.ETS);
     const transformer: ts.TransformerFactory<ts.SourceFile> = context => node =>
-      processStaticInteropImports(node, importerId, context);
+      processStaticInteropImports(node, containingFile, context);
     const result: ts.TransformationResult<ts.SourceFile> = ts.transform(sourceFile, [transformer]);
     return ts.createPrinter({ newLine: ts.NewLineKind.LineFeed }).printFile(result.transformed[0]);
   }
@@ -142,6 +158,8 @@ mocha.describe('process static interop imports tests', function() {
     expect(result).not.to.include('import { test } from "./teststatic";');
     expect(result).to.include('function __createLazy__<T>(loader: () => T, label?: string): T');
     expect(result).to.include('Panda.getFunction(\'Lentry/src/main/ets/pages/teststatic/ETSGLOBAL;\'');
+    expect(result).to.include(
+      'Panda.getClass(\'Lentry/src/main/ets/pages/teststatic/ETSGLOBAL;\')[\'message\']');
     expect(result).to.include('function __createUnsupportedObject__(reason: unknown, label = \'object\'): any');
     expect(result).to.include('export const aa = __createLazy__(');
     expect(result).to.include('export const message = __createLazy__(');
@@ -155,6 +173,12 @@ mocha.describe('process static interop imports tests', function() {
     expect(result).to.include('function __createLazy__<T>');
     expect(result).to.include('custom/ETSGLOBAL');
     expect(result).to.include('value();');
+  });
+
+  mocha.it('uses the localName for the runtime lookup when localName is present', function() {
+    const result: string = transform('import value from "./custom.ets";\nvalue();\n');
+    expect(result).to.include("Panda.getFunction('Lentry/src/main/ets/pages/custom/ETSGLOBAL;', 'value')");
+    expect(result).not.to.include("Panda.getFunction('Lentry/src/main/ets/pages/custom/ETSGLOBAL;', 'default')");
   });
 
   mocha.it('does not match text outside an import declaration', function() {
@@ -346,5 +370,97 @@ mocha.describe('process static interop imports tests', function() {
     const result: string = transformWithSyntheticGlobals(code, [/^let tmpClass = globalThis\.Panda\.getClass/]);
     expect(result).to.include('import { __staticInteropConcurrent_tmpClass as tmpClass } from "./index";');
     expect(result).not.to.include('__createLazy__');
+  });
+
+  mocha.describe('ATS imports with the TSC resolver', function() {
+    mocha.before(function() {
+      etsChecker.resolveModuleName = (moduleName: string, containingFile: string) =>
+        ts.resolveModuleName(moduleName, containingFile, { moduleResolution: ts.ModuleResolutionKind.NodeJs }, ts.sys);
+      const declgenV1OutPath: string = path.join(projectRootPath, 'declgenV1');
+      fs.mkdirSync(declgenV1OutPath, { recursive: true });
+      for (const name of ['source', 'declaration']) {
+        fs.writeFileSync(path.join(declgenV1OutPath, name + '.d.ets'), 'export declare class Foo {}');
+      }
+      arkTSHybridModuleMap.set('pkg', {
+        language: ARKTS_HYBRID, packageName: 'pkg', moduleName: 'pkg', modulePath: pagesPath,
+        declgenV1OutPath, staticFiles: atsFiles, dynamicFiles: []
+      });
+    });
+
+    mocha.after(function() {
+      etsChecker.resolveModuleName = resolveModuleNameForTest;
+      arkTSHybridModuleMap.delete('pkg');
+    });
+
+    for (const [name, suffix] of [['source', '.ats'], ['declaration', '.d.ats']]) {
+      mocha.it(`bridges a package root import of Index${suffix} using source metadata`, function() {
+        const modulePath: string = path.join(pagesPath, name + 'Pkg');
+        const declgenV1OutPath: string = path.join(projectRootPath, 'declgenV1', name + 'Pkg');
+        fs.mkdirSync(declgenV1OutPath, { recursive: true });
+        fs.writeFileSync(path.join(declgenV1OutPath, 'Index.d.ets'), 'export declare class Foo {}');
+        for (const request of [name + '-pkg', '@scope/' + name + '-pkg']) {
+          arkTSHybridModuleMap.set(request, {
+            language: ARKTS_HYBRID, packageName: request, moduleName: request, modulePath,
+            declgenV1OutPath, staticFiles: [path.join(modulePath, 'Index' + suffix)], dynamicFiles: []
+          });
+          try {
+            expect(etsChecker.resolveModuleName(request, importerId).resolvedModule).to.equal(undefined);
+            const result: string = transform(`import { Foo } from "${request}";\nnew Foo();\n`);
+            expect(result).not.to.include('import { Foo }');
+            expect(result).to.include("Panda.getClass('Lstatic/Foo;')");
+            expect(result).to.include('new Foo();');
+          } finally {
+            arkTSHybridModuleMap.delete(request);
+          }
+        }
+      });
+
+      mocha.it(`bridges an extensionless package import of ${suffix} using source metadata`, function() {
+        const request: string = 'pkg/' + name;
+        expect(etsChecker.resolveModuleName(request, importerId).resolvedModule).to.equal(undefined);
+        const result: string = transform(`import { Foo } from "${request}";\nnew Foo();\n`);
+        expect(result).not.to.include('import { Foo }');
+        expect(result).to.include("Panda.getClass('Lstatic/Foo;')");
+        expect(result).to.include('new Foo();');
+      });
+
+      mocha.it(`bridges relative ${suffix} value imports using source metadata`, function() {
+        for (const prefix of ['./', '../pages/']) {
+          for (const extension of ['', suffix]) {
+            const request: string = prefix + name + extension;
+            const result: string = transform(`import { Foo } from "${request}";\nnew Foo();\n`);
+            expect(result).not.to.include('import { Foo }');
+            expect(result).to.include("Panda.getClass('Lstatic/Foo;')");
+            expect(result).to.include('new Foo();');
+          }
+        }
+      });
+    }
+
+    mocha.it('preserves legacy ETS bridging and TSC resolution precedence', function() {
+      const result: string = transform('import { test } from "./teststatic";\ntest.aa();\n');
+      expect(result).to.include("Panda.getFunction('Lentry/src/main/ets/pages/teststatic/ETSGLOBAL;'");
+      const sibling: string = path.join(pagesPath, 'source.ets');
+      fs.writeFileSync(sibling, 'export class Foo {}');
+      try {
+        const code: string = 'import { Foo } from "./source";\nnew Foo();\n';
+        expect(transform(code)).to.equal(code);
+      } finally {
+        fs.unlinkSync(sibling);
+      }
+    });
+
+    mocha.it('leaves unsupported requests and non-source ETS importers unchanged', function() {
+      for (const request of ['source', './missing', 'pkg/missing', 'pkg/source.ats', 'pkg/declaration.d.ats']) {
+        const code: string = `import { Foo } from "${request}";\nnew Foo();\n`;
+        expect(transform(code)).to.equal(code);
+      }
+      const code: string = 'import { Foo } from "./source";\nnew Foo();\n';
+      for (const suffix of ['.ts', '.js', '.d.ets', '.ats', '.d.ats']) {
+        expect(transform(code, path.join(pagesPath, 'index' + suffix))).to.equal(code);
+        const packageCode: string = 'import { Foo } from "pkg/source";\nnew Foo();\n';
+        expect(transform(packageCode, path.join(pagesPath, 'index' + suffix))).to.equal(packageCode);
+      }
+    });
   });
 });

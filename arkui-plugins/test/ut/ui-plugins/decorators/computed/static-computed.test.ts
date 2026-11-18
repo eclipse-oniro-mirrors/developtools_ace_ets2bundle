@@ -73,7 +73,7 @@ import { Computed as Computed, ObservedV2 as ObservedV2, Trace as Trace, Local a
 
 function main() {}
 
-@ObservedV2() class Name implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class Name implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
 
   public addWatchSubscriber(watchId: WatchIdType): void {
@@ -135,6 +135,10 @@ function main() {}
   public constructor() {}
   static {
 
+  }
+  public addRefAnyProp(): void {
+    this.__meta_firstName.addRef();
+    this.__meta_lastName.addRef();
   }
 
 }
@@ -242,7 +246,7 @@ function main() {}
   }
 }
 
-@ObservedV2() class Name2 implements IObservedObject, ISubscribedWatches {
+@ObservedV2() class Name2 implements IObservedObject, ISubscribedWatches, IObservedAnyProp {
   @JSONStringifyIgnore() @JSONParseIgnore() private subscribedWatches: (ISubscribedWatches | undefined) = STATE_MGMT_FACTORY.makeSubscribedWatches();
 
   public addWatchSubscriber(watchId: WatchIdType): void {
@@ -279,6 +283,8 @@ function main() {}
     return Name2.__computed_fullName.get();
   }
   public constructor() {}
+
+  public addRefAnyProp(): void {}
   static {
 
   }

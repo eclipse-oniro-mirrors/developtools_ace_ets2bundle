@@ -31,6 +31,8 @@ import {
 } from '../../../utils';
 import { getPkgInfo } from '../../../ark_utils';
 import {
+  EXTNAME_ATS,
+  EXTNAME_D_ATS,
   EXTNAME_D_ETS,
   EXTNAME_ETS,
   EXTNAME_TS,
@@ -50,7 +52,7 @@ import {
   red,
   reset
 } from '../common/ark_define';
-import { FileManager } from './interop_manager';
+import { FileManager, getDeclgenV2DeclPath } from './interop_manager';
 
 interface DeclFileConfig {
   declPath: string;
@@ -120,7 +122,7 @@ export function addDeclFilesConfig(filePath: string, projectConfig: Object, logg
   const mainModuleName: string = projectConfig.mainModuleName;
   const bundleName: string = projectConfig.bundleName;
   const normalizedFilePath: string = `${pkgName}/${projectFilePath}`;
-  const declPath: string = path.join(toUnixPath(declgenV2OutPath), projectFilePath) + EXTNAME_D_ETS;
+  const declPath: string = getDeclgenV2DeclPath(path.join(toUnixPath(declgenV2OutPath), projectFilePath));
   const ohmUrl: string = `${isSO}&${mainModuleName}&${bundleName}&${normalizedFilePath}&${pkgInfo.version}`;
   pkgDeclFilesConfig[pkgName].files[projectFilePath] = { declPath, ohmUrl: `@normalized:${ohmUrl}` };
 }
@@ -137,16 +139,19 @@ export function getArkTSEvoDeclFilePath(resolvedFileInfo: ResolvedFileInfo): str
     });
     const sourceRoots: string[] = arkTSEvolutionModuleInfo.sourceRoots;
     if (resolvedFileName && staticFiles.length > 0 && staticFiles.indexOf(resolvedFileName) !== -1) {
-      if(resolvedFileName.endsWith(EXTNAME_D_ETS)) {
+      if (resolvedFileName.endsWith(EXTNAME_D_ETS)) {
+        arktsEvoDeclFilePath = resolvedFileName.replace(modulePath, declgenV1OutPath);
+      } else if (resolvedFileName.endsWith(EXTNAME_D_ATS)) {
+        // tsc does not support ats, actually we wont hit here.
         arktsEvoDeclFilePath = resolvedFileName
-          .replace(modulePath, declgenV1OutPath);
-        break;
+          .replace(modulePath, declgenV1OutPath)
+          .replace(/\.d\.ats$/, EXTNAME_D_ETS);
       } else {
         arktsEvoDeclFilePath = resolvedFileName
           .replace(modulePath, declgenV1OutPath)
-          .replace(EXTNAME_ETS, EXTNAME_D_ETS);
-        break;
+          .replace(/\.(?:ets|ats)$/, EXTNAME_D_ETS);
       }
+      break;
     }
     if (moduleRequest && moduleRequest === pkgName) {
       arktsEvoDeclFilePath = path.join(declgenV1OutPath, 'Index.d.ets');
@@ -180,12 +185,66 @@ export function getArkTSEvoDeclFilePath(resolvedFileInfo: ResolvedFileInfo): str
   return arktsEvoDeclFilePath;
 }
 
+/**
+ * Resolves relative ATS files imported by arkts-dyn ETS source.
+ * @param moduleName import path
+ * @param containingFile importer file
+ * @returns resolved ats file
+ */
+export function resolveRelativeAtsFileFromEtsFile(moduleName: string, containingFile: string): string | undefined {
+  if (!/^\.\.?\//.test(moduleName) || !containingFile.endsWith(EXTNAME_ETS) ||
+    containingFile.endsWith(EXTNAME_D_ETS)) {
+    return undefined;
+  }
+  const sourceDir: string = path.dirname(containingFile);
+  for (const ext of [EXTNAME_ATS, EXTNAME_D_ATS]) {
+    const candidate: string = path.resolve(sourceDir,
+      moduleName.endsWith(EXTNAME_ATS) ? moduleName : moduleName + ext);
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Resolve the source file path (not the interop decl file) based on import path in interop situation.
+ * we will fistly try resolve the interop decl file, then resolve to the source file based on the module root path.
+ * @param moduleName import path
+ * @param containingFile importer file
+ * @returns resolved real file path
+ */
+export function resolvePackageAtsFileFromEtsFile(moduleName: string, containingFile: string): string | undefined {
+  if (!containingFile.endsWith(EXTNAME_ETS) || containingFile.endsWith(EXTNAME_D_ETS) ||
+    moduleName.endsWith(EXTNAME_ATS)) {
+    return undefined;
+  }
+  const combinedMap = new Map([...arkTSEvolutionModuleMap, ...arkTSHybridModuleMap]);
+  for (const [pkgName, moduleInfo] of combinedMap) {
+    if (moduleName !== pkgName && !moduleName.startsWith(pkgName + '/')) {
+      continue;
+    }
+    const declFilePath: string = getArkTSEvoDeclFilePath({ moduleRequest: moduleName, resolvedFileName: '' });
+    const sourcePath: string = path.resolve(moduleInfo.modulePath,
+      path.relative(moduleInfo.declgenV1OutPath, declFilePath));
+    const staticFiles: Set<string> = new Set(moduleInfo.staticFiles.map(toUnixPath));
+    for (const ext of [EXTNAME_ATS, EXTNAME_D_ATS]) {
+      const candidate: string = toUnixPath(sourcePath.replace(/\.d\.ets$/, ext));
+      if (staticFiles.has(candidate) && fs.existsSync(candidate)) {
+        return candidate;
+      }
+    }
+    return undefined;
+  }
+  return undefined;
+}
+
 export function resolveTargetsPath(moduleRequest: string, pkgName: string, declgenV1OutPath: string, sourceRoots: string[]): string {
   let arktsEvoDeclFilePath: string = '';
   if (!moduleRequest || !moduleRequest.startsWith(pkgName + '/') || !sourceRoots || sourceRoots.length < 2) {
     return arktsEvoDeclFilePath;
   }
-  for (const sourceRoot of sourceRoots.reverse()) {
+  for (const sourceRoot of [...sourceRoots].reverse()) {
     arktsEvoDeclFilePath = moduleRequest.replace(
       pkgName,
       toUnixPath(path.join(declgenV1OutPath, sourceRoot))
@@ -895,6 +954,26 @@ export function resolveRelativeModuleFromDecl(
     }
   }
   return undefined;
+}
+
+/**
+ * Resolve a relative module import path. This is used to resolve interop imports.
+ * example:
+ * ```
+ * // current.ets
+ * import {foo} from './Foo'
+ * ```
+ * `current.ets` is a arkts 1.1 file, `Foo.ats` is a arkts 1.2 file, 
+ * the import path will be resolved to `Foo.d.ets`.
+ * @param moduleName import path e.g. './Foo'
+ * @param containingFile importer file e.g. 'current.ets'
+ * @returns resolved file
+ */
+export function resolveRelativeModuleFromSource(
+  moduleName: string, containingFile: string
+): string | undefined {
+  const sourceFilePath: string | undefined = resolveRelativeAtsFileFromEtsFile(moduleName, containingFile);
+  return sourceFilePath ? redirectToDeclFileForInterop(sourceFilePath)?.resolvedFileName : undefined;
 }
 
 export function resetInteropTransformLog(): void {

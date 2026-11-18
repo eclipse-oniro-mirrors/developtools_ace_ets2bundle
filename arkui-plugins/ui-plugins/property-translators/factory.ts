@@ -42,13 +42,11 @@ import { optionsHasField } from '../utils';
 import { addMemoAnnotation, findCanAddMemoFromTypeAnnotation } from '../../collectors/memo-collectors/utils';
 import { annotation, isNumeric } from '../../common/arkts-utils';
 import { PropertyFactoryCallTypeCache, PropertyValueCache } from '../memo-collect-cache';
-import { MetaDataCollector } from '../../common/metadata-collector';
 import { AstNodeCacheValueMetadata, NodeCacheFactory } from '../../common/node-cache';
 import { CustomComponentInnerClassPropertyInfo } from 'collectors/ui-collectors/records';
 import { PropertyPathNode, PropertyPathResult, resolvePropertyPath } from '../../common/path-resolvers';
 
 const MONITOR_WILDCARD_SUFFIX = '.*';
-const MONITOR_WILDCARD_MIN_VERSION = 26;
 const MONITOR_WILDCARD_PROPERTY_NAME = 'enableWildcard';
 
 export class factory {
@@ -943,33 +941,28 @@ export class factory {
         const args: arkts.Expression[] = [
             this.generatePathArg(definition, monitorItem),
             this.generateLambdaArg(originalName, paramsLength)];
-        const compatibleVersion = MetaDataCollector.getInstance().projectConfig?.compatibleSdkVersion;
-        if (compatibleVersion !== undefined && compatibleVersion >= 24) {
-            const makeMonitorOptions = arkts.factory.createObjectExpression(
-                [
-                    arkts.factory.createProperty(
-                        arkts.Es2pandaPropertyKind.PROPERTY_KIND_INIT,
-                        arkts.factory.createIdentifier(MonitorNames.OWNER),
-                        isFromStruct ? arkts.factory.createThisExpression() : arkts.factory.createUndefinedLiteral(),
-                        false, false
-                    ),
-                    arkts.factory.createProperty(
-                        arkts.Es2pandaPropertyKind.PROPERTY_KIND_INIT,
-                        arkts.factory.createIdentifier(MonitorNames.FUNCTION_NAME),
-                        arkts.factory.createStringLiteral(originalName),
-                        false, false
-                    ),
-                ]
-            );
-            collectStateManagementTypeImport(StateManagementTypes.MAKE_MONITOR_OPTIONS);
-            args.push(arkts.factory.createTSAsExpression(
-                makeMonitorOptions,
-                UIFactory.createTypeReferenceFromString(StateManagementTypes.MAKE_MONITOR_OPTIONS),
-                false
-            ));
-        } else if (isFromStruct) {
-            args.push(arkts.factory.createThisExpression());
-        }
+        const makeMonitorOptions = arkts.factory.createObjectExpression(
+            [
+                arkts.factory.createProperty(
+                    arkts.Es2pandaPropertyKind.PROPERTY_KIND_INIT,
+                    arkts.factory.createIdentifier(MonitorNames.OWNER),
+                    isFromStruct ? arkts.factory.createThisExpression() : arkts.factory.createUndefinedLiteral(),
+                    false, false
+                ),
+                arkts.factory.createProperty(
+                    arkts.Es2pandaPropertyKind.PROPERTY_KIND_INIT,
+                    arkts.factory.createIdentifier(MonitorNames.FUNCTION_NAME),
+                    arkts.factory.createStringLiteral(originalName),
+                    false, false
+                ),
+            ]
+        );
+        collectStateManagementTypeImport(StateManagementTypes.MAKE_MONITOR_OPTIONS);
+        args.push(arkts.factory.createTSAsExpression(
+            makeMonitorOptions,
+            UIFactory.createTypeReferenceFromString(StateManagementTypes.MAKE_MONITOR_OPTIONS),
+            false
+        ));
         const right: arkts.CallExpression = factory.generateStateMgmtFactoryCall(
             StateManagementTypes.MAKE_MONITOR,
             undefined,
@@ -1168,9 +1161,7 @@ export class factory {
         monitorItem: string,
         definition?: arkts.ClassDefinition
     ): arkts.ObjectExpression {
-        const compatibleVersion = MetaDataCollector.getInstance().projectConfig?.compatibleSdkVersion;
-        const hasWildcard: boolean = monitorItem.endsWith(MONITOR_WILDCARD_SUFFIX) &&
-            compatibleVersion !== undefined && compatibleVersion >= MONITOR_WILDCARD_MIN_VERSION;
+        const hasWildcard: boolean = monitorItem.endsWith(MONITOR_WILDCARD_SUFFIX);
         const propertyPathResult = definition ? 
             factory.findUnionTypesInPropertyPath(definition, monitorItem, hasWildcard) : undefined;
         const valueCallbackPath: string = hasWildcard

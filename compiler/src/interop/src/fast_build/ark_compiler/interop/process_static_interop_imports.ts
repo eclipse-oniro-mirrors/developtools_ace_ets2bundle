@@ -30,6 +30,10 @@ import { logger } from '../../../compile_info';
 import { FileManager } from './interop_manager';
 import { StaticInteropSymbol } from './type';
 import { ARKTS_1_2 } from './pre_define';
+import {
+  resolveRelativeAtsFileFromEtsFile,
+  resolvePackageAtsFileFromEtsFile
+} from './process_arkts_evolution';
 
 /**
  * Connects an imported name to its local name. For `import * as ns`, importedName is absent and
@@ -310,14 +314,31 @@ function getStaticImport(node: ts.Node, containingFile: string): string | undefi
   return getStaticImportPath(node.moduleSpecifier.text, containingFile);
 }
 
+/**
+ * Resolves an import path to the real source file (maybe .ets or .ats)
+ * ```ts
+ * // current.ets
+ * import { Foo } from './Foo';
+ * ```
+ * resolves to real path of Foo.ats(arkts-sta) or Foo.ets(arkts-dyn), not interop Foo.d.ets.
+ * @param moduleName import path
+ * @param containingFile importer file
+ * @returns resolved arkts-sta file
+ */
 function getStaticImportPath(moduleName: string, containingFile: string): string | undefined {
+  // since ohos-tsc is not support .ats yet (maybe support in the future), and resolveModuleName call ts.resolveModuleName, 
+  // so it actually will no longer resolve .ats file, so we need to resolve it by ourselves.
   const resolvedModule: ts.ResolvedModuleFull | undefined = resolveModuleName(moduleName, containingFile).resolvedModule;
 
-  if (!resolvedModule?.resolvedFileName) {
+  const resolvedFileName: string | undefined = resolvedModule?.resolvedFileName ||
+    resolveRelativeAtsFileFromEtsFile(moduleName, containingFile) ||
+    resolvePackageAtsFileFromEtsFile(moduleName, containingFile);
+
+  if (!resolvedFileName) {
     return undefined;
   }
 
-  const resolvedImportPath: string = normalizeFilePath(stripQuery(resolvedModule.resolvedFileName));
+  const resolvedImportPath: string = normalizeFilePath(stripQuery(resolvedFileName));
   const languageVersion = FileManager.getInstance().getLanguageVersionByFilePath(resolvedImportPath);
 
   if (languageVersion?.languageVersion !== ARKTS_1_2) {
@@ -550,7 +571,7 @@ function createStaticInteropReplacementSource(symbols: BoundStaticInteropSymbol[
 
 /**
  * Recursively emits one declaration using the metadata kind:
- * class -> Panda.getClass, function -> Panda.getFunction, property -> getClass(...).name,
+ * class -> Panda.getClass, function -> Panda.getFunction, property -> getClass(...)[name],
  * namespace -> an exported declaration for every processable entry in its children map.
  */
 function createStaticInteropDeclaration(symbol: StaticInteropSymbol, declarationName: string,
@@ -576,13 +597,14 @@ function createStaticInteropDeclaration(symbol: StaticInteropSymbol, declaration
     return '';
   }
   const runtimeName: string = JSON.stringify(symbol.runtimeName);
+  const localName: string = symbol.localName ?? symbol.name;
   let expression: string;
   switch (symbol.kind) {
     case 'function':
-      expression = `(globalThis as any).Panda.getFunction(${runtimeName}, ${JSON.stringify(symbol.name)})`;
+      expression = `(globalThis as any).Panda.getFunction(${runtimeName}, ${JSON.stringify(localName)})`;
       break;
     case 'property':
-      expression = `(globalThis as any).Panda.getClass(${runtimeName}).${symbol.name}`;
+      expression = `(globalThis as any).Panda.getClass(${runtimeName})[${JSON.stringify(localName)}]`;
       break;
     case 'class':
       expression = `(globalThis as any).Panda.getClass(${runtimeName})`;

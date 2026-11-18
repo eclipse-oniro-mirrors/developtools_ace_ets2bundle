@@ -17,7 +17,7 @@ import path from 'path';
 
 import { ModuleMode } from './module_mode';
 import { PATCH_SYMBOL_TABLE } from '../common/ark_define';
-import { getEs2abcFileThreadNumber } from '../utils';
+import { getEffectiveTargetApiVersion, getEs2abcFileThreadNumber } from '../utils';
 import { SourceMapGenerator } from '../generate_sourcemap';
 import { CompileEvent } from '../../../performance';
 
@@ -55,7 +55,7 @@ export class ModuleHotfixMode extends ModuleMode {
     this.cmdArgs.push(`"${this.moduleAbcPath}"`);
     this.cmdArgs.push('--file-threads');
     this.cmdArgs.push(`"${fileThreads}"`);
-    this.cmdArgs.push(`"--target-api-version=${this.projectConfig.compatibleSdkVersion}"`);
+    this.cmdArgs.push(`"--target-api-version=${getEffectiveTargetApiVersion(this.projectConfig)}"`);
 
     if (this.projectConfig.patch) {
       const oldHapSymbolTable: string = path.join(this.projectConfig.inOldSymbolTablePath, PATCH_SYMBOL_TABLE);

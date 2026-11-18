@@ -22,7 +22,7 @@ import { compilerOptions, resolveModuleNames as resolveModuleNamesOrig } from '.
 import { projectConfig } from '../main';
 import {
   escapeRegExp, splitLeadingTrivia, isExternalModuleSpecifier, isNameReferencedInText,
-  findNamesMatchingPattern, sortImportLinesFirst, transformToExportDeclare, ensureDeclareKeyword, stripExportFromText,
+  findNamesMatchingPattern, sortImportLinesFirst, withTopLevelDeclarationModifiers,
   isTypeParameterSymbol, isEnumMemberSymbol, isRightOfMatchingQualifiedName, getLocalNameOfDeclaration,
   getDeclarationNode, withNamespaceMemberModifiers, sanitizeDeclarationNode, validateOutput, resolveWithFallback,
   buildBidirectionalMaps, createDeclarationModuleResolver, normalizeForTextDedup, pushCompanionMemberDeduped,
@@ -1570,15 +1570,11 @@ export class DeclarationMerger {
   }
 
   private emitTopLevelDeclaration(entity: MergeEntity, isExported: boolean): string {
+    const wantExport: boolean = isExported && !entity.isDefaultExport;
     return this.printDeclarations(entity.declarations, {
-      transformNode: (sanitizedNode: ts.Node): ts.Node => sanitizedNode,
-      formatText: (text: string, printNode: ts.Node): string => {
-        if (isExported && !entity.isDefaultExport) {
-          return transformToExportDeclare(text, printNode);
-        }
-        text = stripExportFromText(text, printNode);
-        return ensureDeclareKeyword(text, printNode);
-      },
+      transformNode: (sanitizedNode: ts.Node): ts.Node =>
+        withTopLevelDeclarationModifiers(sanitizedNode, wantExport),
+      formatText: (text: string): string => text,
       normalizeForDedup: (text: string): string =>
         text.replace(/^export\s+/, '').replace(/^declare\s+/, ''),
     });
@@ -1603,9 +1599,9 @@ export class DeclarationMerger {
     localOverrides: Map<ts.Symbol, string>
   ): string {
     return this.printDeclarations(member.declarations, {
-      transformNode: (sanitizedNode: ts.Node): ts.Node => sanitizedNode,
-      formatText: (text: string, printNode: ts.Node): string =>
-        transformToExportDeclare(text, printNode),
+      transformNode: (sanitizedNode: ts.Node): ts.Node =>
+        withTopLevelDeclarationModifiers(sanitizedNode, true),
+      formatText: (text: string): string => text,
       localOverrides,
       normalizeForDedup: (text: string): string =>
         text.replace(/^export\s+/, '').replace(/^declare\s+/, ''),

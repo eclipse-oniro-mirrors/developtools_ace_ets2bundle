@@ -20,6 +20,7 @@ import {
   WHITELISTNEW,
   readExternalComponents
 } from './external_component_map';
+import { ISdkApiValues } from './ui_utils';
 const COMPONENTS = 'components';
 const FORM_COMPONENTS = 'form_components';
 export const COMPONENT_MAP: any = {};
@@ -122,6 +123,9 @@ export const INNER_CUSTOM_LOCALBUILDER_METHOD: Set<string> = new Set();
 export const INNER_STYLE_FUNCTION: Map<string, ts.Block> = new Map();
 export const GLOBAL_STYLE_FUNCTION: Map<string, ts.Block> = new Map();
 
+export const GLOBAL_STYLE_VERSION: Map<string, ISdkApiValues> = new Map();
+export const INNER_STYLE_VERSION: Map<string, ISdkApiValues> = new Map();
+
 export interface ExtendParamterInterfance {
   attribute: string,
   parameterCount: number
@@ -154,7 +158,7 @@ export const CUSTOM_BUILDER_PROPERTIES: Set<string> = new Set(['background', 'bi
   'menus', 'toolBar', 'tabBar', 'toolbar', 'onDragStart', 'onItemDragStart', 'swipeAction', 'bindContentCover', 'bindSheet',
   'navDestination', 'overlay', 'toolbarConfiguration', 'customKeyboard', 'bindSelectionMenu', 'description',
   'showUnit', 'customKeyboard', 'create', 'addBuilderSpan', 'dragPreview', 'accessibilityVirtualNode',
-  'header', 'footer', 'subMenuBuilder']);
+  'header', 'footer', 'subMenuBuilder', 'safeAreaInset']);
 export const CUSTOM_BUILDER_PROPERTIES_WITHOUTKEY: Set<string> = new Set(['showUnit', 'create', 'header', 'footer', 'subMenuBuilder']);
 export const CUSTOM_BUILDER_CONSTRUCTORS: Set<string> = new Set(['MenuItem', 'MenuItemGroup', 'Refresh', 'WaterFlow', 'Radio', 'Checkbox']);
 

@@ -32,7 +32,6 @@ buildConfig.compileFiles = [
 ];
 
 const projectConfig: ProjectConfig = mockProjectConfig();
-projectConfig.compatibleSdkVersion = 26;
 
 const pluginTester = new PluginTester(
     'test @Monitor index-wildcard path validation (Collector + validators)',

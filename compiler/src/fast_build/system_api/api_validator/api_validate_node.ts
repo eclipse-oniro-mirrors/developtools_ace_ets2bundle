@@ -16,7 +16,7 @@
 import ts from 'typescript';
 import fs from 'fs';
 import path from 'path';
-import { SdkComparisonHelper, findImpliedGuardExpression, isNodeInGuardPattern } from './api_validate_utils';
+import { SdkComparisonHelper, findImpliedGuardExpression, isNodeInGuardPattern, resolveInitializerExpression } from './api_validate_utils';
 import {
   getValueChecker,
   getFormatChecker,
@@ -1123,24 +1123,50 @@ export class CanIUseValidator extends BaseValidator implements NodeValidator {
     if (specifyJsDocTagValue === undefined) {
       return true;
     }
-    const hasIfChecked = this.hasConditionChecked(node, specifyJsDocTagValue, checkConfig);
-    if (!hasIfChecked) {
-      const jsDocTagInfos: ts.JsDocTagInfo[] = [];
-      jsDocTags.forEach(item => {
-        jsDocTagInfos.push({
-          name: item.tagName.escapedText.toString(),
-          text: ts.getTextOfJSDocComment(item.comment),
-        });
-      });
-      const conditionCheckResult = this.checkSyscapCondition(jsDocTagInfos);
-      if (conditionCheckResult.valid) {
-        return true;
-      } else {
-        return false;
-      }
-    } else {
+    if (this.isNodeInCanIUseGuardPattern(node, specifyJsDocTagValue)) {
       return true;
     }
+    const jsDocTagInfos: ts.JsDocTagInfo[] = [];
+    jsDocTags.forEach(item => {
+      jsDocTagInfos.push({
+        name: item.tagName.escapedText.toString(),
+        text: ts.getTextOfJSDocComment(item.comment),
+      });
+    });
+    const conditionCheckResult = this.checkSyscapCondition(jsDocTagInfos);
+    if (conditionCheckResult.valid) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  private isNodeInCanIUseGuardPattern(node: ts.Node, expectedSyscap: string): boolean {
+    try {
+      return isNodeInGuardPattern(
+        node,
+        (guardExpression: ts.Expression, impliedConditionValue: boolean) =>
+          this.canIUseGuardImpliedTrue(guardExpression, impliedConditionValue, expectedSyscap)
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  private canIUseGuardImpliedTrue(guardExpression: ts.Expression, impliedConditionValue: boolean,
+    expectedSyscap: string): boolean {
+    const expression = findImpliedGuardExpression(
+      guardExpression,
+      impliedConditionValue,
+      (candidate: ts.Expression, candidateValue: boolean) => candidateValue &&
+        ts.isCallExpression(candidate) &&
+        ts.isIdentifier(candidate.expression) &&
+        candidate.expression.escapedText.toString() === 'canIUse'
+    );
+    if (!expression || !ts.isCallExpression(expression)) {
+      return false;
+    }
+    return this.checkSyscapConditionValidCallback(expression, 'canIUse', expectedSyscap);
   }
 
   private getSpecifyJsDocTagValue(jsDocTags: readonly ts.JSDocTag[], specifyTag: string[]): string | undefined {
@@ -1151,41 +1177,6 @@ export class CanIUseValidator extends BaseValidator implements NodeValidator {
       }
     });
     return specifyJsDocTagValue;
-  }
-
-  private hasConditionChecked(expression: ts.Node, importSymbol: string,
-    checkConfig: ts.JsDocNodeCheckConfigItem): boolean {
-    const result = { hasIfChecked: false };
-    const container = ts.findAncestor(expression, ts.isSourceFile);
-    if (!container) {
-      return result.hasIfChecked;
-    }
-    this.traversalNode(expression, importSymbol, container, result, checkConfig);
-    return result.hasIfChecked;
-  }
-
-  private traversalNode(node: ts.Node, importSymbol: string, parent: ts.Node, result: { hasIfChecked: boolean },
-    checkConfig: ts.JsDocNodeCheckConfigItem): void {
-    const specifyFuncName: string = 'canIUse';
-    if (result.hasIfChecked) {
-      return;
-    }
-
-    if (node.parent !== parent) {
-      if (ts.isIfStatement(node.parent)) {
-        if (ts.isCallExpression(node.parent.expression) && this.checkSyscapConditionValidCallback(node.parent.expression, specifyFuncName, importSymbol)) {
-          result.hasIfChecked = true;
-          return;
-        }
-        else {
-          this.traversalNode(node.parent, importSymbol, parent, result, checkConfig);
-        }
-      }
-      this.traversalNode(node.parent, importSymbol, parent, result, checkConfig);
-    }
-    else {
-      return;
-    }
   }
 
   /**
@@ -1233,12 +1224,10 @@ export class CanIUseValidator extends BaseValidator implements NodeValidator {
       const expression = node.arguments[0];
       if (ts.isStringLiteral(expression) && tagValue === expression.text) {
         return true;
-      } else if (ts.isIdentifier(expression)) {
+      } else {
         const typeChecker: ts.TypeChecker = globalProgram.program.getTypeChecker();
-        const arguSymbol: ts.Symbol | undefined = typeChecker.getSymbolAtLocation(expression);
-        return arguSymbol && arguSymbol.valueDeclaration && ts.isVariableDeclaration(arguSymbol.valueDeclaration) &&
-          arguSymbol.valueDeclaration.initializer && ts.isStringLiteral(arguSymbol.valueDeclaration.initializer) &&
-          arguSymbol.valueDeclaration.initializer.text === tagValue;
+        const initializer: ts.Expression | undefined = resolveInitializerExpression(expression, typeChecker);
+        return initializer !== undefined && ts.isStringLiteral(initializer) && initializer.text === tagValue;
       }
     }
     return false;

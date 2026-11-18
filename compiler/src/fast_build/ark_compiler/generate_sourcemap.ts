@@ -252,36 +252,106 @@ export class SourceMapGenerator {
     }
 
     const cacheFileContent: string = fs.readFileSync(toUnixPath(cacheSourceMapInfo.path)).toString();
-    try {
-      let cacheFileJson: Object = JSON.parse(cacheFileContent);
-      let compileFileList: Set<string> = this.getCompileFileList();
-      Object.keys(cacheFileJson).forEach(key => {
-        if (!(!compileFileList.has(key) || this.sourceMapsResult[key])) {
-          this.sourceMapsResult[key] = cacheFileJson[key];
-        }
-      });
-    } catch (e) {
-      let lines: string[] = cacheFileContent.split(/\r?\n/);
-      if (lines.length <= 0) {
-        this.checkAndWriteEnd();
-        stopEvent(eventMergeCachedSourceMaps);
-        return;
-      }
-
-      let compileFileList: Set<string> = this.getCompileFileList();
-      for (const line of lines) {
-        if (line.trim() === '') {
-          continue;
-        }
-        let smObj: Object = JSON.parse(line.trim());
-        if (!(!compileFileList.has(smObj.key) || this.sourceMapsResult[smObj.key])) {
-          this.sourceMapsResult[smObj.key] = smObj.val;
-        }
-      }
-    }
+    this.mergeCachedSourceMaps(this.readCachedSourceMaps(cacheFileContent));
 
     this.checkAndWriteEnd();
     stopEvent(eventMergeCachedSourceMaps);
+  }
+
+  private *readCachedSourceMaps(content: string): IterableIterator<[string, Object]> {
+    let sourceMaps: Object;
+    try {
+      sourceMaps = JSON.parse(content);
+    } catch (e) {
+      const seenKeys: Set<string> = new Set();
+      for (const line of content.split(/\r?\n/)) {
+        if (line.trim() === '') {
+          continue;
+        }
+        const sourceMap: Object = JSON.parse(line.trim());
+        if (seenKeys.has(sourceMap.key)) {
+          continue;
+        }
+        seenKeys.add(sourceMap.key);
+        yield [sourceMap.key, sourceMap.val];
+      }
+      return;
+    }
+    // A single JSONL record is also valid JSON; distinguish it from the map collection.
+    if (typeof sourceMaps?.key === 'string' && Object.prototype.hasOwnProperty.call(sourceMaps, 'val')) {
+      yield [sourceMaps.key, sourceMaps.val];
+      return;
+    }
+    for (const key of Object.keys(sourceMaps)) {
+      yield [key, sourceMaps[key]];
+    }
+  }
+
+  private mergeCachedSourceMaps(sourceMaps: Iterable<[string, Object]>): void {
+    const compileFileList: Set<string> = this.getCompileFileList();
+    const currentKeys: Set<string> = new Set(Object.keys(this.sourceMapsResult));
+    const restoredKeys: Map<string, string> = new Map();
+    const ambiguousKeys: Set<string> = new Set();
+    for (const [key, sourceMap] of sourceMaps) {
+      // Keep maps produced this round, including externally supplied bytecode HAR maps.
+      if (currentKeys.has(key)) {
+        continue;
+      }
+      const updated = this.updateCachedSourceMapEntry(key, sourceMap);
+      if (!compileFileList.has(updated.key) || currentKeys.has(updated.key) || ambiguousKeys.has(updated.key)) {
+        continue;
+      }
+      const restoredKey: string = restoredKeys.get(updated.key);
+      if (restoredKey !== undefined) {
+        if (restoredKey !== key) {
+          ambiguousKeys.add(updated.key);
+        }
+        continue;
+      }
+      this.sourceMapsResult[updated.key] = updated.sourceMap;
+      restoredKeys.set(updated.key, key);
+    }
+    if (ambiguousKeys.size > 0) {
+      const filteredSourceMaps: Object = {};
+      for (const key of Object.keys(this.sourceMapsResult)) {
+        if (!ambiguousKeys.has(key)) {
+          filteredSourceMaps[key] = this.sourceMapsResult[key];
+        }
+      }
+      this.sourceMapsResult = filteredSourceMaps;
+    }
+  }
+
+  // Version-only changes can leave all modules cached; refresh entry identities before filtering against this build.
+  private updateCachedSourceMapEntry(key: string, sourceMap: Object): { key: string; sourceMap: Object } {
+    const unchanged = { key, sourceMap };
+    const entryPackageInfo: string = sourceMap?.['entry-package-info'];
+    const updatedEntryInfo: string = `${this.projectConfig.entryPackageName}|${this.projectConfig.entryModuleVersion}`;
+    if (typeof entryPackageInfo !== 'string' || entryPackageInfo === updatedEntryInfo) {
+      return unchanged;
+    }
+    const entryInfo: string[] = entryPackageInfo.split('|');
+    const keyParts: string[] = key.split('|');
+    if (entryInfo.length !== 2 || keyParts.length !== 4 ||
+      entryInfo[0] !== this.projectConfig.entryPackageName || keyParts[0] !== entryInfo[0]) {
+      return unchanged;
+    }
+    const packageInfo: string = sourceMap['package-info'];
+    if (packageInfo !== undefined) {
+      // A dependency retains its own package version, even when its name matches the entry.
+      if (packageInfo !== `${keyParts[1]}|${keyParts[2]}`) {
+        return unchanged;
+      }
+    } else {
+      if (keyParts[1] !== entryInfo[0] || keyParts[2] !== entryInfo[1]) {
+        return unchanged;
+      }
+      keyParts[2] = this.projectConfig.entryModuleVersion;
+    }
+    return {
+      key: keyParts.join('|'),
+      sourceMap: { ...sourceMap, 'entry-package-info': updatedEntryInfo }
+    };
   }
 
   public buildModuleSourceMapInfoSingle(parentEvent: CompileEvent | undefined): void {
