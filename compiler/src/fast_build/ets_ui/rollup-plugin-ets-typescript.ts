@@ -507,8 +507,9 @@ async function transform(code: string, id: string) {
     }
     compilerOptions.moduleResolution = 'nodenext';
     compilerOptions.module = 'es2020';
-    const newContent: string = jsBundlePreProcess(code, id, this.getModuleInfo(id).isEntry, logger, hvigorLogger);
     const metaInfo: Object = this.getModuleInfo(id).metaInfo || {};
+    const newContent: string = jsBundlePreProcess(code, id, this.getModuleInfo(id).isEntry, logger, hvigorLogger,
+      metaInfo);
     const result: ts.TranspileOutput = ts.transpileModule(newContent, {
       compilerOptions: compilerOptions,
       fileName: id,
@@ -568,8 +569,10 @@ async function transform(code: string, id: string) {
     storedFileInfo.reUseProgram = true;
   }
   setPkgNameForFile(this.getModuleInfo(id));
+  const metaInfo: Object = this.getModuleInfo(id).meta;
+  ProjectCollections.projectWhiteListManager?.setCurrentCollector(id);
   const eventValidateEts = createAndStartEvent(eventEtsTransformForEsmodule, 'validateEts');
-  validateEts(code, id, this.getModuleInfo(id).isEntry, logger, targetSourceFile, hvigorLogger);
+  validateEts(code, id, this.getModuleInfo(id).isEntry, logger, targetSourceFile, hvigorLogger, metaInfo);
   stopEvent(eventValidateEts);
   const emitResult: EmitResult = { outputText: '', sourceMapText: '' };
   const writeFile: ts.WriteFileCallback = (fileName: string, data: string) => {
@@ -582,7 +585,6 @@ async function transform(code: string, id: string) {
 
   // close `noEmit` to make invoking emit() effective.
   tsProgram.getCompilerOptions().noEmit = false;
-  const metaInfo: Object = this.getModuleInfo(id).meta;
   const lazyImportOptions: LazyImportOptions = {
     autoLazyImport: this.share.projectConfig?.autoLazyImport ?? false,
     reExportCheckMode: this.share.projectConfig?.reExportCheckMode ?? reExportNoCheckMode,
@@ -594,7 +596,6 @@ async function transform(code: string, id: string) {
   shouldEmitJsFlagMap.set(id, shouldEmitJsFlag);
   stopEvent(eventShouldEmitJs);
   let transformResult: ts.TransformationResult<ts.SourceFile> = null;
-  ProjectCollections.projectWhiteListManager?.setCurrentCollector(id);
   try {
     const eventTsProgramEmit = createAndStartEvent(eventEtsTransformForEsmodule, 'tsProgramEmit');
     const recordInfo = MemoryMonitor.recordStage(MemoryDefine.GLOBAL_PROGRAM_UI_KIT);
@@ -790,25 +791,29 @@ function setPkgNameForFile(moduleInfo: Object): void {
 }
 
 function validateEts(code: string, id: string, isEntry: boolean, logger: Object, sourceFile: ts.SourceFile, 
-  hvigorLogger: Object | undefined = undefined): void {
+  hvigorLogger: Object | undefined = undefined, metaInfo: Object = undefined): void {
   if (/\.ets$/.test(id)) {
     clearCollection();
     const fileQuery: string = isEntry && !abilityPagesFullPath.has(path.resolve(id).toLowerCase()) ? '?entry' : '';
     const log: LogInfo[] = validateUISyntax(code, code, id, fileQuery, sourceFile);
+    parseIntent.collectIntentFactsFromSourceFile(sourceFile, id, log, metaInfo);
     if (log.length && !projectConfig.ignoreWarning) {
       emitLogInfo(logger, log, true, id, hvigorLogger);
     }
   }
 }
 
-function jsBundlePreProcess(code: string, id: string, isEntry: boolean, logger: Object, 
-  hvigorLogger: Object | undefined = undefined): string {
+function jsBundlePreProcess(code: string, id: string, isEntry: boolean, logger: Object,
+  hvigorLogger: Object | undefined = undefined, metaInfo: Object = {}): string {
   if (/\.ets$/.test(id)) {
     clearCollection();
     let content = preprocessExtend(code);
     content = preprocessNewExtend(content);
     const fileQuery: string = isEntry && !abilityPagesFullPath.has(path.resolve(id).toLowerCase()) ? '?entry' : '';
-    const log: LogInfo[] = validateUISyntax(code, content, id, fileQuery);
+    const sourceFile: ts.SourceFile =
+      ts.createSourceFile(id, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.ETS);
+    const log: LogInfo[] = validateUISyntax(code, content, id, fileQuery, sourceFile);
+    parseIntent.collectIntentFactsFromSourceFile(sourceFile, id, log, metaInfo);
     if (log.length && !projectConfig.ignoreWarning) {
       emitLogInfo(logger, log, true, id, hvigorLogger);
     }

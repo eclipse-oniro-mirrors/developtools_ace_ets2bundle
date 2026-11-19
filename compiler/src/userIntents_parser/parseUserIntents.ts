@@ -42,8 +42,7 @@ import {
   COMPONENT_USER_INTENTS_DECORATOR_PAGE,
   COMPONENT_USER_INTENTS_DECORATOR_FORM
 } from '../pre_define';
-import { CompileEvent, createAndStartEvent, stopEvent } from '../performance';
-import {emitLogInfo, getTransformLog, LogInfo, LogType, CurrentProcessFile} from '../utils';
+import {emitLogInfo, getTransformLog, LogInfo, LogType, CurrentProcessFile, tryToLowerCasePath} from '../utils';
 import {ABILITY_SUBSYSTEM_CODE} from '../hvigor_error_code/hvigor_error_info';
 import {resetLog, transformLog} from '../process_ui_syntax';
 
@@ -73,6 +72,7 @@ class ParseIntent {
   private entityOwnerMap: Map<string, string[]>;
   private moduleJsonInfo: Map<string, object[]>;
   private EntityHeritageClassSet: Set<string>;
+  private factsCollectedKeys: Set<string> = new Set();
   private EntityExtendsMap: Map<string, string>;
   private transformLog: LogInfo[];
   private currentNode: ts.Node;
@@ -125,13 +125,56 @@ class ParseIntent {
     this.allCompiledSourceFiles.set(decoratorFile, filePath);
   }
 
-  public detectInsightIntent(
-    node: ts.ClassDeclaration, metaInfo: object, filePath: string, eventOrEventFactory: CompileEvent | undefined, transformLog: LogInfo[]): ts.Node {
-    this.initInsightIntent(node, metaInfo, transformLog, filePath);
-    const eventParseIntentTime: CompileEvent | undefined = createAndStartEvent(eventOrEventFactory, 'parseIntentTime');
-    const definedDecorators: string[] = [COMPONENT_USER_INTENTS_DECORATOR_LINK, COMPONENT_USER_INTENTS_DECORATOR_ENTRY,
-      COMPONENT_USER_INTENTS_DECORATOR_FUNCTION, COMPONENT_USER_INTENTS_DECORATOR_PAGE, COMPONENT_USER_INTENTS_DECORATOR_ENTITY,
-      COMPONENT_USER_INTENTS_DECORATOR_FORM];
+  private static readonly INSIGHTINTENT_DECORATORS: string[] = [COMPONENT_USER_INTENTS_DECORATOR_LINK, COMPONENT_USER_INTENTS_DECORATOR_ENTRY,
+    COMPONENT_USER_INTENTS_DECORATOR_FUNCTION, COMPONENT_USER_INTENTS_DECORATOR_PAGE, COMPONENT_USER_INTENTS_DECORATOR_ENTITY,
+    COMPONENT_USER_INTENTS_DECORATOR_FORM];
+
+  public hasIntentDecorator(node: ts.Node): boolean {
+    return this.hasDecorator(node, ParseIntent.INSIGHTINTENT_DECORATORS);
+  }
+
+  public collectIntentFacts(node: ts.ClassDeclaration | ts.StructDeclaration, filePath: string, log: LogInfo[],
+    metaInfo?: object): void {
+    if (!this.hasIntentDecorator(node)) {
+      return;
+    }
+    const factKey: string = this.getIntentFactKey(node, filePath);
+    if (this.factsCollectedKeys.has(factKey)) {
+      return;
+    }
+    // Keep the pre-change behavior: use the module metaInfo passed by the caller as-is.
+    // A missing/incomplete module info goes through handleIntent -> getPkgInfo, which reports
+    // ETS2BUNDLE_EXTERNAL_FAILED_TO_RESOLVE_OHM_URL; a missing checker fails in handleDecorator
+    // exactly as it did when the facts were collected in processUISyntax.
+    const checker: TypeChecker = CurrentProcessFile.getChecker();
+    this.factsCollectedKeys.add(factKey);
+    this.initInsightIntent(node as ts.ClassDeclaration, metaInfo, log, filePath);
+    this.handleIntent(node as ts.ClassDeclaration, checker, filePath, metaInfo);
+  }
+
+  public collectIntentFactsFromSourceFile(sourceFile: ts.SourceFile, filePath: string,
+    log: LogInfo[], metaInfo?: object): void {
+    if (!sourceFile) {
+      return;
+    }
+    const visit = (node: ts.Node): void => {
+      if ((ts.isClassDeclaration(node) || ts.isStructDeclaration(node)) && this.hasIntentDecorator(node)) {
+        this.collectIntentFacts(node, filePath, log, metaInfo);
+      }
+      ts.forEachChild(node, visit);
+    };
+    ts.forEachChild(sourceFile, visit);
+  }
+
+  private getIntentFactKey(node: ts.ClassDeclaration | ts.StructDeclaration, filePath: string): string {
+    const className: string = (node.name && ts.isIdentifier(node.name)) ? node.name.text : String(node.pos);
+    return `${tryToLowerCasePath(filePath)}#${className}`;
+  }
+
+  public removeIntentDecorators(node: ts.ClassDeclaration | ts.StructDeclaration, errors: LogInfo[]):
+    ts.ClassDeclaration | ts.StructDeclaration {
+    this.transformLog = errors;
+    this.currentNode = node;
     if (ts.isClassDeclaration(node) && !this.hasDecorator(node, [COMPONENT_USER_INTENTS_DECORATOR_FUNCTION])) {
       node.members.forEach((member) => {
         if (ts.isMethodDeclaration(member) && this.hasModifier(member, ts.SyntaxKind.StaticKeyword) &&
@@ -149,12 +192,10 @@ class ParseIntent {
         }
       });
     }
-    if (this.hasDecorator(node, definedDecorators)) {
-      const checker: TypeChecker = CurrentProcessFile.getChecker();
-      this.handleIntent(node, checker, filePath, metaInfo);
-      node = this.removeDecorator(node, definedDecorators.concat(COMPONENT_USER_INTENTS_DECORATOR_METHOD));
+    if (this.hasDecorator(node, ParseIntent.INSIGHTINTENT_DECORATORS)) {
+      return this.removeDecorator(node as ts.ClassDeclaration,
+        ParseIntent.INSIGHTINTENT_DECORATORS.concat(COMPONENT_USER_INTENTS_DECORATOR_METHOD));
     }
-    stopEvent(eventParseIntentTime);
     return node;
   }
 
@@ -541,6 +582,10 @@ class ParseIntent {
     }
   }
 
+  private normalizeIntentPath(filePath: string): string {
+    return tryToLowerCasePath(path.resolve(filePath));
+  }
+
   private processFormInfo(node: ts.ClassDeclaration, formClassPath: string, pkgParams: object,
     intentObj: object): void {
     if (this.moduleJsonInfo.size === 0 && pkgParams.pkgPath) {
@@ -548,8 +593,9 @@ class ParseIntent {
     }
     const extensionAbilities: object[] = this.moduleJsonInfo.get('extensionAbilities');
     const bindFormInfo: object = extensionAbilities.find(extensionInfo => {
-      const formSrcEntryPath: string = path.join(pkgParams.pkgPath, 'src', 'main', extensionInfo.srcEntry);
-      return formSrcEntryPath === formClassPath && extensionInfo.type === 'form';
+      const formSrcEntryPath: string = this.normalizeIntentPath(
+        path.resolve(pkgParams.pkgPath, 'src', 'main', extensionInfo.srcEntry));
+      return formSrcEntryPath === this.normalizeIntentPath(formClassPath) && extensionInfo.type === 'form';
     });
     this.verifyFormName(bindFormInfo, intentObj);
     const isExported: boolean = node.modifiers?.some(mod => mod.kind === ts.SyntaxKind.ExportKeyword);
@@ -2046,6 +2092,7 @@ class ParseIntent {
     this.moduleJsonInfo = new Map();
     this.EntityHeritageClassSet = new Set();
     this.EntityExtendsMap = new Map();
+    this.factsCollectedKeys = new Set();
   }
 }
 
