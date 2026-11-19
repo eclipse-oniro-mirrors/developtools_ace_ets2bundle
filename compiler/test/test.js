@@ -47,6 +47,8 @@ const {
 const processStructComponentV2 = require('../lib/process_struct_componentV2');
 const { getCompilerHost } = require('../lib/fast_build/ets_ui/rollup-plugin-ets-typescript');
 const { processKitImport } = require('../lib/process_kit_import');
+const { processLazyImport } = require('../lib/process_lazy_import');
+const { collectModuleSourceFile } = require('../lib/process_module_source_file');
 const { ModuleSourceFile } = require('../lib/fast_build/ark_compiler/module/module_source_file');
 
 projectConfig.projectPath = path.resolve(process.cwd());
@@ -54,11 +56,14 @@ projectConfig.projectPath = path.resolve(process.cwd());
 function processModule(compilerOptions, etsFilePath) {
   const compilerHost = getCompilerHost();
   const tsProgram = ts.createProgram([etsFilePath], compilerOptions, compilerHost);
-  tsProgram.emit(tsProgram.getSourceFile(etsFilePath), undefined, undefined, undefined,
+  const sourceFile = tsProgram.getSourceFile(etsFilePath);
+  tsProgram.emit(sourceFile, undefined, undefined, undefined,
     {
       before: [
         processUISyntax(null, true),
-        processKitImport(etsFilePath, undefined, undefined, false)
+        processKitImport(etsFilePath, undefined, undefined),
+        processLazyImport(undefined, undefined),
+        collectModuleSourceFile(etsFilePath, undefined, undefined)
       ]
     }
   );

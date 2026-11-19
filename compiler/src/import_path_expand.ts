@@ -15,6 +15,7 @@
 
 import * as ts from 'typescript';
 import path from 'path';
+import type { ImportTransformResolver } from './utils';
 
 import { toUnixPath } from './utils';
 import { sdkConfigPrefix } from '../main';
@@ -32,13 +33,19 @@ interface ImportInfo {
   namedImports: ts.ImportSpecifier[];
 }
 
-interface SymbolInfo {
+export interface SymbolInfo {
   filePath: string,
   isDefault: boolean,
   exportName?: string
 }
 
-export function expandAllImportPaths(checker: ts.TypeChecker, rollupObejct: Object, parentEvent: CompileEvent): Function {
+export interface ImportPathExpandDataSource {
+  resolver: ImportTransformResolver;
+  getRealFilePath(moduleSpecifier: ts.StringLiteral, importName: string): SymbolInfo | undefined;
+}
+
+export function expandAllImportPaths(checker: ts.TypeChecker | undefined, rollupObejct: Object,
+  parentEvent: CompileEvent, dataSource?: ImportPathExpandDataSource): Function {
   const expandImportPath: Object = rollupObejct.share.projectConfig?.expandImportPath;
   if (!(expandImportPath && Object.entries(expandImportPath).length !== 0) || !expandImportPath.enable) {
     return () => sourceFile => sourceFile;
@@ -46,12 +53,12 @@ export function expandAllImportPaths(checker: ts.TypeChecker, rollupObejct: Obje
   const eventExpandAllImportPaths: CompileEvent = createAndStartEvent(parentEvent, 'import path expand');
   const exclude: string[] = expandImportPath?.exclude ? expandImportPath?.exclude : [];
   return (context: ts.TransformationContext) => {
-    const resolver = context.getEmitResolver();
+    const resolver = dataSource?.resolver ?? context.getEmitResolver();
     // @ts-ignore
     const visitor: ts.Visitor = (node: ts.Node): ts.VisitResult<ts.Node> => {
       if (ts.isImportDeclaration(node)) {
         const result: ts.ImportDeclaration[] = transformImportDecl(node, checker, exclude, resolver,
-          Object.assign(rollupObejct.share.projectConfig, rollupObejct.share.arkProjectConfig));
+          Object.assign(rollupObejct.share.projectConfig, rollupObejct.share.arkProjectConfig), dataSource);
         return result.length > 0 ? result : node;
       }
       return node;
@@ -65,33 +72,22 @@ export function expandAllImportPaths(checker: ts.TypeChecker, rollupObejct: Obje
   };
 }
 
-function transformImportDecl(node: ts.ImportDeclaration, checker: ts.TypeChecker, exclude: string[],
-  resolver: ts.EmitResolver | undefined, projectConfig: Object): ts.ImportDeclaration[] {
+function transformImportDecl(node: ts.ImportDeclaration, checker: ts.TypeChecker | undefined, exclude: string[],
+  resolver: ImportTransformResolver | undefined, projectConfig: Object,
+  dataSource?: ImportPathExpandDataSource): ts.ImportDeclaration[] {
+  if (!shouldExpandImportDeclaration(node, exclude, projectConfig)) {
+    return [];
+  }
   const moduleSpecifier: ts.StringLiteral = node.moduleSpecifier as ts.StringLiteral;
-  const moduleRequest: string = moduleSpecifier.text;
-  const REG_SYSTEM_MODULE: RegExp = new RegExp(`@(${sdkConfigPrefix})\\.(\\S+)`);
-  const REG_LIB_SO: RegExp = /lib(\S+)\.so/;
   const depName2DepInfo: Object = projectConfig.depName2DepInfo;
   const packageDir: string = projectConfig.packageDir;
-  const hspNameOhmMap: Object = Object.assign({}, projectConfig.hspNameOhmMap, projectConfig.harNameOhmMap);
-  if (moduleRequest.startsWith('.') || REG_SYSTEM_MODULE.test(moduleRequest.trim()) || REG_LIB_SO.test(moduleRequest.trim()) ||
-    exclude.indexOf(moduleRequest) !== -1 || (depName2DepInfo && !(depName2DepInfo.has(moduleRequest))) ||
-    (hspNameOhmMap && hspNameOhmMap[moduleRequest])) {
-    return [];
-  }
-  const importClause = node.importClause;
-  if (!importClause) {
-    return [];
-  }
-  if ((importClause.namedBindings && ts.isNamespaceImport(importClause.namedBindings)) || importClause.isTypeOnly) {
-    return [];
-  }
+  const importClause = node.importClause!;
 
   const importMap = new Map<string, ImportInfo>();
   // default import
-  processDefaultImport(checker, importMap, importClause, moduleSpecifier, packageDir, depName2DepInfo, resolver);
+  processDefaultImport(checker, importMap, importClause, moduleSpecifier, packageDir, depName2DepInfo, resolver, dataSource);
   // named imports
-  processNamedImport(checker, importMap, importClause, moduleSpecifier, packageDir, depName2DepInfo, resolver);
+  processNamedImport(checker, importMap, importClause, moduleSpecifier, packageDir, depName2DepInfo, resolver, dataSource);
   if (importMap.size === 0) {
     return [];
   }
@@ -109,12 +105,35 @@ function transformImportDecl(node: ts.ImportDeclaration, checker: ts.TypeChecker
   return results;
 }
 
+export function shouldExpandImportDeclaration(node: ts.ImportDeclaration, exclude: string[], projectConfig: Object): boolean {
+  const moduleRequest: string = (node.moduleSpecifier as ts.StringLiteral).text;
+  const REG_SYSTEM_MODULE: RegExp = new RegExp(`@(${sdkConfigPrefix})\\.(\\S+)`);
+  const REG_LIB_SO: RegExp = /lib(\S+)\.so/;
+  const depName2DepInfo: Object = projectConfig.depName2DepInfo;
+  const hspNameOhmMap: Object = Object.assign({}, projectConfig.hspNameOhmMap, projectConfig.harNameOhmMap);
+  if (moduleRequest.startsWith('.') || REG_SYSTEM_MODULE.test(moduleRequest.trim()) || REG_LIB_SO.test(moduleRequest.trim()) ||
+    exclude.indexOf(moduleRequest) !== -1 || (depName2DepInfo && !(depName2DepInfo.has(moduleRequest))) ||
+    (hspNameOhmMap && hspNameOhmMap[moduleRequest])) {
+    return false;
+  }
+  const importClause: ts.ImportClause | undefined = node.importClause;
+  if (!importClause) {
+    return false;
+  }
+  if ((importClause.namedBindings && ts.isNamespaceImport(importClause.namedBindings)) || importClause.isTypeOnly) {
+    return false;
+  }
+  return true;
+}
 
-function processDefaultImport(checker: ts.TypeChecker, importMap: Map<string, ImportInfo>, importClause: ts.ImportClause,
-  moduleSpecifier: ts.StringLiteral, packageDir: string, depName2DepInfo: Object, resolver: ts.EmitResolver | undefined): void {
+function processDefaultImport(checker: ts.TypeChecker | undefined, importMap: Map<string, ImportInfo>, importClause: ts.ImportClause,
+  moduleSpecifier: ts.StringLiteral, packageDir: string, depName2DepInfo: Object,
+  resolver: ImportTransformResolver | undefined,
+  dataSource?: ImportPathExpandDataSource): void {
   if (importClause.name) {
     const defaultImportIsTypeOnly: boolean = importClause.isTypeOnly || (resolver && !resolver.isReferencedAliasDeclaration(importClause));
-    const resolved = getRealFilePath(checker, moduleSpecifier, 'default', packageDir, depName2DepInfo);
+    const resolved = dataSource ? dataSource.getRealFilePath(moduleSpecifier, 'default') :
+      getRealFilePath(checker!, moduleSpecifier, 'default', packageDir, depName2DepInfo);
     if (!resolved) {
       return;
     }
@@ -143,12 +162,15 @@ function processDefaultImport(checker: ts.TypeChecker, importMap: Map<string, Im
   }
 }
 
-function processNamedImport(checker: ts.TypeChecker, importMap: Map<string, ImportInfo>, importClause: ts.ImportClause,
-  moduleSpecifier: ts.StringLiteral, packageDir: string, depName2DepInfo: Object, resolver: ts.EmitResolver | undefined): void {
+function processNamedImport(checker: ts.TypeChecker | undefined, importMap: Map<string, ImportInfo>, importClause: ts.ImportClause,
+  moduleSpecifier: ts.StringLiteral, packageDir: string, depName2DepInfo: Object,
+  resolver: ImportTransformResolver | undefined,
+  dataSource?: ImportPathExpandDataSource): void {
   if (importClause.namedBindings && ts.isNamedImports(importClause.namedBindings)) {
     for (const element of importClause.namedBindings.elements) {
       const name: string = element.propertyName?.text || element.name.text;
-      const resolved: SymbolInfo | undefined = getRealFilePath(checker, moduleSpecifier, name, packageDir, depName2DepInfo);
+      const resolved: SymbolInfo | undefined = dataSource ? dataSource.getRealFilePath(moduleSpecifier, name) :
+        getRealFilePath(checker!, moduleSpecifier, name, packageDir, depName2DepInfo);
       if (!resolved) {
         continue;
       }
@@ -230,7 +252,7 @@ function genModuleRequest(filePath: string, moduleRequest: string, depName2DepIn
   return moduleRequest;
 }
 
-function getRealFilePath(checker: ts.TypeChecker, moduleSpecifier: ts.StringLiteral,
+export function getRealFilePath(checker: ts.TypeChecker, moduleSpecifier: ts.StringLiteral,
   importName: string, packageDir: string, depName2DepInfo: Object): SymbolInfo | undefined {
   const symbol: ts.Symbol | undefined = resolveImportedSymbol(checker, moduleSpecifier, importName);
   if (!symbol) {

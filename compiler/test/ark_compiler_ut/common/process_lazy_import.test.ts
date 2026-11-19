@@ -18,21 +18,42 @@ import path from 'path';
 import * as ts from 'typescript';
 import { expect } from 'chai';
 
-import {
-  processKitImport
-} from '../../../lib/process_kit_import';
+import { processKitImport } from '../../../lib/process_kit_import';
 import {
   processJsCodeLazyImport,
   reExportNoCheckMode,
   reExportCheckLog,
   resetReExportCheckLog,
+  processLazyImport,
   transformLazyImport
 } from '../../../lib/process_lazy_import';
+import {
+  createSourceFileReturnTransformers,
+  collectModuleSourceFile
+} from '../../../lib/process_module_source_file';
+import {
+  getCheckerlessLazyImportResolver,
+  initCheckerlessImportPreprocess,
+  preprocessSourceFileForCheckerlessImport,
+  resetCheckerlessImportTransform
+} from '../../../lib/checkerless_import_transform';
+import '../../../lib/fast_build/ets_ui/rollup-plugin-ets-typescript';
 import { RELEASE } from '../../../lib/fast_build/ark_compiler/common/ark_define';
 import { ModuleSourceFile } from '../../../lib/fast_build/ark_compiler/module/module_source_file';
 import { projectConfig } from '../../../main';
 import { createErrInfo } from '../utils/utils';
 import RollUpPluginMock from './../mock/rollup_mock/rollup_plugin_mock';
+
+function processImports(id: string, metaInfo: Object, lazyImportOptions: Object): Function[] {
+  const [captureSourceFile, restoreSourceFile] = createSourceFileReturnTransformers();
+  return [
+    captureSourceFile,
+    processKitImport(id, metaInfo, undefined),
+    processLazyImport(metaInfo, undefined, lazyImportOptions),
+    collectModuleSourceFile(id, metaInfo, undefined),
+    restoreSourceFile
+  ];
+}
 
 const TRANSFORM_LAZY_IMPORT_CODE: string =
 `
@@ -210,7 +231,8 @@ mocha.describe('process Lazy Imports tests', function () {
       fileName: 'test.ets',
       transformers: {
         before: [
-          processKitImport('test.ets', undefined, undefined, true, { autoLazyImport: true, reExportCheckMode: reExportNoCheckMode, autoLazyFilter: {} })
+          ...processImports('test.ets', undefined,
+            { autoLazyImport: true, reExportCheckMode: reExportNoCheckMode, autoLazyFilter: {} })
         ]
       }
     });
@@ -242,7 +264,8 @@ mocha.describe('process Lazy Imports tests', function () {
       fileName: 'no.ets',
       transformers: {
         before: [
-          processKitImport('no.ets', undefined, undefined, true, { autoLazyImport: false, reExportCheckMode: reExportNoCheckMode, autoLazyFilter: {} })
+          ...processImports('no.ets', undefined,
+            { autoLazyImport: false, reExportCheckMode: reExportNoCheckMode, autoLazyFilter: {} })
         ]
       }
     });
@@ -262,6 +285,44 @@ mocha.describe('process Lazy Imports tests', function () {
     'import "test6";\n' +
     'let a: testType = test + t + test2 + test3.b + test4 + test5;\n';
     expect(writer.getText() === expectCode).to.be.true;
+  });
+
+  mocha.it('1-2-1: collectModuleSourceFile restores the source file marked for emit', function () {
+    projectConfig.processTs = true;
+    let sourceFileBeforeKit: ts.SourceFile;
+    let sourceFileAfterFinalize: ts.SourceFile;
+    const precedingTransformer: ts.TransformerFactory<ts.SourceFile> = () => node => {
+      sourceFileBeforeKit = ts.factory.updateSourceFile(node, [
+        ...node.statements,
+        ts.factory.createExpressionStatement(ts.factory.createStringLiteral('before kit'))
+      ]);
+      return sourceFileBeforeKit;
+    };
+    const followingTransformer: ts.TransformerFactory<ts.SourceFile> = () => node => {
+      sourceFileAfterFinalize = node;
+      return node;
+    };
+    const [captureSourceFile, restoreSourceFile] = createSourceFileReturnTransformers();
+    ts.transpileModule('import { Ability } from "@kit.AbilityKit";', {
+      compilerOptions: compilerOptions,
+      fileName: 'pipeline.ets',
+      transformers: {
+        before: [
+          precedingTransformer,
+          captureSourceFile,
+          processKitImport('pipeline.ets', undefined, undefined),
+          processLazyImport(undefined, undefined,
+            { autoLazyImport: false, reExportCheckMode: reExportNoCheckMode, autoLazyFilter: {} },
+            undefined),
+          collectModuleSourceFile('pipeline.ets', undefined, undefined),
+          restoreSourceFile,
+          followingTransformer
+        ]
+      }
+    });
+
+    expect(sourceFileAfterFinalize).to.equal(sourceFileBeforeKit);
+    projectConfig.processTs = false;
   });
 
   mocha.it('1-3: test transformLazyImport (js code): perform lazy conversion', function () {
@@ -313,7 +374,8 @@ mocha.describe('process Lazy Imports tests', function () {
       fileName: "kitTest.ts",
       transformers: {
         before: [
-          processKitImport('kitTest.ts', undefined, undefined, true, { autoLazyImport: false, reExportCheckMode: 'strict', autoLazyFilter: {} })
+          ...processImports('kitTest.ts', undefined,
+            { autoLazyImport: false, reExportCheckMode: 'strict', autoLazyFilter: {} })
         ]
       }
     });
@@ -344,7 +406,8 @@ mocha.describe('process Lazy Imports tests', function () {
       fileName: "kitTest.ts",
       transformers: {
         before: [
-          processKitImport('kitTest.ts', undefined, undefined, true, { autoLazyImport: false, reExportCheckMode: 'strict', autoLazyFilter: {} })
+          ...processImports('kitTest.ts', undefined,
+            { autoLazyImport: false, reExportCheckMode: 'strict', autoLazyFilter: {} })
         ]
       }
     });
@@ -368,7 +431,8 @@ mocha.describe('process Lazy Imports tests', function () {
       fileName: "kitTest.ts",
       transformers: {
         before: [
-          processKitImport('kitTest.ts', undefined, undefined, true, { autoLazyImport: false, reExportCheckMode: 'compatible', autoLazyFilter: {} })
+          ...processImports('kitTest.ts', undefined,
+            { autoLazyImport: false, reExportCheckMode: 'compatible', autoLazyFilter: {} })
         ]
       }
     });
@@ -392,7 +456,8 @@ mocha.describe('process Lazy Imports tests', function () {
       fileName: "kitTest.ts",
       transformers: {
         before: [
-          processKitImport('kitTest.ts', undefined, undefined, true, { autoLazyImport: true, reExportCheckMode: 'compatible', autoLazyFilter: {} })
+          ...processImports('kitTest.ts', undefined,
+            { autoLazyImport: true, reExportCheckMode: 'compatible', autoLazyFilter: {} })
         ]
       }
     });
@@ -656,7 +721,7 @@ mocha.describe('process Lazy Imports tests', function () {
       fileName: 'entry_test.ets',
       transformers: {
         before: [
-          processKitImport('entry_test.ets', metaInfo, undefined, true,
+          ...processImports('entry_test.ets', metaInfo,
             { autoLazyImport: true, reExportCheckMode: reExportNoCheckMode, autoLazyFilter: { include: ['entry'] } })
         ]
       }
@@ -682,7 +747,7 @@ mocha.describe('process Lazy Imports tests', function () {
       fileName: 'lib_test.ets',
       transformers: {
         before: [
-          processKitImport('lib_test.ets', metaInfo, undefined, true,
+          ...processImports('lib_test.ets', metaInfo,
             { autoLazyImport: true, reExportCheckMode: reExportNoCheckMode, autoLazyFilter: { exclude: ['lib'] } })
         ]
       }
@@ -696,5 +761,122 @@ mocha.describe('process Lazy Imports tests', function () {
     printer.writeFile(sourceFile.source, writer, undefined);
     expect(writer.getText() === TRANSFORM_LAZY_IMPORT_CODE_EXCLUDE_LIST_EXPECT).to.be.true;
     projectConfig.processTs = false;
+  });
+
+  const LAZY_PREPROCESS_FILES: Record<string, string> = {
+    'main.ts': `
+      import { foo, bar } from './lib';
+      import { type typeOnly } from './lib';
+      console.log(foo);
+      let x: bar;
+    `,
+    'lib.ts': `
+      export const foo = 42;
+      export type bar = number;
+      export type typeOnly = string;
+    `
+  };
+
+  const LAZY_PREPROCESS_EXPECT: string =
+    "import lazy { foo } from './lib';\n" +
+    "import { type typeOnly } from './lib';\n" +
+    'console.log(foo);\n' +
+    'let x: bar;\n';
+
+  function createLazyPreprocessProgram(): {
+    program: ts.Program, sourceFile: ts.SourceFile, elements: ts.ImportSpecifier[]
+  } {
+    const compilerHost = ts.createCompilerHost({}, true);
+    const getFileKey = (filePath: string) => path.basename(filePath);
+    compilerHost.getSourceFile = (filePath, languageVersion) => {
+      const key = getFileKey(filePath);
+      const sourceText = LAZY_PREPROCESS_FILES[key];
+      return sourceText !== undefined
+        ? ts.createSourceFile(filePath, sourceText, languageVersion, true)
+        : undefined;
+    };
+    compilerHost.readFile = (filePath) => {
+      const key = getFileKey(filePath);
+      return LAZY_PREPROCESS_FILES[key];
+    };
+    compilerHost.fileExists = (filePath) => {
+      const key = getFileKey(filePath);
+      return key in LAZY_PREPROCESS_FILES;
+    };
+    compilerHost.getCanonicalFileName = fileName =>
+      ts.sys.useCaseSensitiveFileNames ? fileName : fileName.toLowerCase();
+    const program = ts.createProgram(['main.ts'], {
+      target: ts.ScriptTarget.ESNext,
+      module: ts.ModuleKind.ESNext
+    }, compilerHost);
+    const sourceFile = program.getSourceFile('main.ts')!;
+    const importDecl = sourceFile.statements.find(ts.isImportDeclaration)!;
+    const elements = (importDecl.importClause!.namedBindings as ts.NamedImports).elements;
+    return { program, sourceFile, elements };
+  }
+
+  mocha.it('5-1: lazy import preprocess answers match the live resolver', function () {
+    const { program, sourceFile, elements } = createLazyPreprocessProgram();
+    const checker = program.getTypeChecker();
+    const liveResolver = checker.getEmitResolver(sourceFile, undefined);
+
+    projectConfig.earlyReleaseChecker = false;
+    expect(getCheckerlessLazyImportResolver()).to.be.undefined;
+
+    projectConfig.earlyReleaseChecker = true;
+    initCheckerlessImportPreprocess({ share: { projectConfig: { earlyReleaseChecker: true, autoLazyImport: true } } });
+    program.getSourceFiles().forEach(sourceFileInProgram => {
+      preprocessSourceFileForCheckerlessImport(program, sourceFileInProgram);
+    });
+    const preprocessResolver = getCheckerlessLazyImportResolver();
+    expect(preprocessResolver).to.exist;
+    // foo is value-referenced, bar is only referenced as a type.
+    expect(preprocessResolver.isReferencedAliasDeclaration(elements[0]))
+      .to.equal(liveResolver.isReferencedAliasDeclaration(elements[0])).and.to.be.true;
+    expect(preprocessResolver.isReferencedAliasDeclaration(elements[1]))
+      .to.equal(liveResolver.isReferencedAliasDeclaration(elements[1])).and.to.be.false;
+    // Nodes that are not part of the parse tree fall back to the patched resolver default (true).
+    const syntheticElement = ts.factory.createImportSpecifier(false, undefined,
+      ts.factory.createIdentifier('foo'));
+    expect(preprocessResolver.isReferencedAliasDeclaration(syntheticElement)).to.be.true;
+
+    projectConfig.earlyReleaseChecker = false;
+    resetCheckerlessImportTransform();
+  });
+
+  mocha.it('5-2: transformLazyImport output is identical with the preprocess resolver', function () {
+    const { program, sourceFile } = createLazyPreprocessProgram();
+    const liveResolver = program.getTypeChecker().getEmitResolver(sourceFile, undefined);
+    const liveTransformed: ts.SourceFile = transformLazyImport({}, sourceFile, {}, liveResolver);
+    const liveOutput: string = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed }).printFile(liveTransformed);
+    expect(liveOutput).to.equal(LAZY_PREPROCESS_EXPECT);
+
+    initCheckerlessImportPreprocess({ share: { projectConfig: { earlyReleaseChecker: true, autoLazyImport: true } } });
+    program.getSourceFiles().forEach(sourceFileInProgram => {
+      preprocessSourceFileForCheckerlessImport(program, sourceFileInProgram);
+    });
+    projectConfig.earlyReleaseChecker = true;
+    const preprocessResolver = getCheckerlessLazyImportResolver();
+    expect(preprocessResolver).to.exist;
+    const preprocessTransformed: ts.SourceFile = transformLazyImport({}, sourceFile, {}, preprocessResolver);
+    const preprocessOutput: string =
+      ts.createPrinter({ newLine: ts.NewLineKind.LineFeed }).printFile(preprocessTransformed);
+    expect(preprocessOutput).to.equal(liveOutput);
+
+    projectConfig.earlyReleaseChecker = false;
+    resetCheckerlessImportTransform();
+  });
+
+  mocha.it('5-3: startLazyImportPreprocess is skipped when autoLazyImport is off', function () {
+    const { program } = createLazyPreprocessProgram();
+    projectConfig.earlyReleaseChecker = true;
+    initCheckerlessImportPreprocess({ share: { projectConfig: { earlyReleaseChecker: true, autoLazyImport: false } } });
+    program.getSourceFiles().forEach(sourceFileInProgram => {
+      preprocessSourceFileForCheckerlessImport(program, sourceFileInProgram);
+    });
+    expect(getCheckerlessLazyImportResolver()).to.be.undefined;
+
+    projectConfig.earlyReleaseChecker = false;
+    resetCheckerlessImportTransform();
   });
 });

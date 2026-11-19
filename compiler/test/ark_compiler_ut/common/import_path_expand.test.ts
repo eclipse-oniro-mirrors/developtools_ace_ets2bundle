@@ -19,6 +19,13 @@ import path from 'path';
 import * as ts from 'typescript';
 
 import { expandAllImportPaths } from '../../../lib/import_path_expand';
+import {
+  getCheckerlessImportPathExpandDataSource,
+  initCheckerlessImportPreprocess,
+  preprocessSourceFileForCheckerlessImport,
+  resetCheckerlessImportTransform
+} from '../../../lib/checkerless_import_transform';
+import '../../../lib/fast_build/ets_ui/rollup-plugin-ets-typescript';
 
 const compilerOptions = ts.readConfigFile(
   path.resolve(__dirname, '../../../tsconfig.json'), ts.sys.readFile).config.compilerOptions;
@@ -649,5 +656,24 @@ mocha.describe('test import_path_expand file api', () => {
     const result = printer.printFile(transformed);
 
     expect(result === EXPECT_4_10).to.be.true;
+  });
+
+  mocha.it('5-1: preprocess path works without a live checker (early-release switch on)', () => {
+    const { program, testSourceFile } = createMultiSymbolProgram(CASE_1_1_TEST, CASE_1_1_FILES, CASE_1_1_INDEX);
+    rollupObejct.share.projectConfig.earlyReleaseChecker = true;
+    initCheckerlessImportPreprocess(rollupObejct);
+    program.getSourceFiles().forEach(sourceFile => {
+      preprocessSourceFileForCheckerlessImport(program, sourceFile);
+    });
+    // Mirrors the rollup plugin call sites: no checker is obtained when the switch is on.
+    const transformed = ts.transform(testSourceFile,
+      [expandAllImportPaths(undefined, rollupObejct, undefined, getCheckerlessImportPathExpandDataSource())],
+      program.getCompilerOptions()).transformed[0];
+    const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
+    const result = printer.printFile(transformed);
+
+    expect(result === EXPECT_1_1).to.be.true;
+    rollupObejct.share.projectConfig.earlyReleaseChecker = false;
+    resetCheckerlessImportTransform();
   });
 });

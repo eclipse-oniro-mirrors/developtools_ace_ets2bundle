@@ -91,9 +91,12 @@ import {
 import {
   kitTransformLog,
   processKitImport,
-  checkHasKeepTs,
+  isKitImportOrExportDeclaration,
+  shouldSkipKitTypeSymbols,
+  isKitTypeSymbol,
   resetKitImportLog
 } from '../../process_kit_import';
+import { checkHasKeepTs } from '../../utils';
 import {
   CompileEvent,
   createAndStartEvent,
@@ -108,8 +111,14 @@ import {
 } from '../ark_compiler/common/ob_config_resolver';
 import {
   LazyImportOptions,
-  reExportNoCheckMode
+  processLazyImport,
+  reExportNoCheckMode,
+  updateImportDecl
 } from '../../process_lazy_import';
+import {
+  createSourceFileReturnTransformers,
+  collectModuleSourceFile
+} from '../../process_module_source_file';
 import arkoalaProgramTransform, { ArkoalaPluginOptions } from './arkoala-plugin';
 import processStructComponentV2 from '../../process_struct_componentV2';
 import { shouldETSOrTSFileTransformToJSWithoutRemove } from '../ark_compiler/utils';
@@ -121,7 +130,19 @@ import { ARKUI_SUBSYSTEM_CODE } from '../../hvigor_error_code/hvigor_error_info'
 import { ProjectCollections } from 'arkguard';
 import parseIntent from '../../userIntents_parser/parseUserIntents';
 import { concatenateEtsOptions, getExternalComponentPaths } from '../../external_component_map';
-import { expandAllImportPaths } from '../../import_path_expand';
+import {
+  expandAllImportPaths,
+  getRealFilePath,
+  shouldExpandImportDeclaration
+} from '../../import_path_expand';
+import {
+  getCheckerlessImportPathExpandDataSource,
+  getCheckerlessKitResolver,
+  getCheckerlessLazyImportResolver,
+  isEarlyReleaseCheckerEnabled,
+  registerCheckerlessImportHooks,
+  resetCheckerlessImportTransform
+} from '../../checkerless_import_transform';
 import { fileInfoCache } from '../../file_info_cache';
 import {
   interopTransformLog,
@@ -161,6 +182,12 @@ let disableCacheOptions = {
   resourceTableHash: 'default',
   etsLoaderVersion: 'default'
 };
+
+registerCheckerlessImportHooks(() => ({
+  expand: { shouldExpandImportDeclaration, getRealFilePath },
+  kit: { isKitImportOrExportDeclaration, shouldSkipKitTypeSymbols, isKitTypeSymbol },
+  lazy: { updateImportDecl }
+}));
 
 export function etsTransform() {
   const allFilesInHar: Map<string, string> = new Map();
@@ -498,6 +525,7 @@ async function transform(code: string, id: string) {
   }
 
   const eventEtsTransformForEsmodule = createAndStartEvent(hookEventFactory, 'transform for esmodule');
+  const useCheckerlessImportTransform: boolean = isEarlyReleaseCheckerEnabled(this.share.projectConfig);
   let tsProgram: ts.Program = globalProgram.program;
   let targetSourceFile: ts.SourceFile | undefined = tsProgram.getSourceFile(id);
 
@@ -561,9 +589,16 @@ async function transform(code: string, id: string) {
       tsProgram = getArkoalaTsProgram(tsProgram);
       targetSourceFile = tsProgram.getSourceFile(id);
     }
+    const importPathExpandChecker: ts.TypeChecker | undefined = useCheckerlessImportTransform ?
+      undefined : CurrentProcessFile.getChecker();
+    const importPathExpandDataSource = useCheckerlessImportTransform ?
+      getCheckerlessImportPathExpandDataSource() : undefined;
+    const kitResolver = getCheckerlessKitResolver();
+    const lazyResolver = getCheckerlessLazyImportResolver();
     if (shouldEmitJsFlag) {
       const eventEmit = createAndStartEvent(eventTsProgramEmit, 'emit');
       const uiKitrecordInfo = MemoryMonitor.recordStage(MemoryDefine.GLOBAL_PROGRAM_UI_KIT);
+      const [captureSourceFile, restoreSourceFile] = createSourceFileReturnTransformers();
       tsProgram.emit(targetSourceFile, writeFile, undefined, undefined,
         {
           before: [
@@ -572,8 +607,12 @@ async function transform(code: string, id: string) {
             // 2. Support 1.1 classes to implement 1.2 interfaces
             interopTransform(tsProgram, id, mixCompile),
             processUISyntax(null, false, eventEmit, id, this.share, metaInfo),
-            expandAllImportPaths(CurrentProcessFile.getChecker(), this, eventEmit),
-            processKitImport(id, metaInfo, eventEmit, true, lazyImportOptions),
+            expandAllImportPaths(importPathExpandChecker, this, eventEmit, importPathExpandDataSource),
+            captureSourceFile,
+            processKitImport(id, metaInfo, eventEmit, kitResolver),
+            processLazyImport(metaInfo, eventEmit, lazyImportOptions, lazyResolver, id),
+            collectModuleSourceFile(id, metaInfo, eventEmit),
+            restoreSourceFile,
             collectReservedNameForObf(this.share.arkProjectConfig?.obfuscationMergedObConfig,
               shouldETSOrTSFileTransformToJSWithoutRemove(id, projectConfig, metaInfo), eventEmit)
           ]
@@ -589,15 +628,19 @@ async function transform(code: string, id: string) {
       metaInfo.checker = tsProgram.getTypeChecker();
       transformResult = ts.transformNodes(emitResolver, tsProgram.getEmitHost?.(), ts.factory,
         tsProgram.getCompilerOptions(), [targetSourceFile],
-        [// interopTransform：The hybrid compilation scenario provides the following two capabilities:
-        // 1. Support for creating 1.2 type object literals in 1.1 modules
-        // 2. Support 1.1 classes to implement 1.2 interfaces
-        interopTransform(tsProgram, id, mixCompile),
-        processUISyntax(null, false, eventTransformNodes, id, this.share, metaInfo),
-        expandAllImportPaths(CurrentProcessFile.getChecker(), this, eventTransformNodes),
-        processKitImport(id, metaInfo, eventTransformNodes, false, lazyImportOptions),
-        collectReservedNameForObf(this.share.arkProjectConfig?.obfuscationMergedObConfig,
-          shouldETSOrTSFileTransformToJSWithoutRemove(id, projectConfig, metaInfo), eventTransformNodes)], false);
+        [
+          // interopTransform：The hybrid compilation scenario provides the following two capabilities:
+          // 1. Support for creating 1.2 type object literals in 1.1 modules
+          // 2. Support 1.1 classes to implement 1.2 interfaces
+          interopTransform(tsProgram, id, mixCompile),
+          processUISyntax(null, false, eventTransformNodes, id, this.share, metaInfo),
+          expandAllImportPaths(importPathExpandChecker, this, eventTransformNodes, importPathExpandDataSource),
+          processKitImport(id, metaInfo, eventTransformNodes, kitResolver),
+          processLazyImport(metaInfo, eventTransformNodes, lazyImportOptions, lazyResolver, id),
+          collectModuleSourceFile(id, metaInfo, eventTransformNodes),
+          collectReservedNameForObf(this.share.arkProjectConfig?.obfuscationMergedObConfig,
+            shouldETSOrTSFileTransformToJSWithoutRemove(id, projectConfig, metaInfo), eventTransformNodes)
+        ], false);
       stopEvent(eventTransformNodes);
       MemoryMonitor.stopRecordStage(uiKitrecordInfo);
     }
@@ -773,6 +816,7 @@ function resetCollection() {
 }
 
 function resetEtsTransform(): void {
+  resetCheckerlessImportTransform();
   ShouldEnableDebugLine.enableDebugLine = false;
   projectConfig.ignoreWarning = false;
   projectConfig.widgetCompile = false;

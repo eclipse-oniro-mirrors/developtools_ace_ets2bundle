@@ -25,7 +25,7 @@ export enum MemoryDefine {
 	PROCESS_BUILD_HAP_GET_SEMANTIC_DIAGNOSTICS = 'ets_checker(processBuildHap: getSemanticDiagnostics)',
 	PROCESS_BUILD_HAP_EMIT_BUILD_INFO = 'ets_checker(processBuildHap: emitBuildInfo)',
 	FILE_TO_IGNORE_DIAGNOSTICS = 'ets_checker(collectFileToIgnoreDiagnostics: fileToIgnoreDiagnostics)',
-	NEW_SOURCE_FILE = 'process_kit_import(processKitImport: ModuleSourceFile.newSourceFile)',
+	NEW_SOURCE_FILE = 'process_module_source_file(collectModuleSourceFile: ModuleSourceFile.newSourceFile)',
 	UPDATE_SOURCE_MAPS = 'generate_sourcemap(buildModuleSourceMapInfo: SourceMapGenerator-updateSourceMaps)',
 	MODULE_SOURCE_FILE_NEW_SOURCE_FILE = 'transform(transformForModule: ModuleSourceFile-newSourceFile)',
 	INIT_ARK_PROJECT_CONFIG = 'process_ark_config(initArkProjectConfig: initObfuscationConfig)',

@@ -34,6 +34,7 @@ import {
   TSC_SYSTEM_CODE,
   traverseProgramSourceFiles
 } from '../../ets_checker';
+import { initCheckerlessImportPreprocess } from '../../checkerless_import_transform';
 import { TS_WATCH_END_MSG } from '../../pre_define';
 import {
   setChecker
@@ -114,6 +115,7 @@ export function etsChecker() {
         strictCheckerOnly: projectConfig.strictCheckerOnly,
         enableAccurateNullChecks: projectConfig.enableAccurateNullChecks
       });
+      initCheckerlessImportPreprocess(this);
       const logger = this.share.getLogger('etsChecker');
       const rootFileNames: string[] = [];
       const resolveModulePaths: string[] = [];

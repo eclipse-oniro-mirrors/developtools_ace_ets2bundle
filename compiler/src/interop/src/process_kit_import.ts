@@ -16,26 +16,17 @@
 import * as ts from 'typescript';
 import fs from 'fs';
 import path from 'path';
-
+import type { ImportTransformResolver } from './utils';
 import {
+  checkHasKeepTs,
   IFileLog,
   LogType
 } from './utils';
 import { projectConfig } from '../main';
-import { ModuleSourceFile } from './fast_build/ark_compiler/module/module_source_file';
 import { collectKitModules } from './fast_build/system_api/rollup-plugin-system-api';
 import { hasTsNoCheckOrTsIgnoreFiles, compilingEtsOrTsFiles } from './fast_build/ark_compiler/utils';
 import { compilerOptions } from './ets_checker';
-import {
-  transformLazyImport,
-  lazyImportReExportCheck,
-  reExportNoCheckMode,
-  LazyImportOptions
-} from './process_lazy_import';
 import createAstNodeUtils from './create_ast_node_utils';
-import { MemoryMonitor } from './fast_build/meomry_monitor/rollup-plugin-memory-monitor';
-import { MemoryDefine } from './fast_build/meomry_monitor/memory_define';
-import { processStaticInteropImports } from './fast_build/ark_compiler/interop/process_static_interop_imports';
 import {
   CompileEvent,
   createAndStartEvent,
@@ -64,7 +55,55 @@ import { etsLoaderErrorReferences } from './fast_build/ark_compiler/url_config.j
 export const kitTransformLog: IFileLog = new createAstNodeUtils.FileLog();
 
 const KIT_PREFIX = '@kit.';
-const KEEPTS = '// @keepTs';
+
+export function isKitImportOrExportDeclaration(
+  node: ts.Node): node is ts.ImportDeclaration | ts.ExportDeclaration {
+  if (!ts.isImportDeclaration(node) && !(ts.isExportDeclaration(node) && node.moduleSpecifier)) {
+    return false;
+  }
+  const moduleRequest: string = (node.moduleSpecifier as ts.StringLiteral).text.replace(/[\u0027\u0022]/g, '');
+  return moduleRequest.startsWith(KIT_PREFIX);
+}
+
+export function shouldSkipKitTypeSymbols(sourceFile: ts.SourceFile, processTs: boolean): boolean {
+  return processTs !== true || ts.hasTsNoCheckOrTsIgnoreFlag(sourceFile);
+}
+
+export function isKitTypeSymbol(node: ts.Node, resolver: ImportTransformResolver): boolean {
+  let isTypeSymbol: boolean = false;
+  switch (node.kind) {
+    case ts.SyntaxKind.ImportDeclaration:
+    case ts.SyntaxKind.ImportClause: {
+      const importClause = ts.isImportClause(node) ? node : (node as ts.ImportDeclaration).importClause;
+      if (importClause) {
+        isTypeSymbol = importClause.isTypeOnly;
+        if (importClause.name && !resolver.isReferencedAliasDeclaration(importClause)) {
+          isTypeSymbol = true;
+        }
+      }
+      break;
+    }
+    case ts.SyntaxKind.ImportSpecifier: {
+      isTypeSymbol = (node as ts.ImportSpecifier).isTypeOnly;
+      if (!resolver.isReferencedAliasDeclaration(node)) {
+        isTypeSymbol = true;
+      }
+      break;
+    }
+    case ts.SyntaxKind.ExportDeclaration: {
+      isTypeSymbol = (node as ts.ExportDeclaration).isTypeOnly;
+      break;
+    }
+    case ts.SyntaxKind.ExportSpecifier: {
+      isTypeSymbol = (node as ts.ExportSpecifier).isTypeOnly;
+      if (!resolver.isValueAliasDeclaration(node)) {
+        isTypeSymbol = true;
+      }
+      break;
+    }
+  }
+  return isTypeSymbol;
+}
 
 /*
 * This API is the TSC Transformer for transforming `KitImport` into `OhosImport`
@@ -77,50 +116,43 @@ const KEEPTS = '// @keepTs';
 *    ```
 */
 export function processKitImport(id: string, metaInfo: Object, parentEvent: CompileEvent,
-  shouldReturnOriginalNode: boolean = true,
-  lazyImportOptions: LazyImportOptions = { autoLazyImport: false, reExportCheckMode: reExportNoCheckMode, autoLazyFilter: {} }): Function {
-  const { autoLazyImport, reExportCheckMode, autoLazyFilter } = lazyImportOptions;
+  resolver?: ImportTransformResolver): Function {
   return (context: ts.TransformationContext) => {
     const visitor: ts.Visitor = node => {
       // only transform static import/export declaration
-      if (ts.isImportDeclaration(node) || (ts.isExportDeclaration(node) && node.moduleSpecifier)) {
-        const moduleRequest: string = (node.moduleSpecifier as ts.StringLiteral).text.replace(/'|"/g, '');
-        if (moduleRequest.startsWith(KIT_PREFIX)) {
-          const kitDefs = getKitDefs(moduleRequest);
-          if (kitDefs && kitDefs.symbols) {
-            KitInfo.processKitInfo(moduleRequest, kitDefs.symbols as KitSymbols, node);
-            const currentKitInfo: KitInfo | undefined = KitInfo.getCurrentKitInfo();
-            return currentKitInfo ? [...currentKitInfo.getOhosImportNodes()] : [];
-          } else {
-            const errInfo: LogData = LogDataFactory.newInstance(
-              ErrorCode.ETS2BUNDLE_EXTERNAL_KIT_CONFIG_FILE_NOT_FOUND,
-              ArkTSErrorDescription,
-              `Kit '${moduleRequest}' has no corresponding config file in ArkTS SDK.`,
-              '',
-              [
-                "Please make sure the Kit apis are consistent with SDK and there's no local modification on Kit apis.",
-                `For more details on Kit apis, please refer to ${etsLoaderErrorReferences.harmonyOSReferencesAPI}.`
-              ]
-            );
-            kitTransformLog.errors.push({
-              type: LogType.ERROR,
-              message: errInfo.toString(),
-              pos: node.getStart()
-            });
-          }
-        }
+      if (!isKitImportOrExportDeclaration(node)) {
+        return node;
       }
+      const moduleRequest: string = (node.moduleSpecifier as ts.StringLiteral).text.replace(/'|"/g, '');
+      const kitDefs = getKitDefs(moduleRequest);
+      if (kitDefs && kitDefs.symbols) {
+        KitInfo.processKitInfo(moduleRequest, kitDefs.symbols as KitSymbols, node);
+        const currentKitInfo: KitInfo | undefined = KitInfo.getCurrentKitInfo();
+        return currentKitInfo ? [...currentKitInfo.getOhosImportNodes()] : [];
+      }
+      const errInfo: LogData = LogDataFactory.newInstance(
+        ErrorCode.ETS2BUNDLE_EXTERNAL_KIT_CONFIG_FILE_NOT_FOUND,
+        ArkTSErrorDescription,
+        `Kit '${moduleRequest}' has no corresponding config file in ArkTS SDK.`,
+        '',
+        [
+          "Please make sure the Kit apis are consistent with SDK and there's no local modification on Kit apis.",
+          `For more details on Kit apis, please refer to ${etsLoaderErrorReferences.harmonyOSReferencesAPI}.`
+        ]
+      );
+      kitTransformLog.errors.push({
+        type: LogType.ERROR,
+        message: errInfo.toString(),
+        pos: node.getStart()
+      });
       return node;
     };
 
     return (node: ts.SourceFile) => {
       const eventProcessKitImport = createAndStartEvent(parentEvent, 'processKitImport');
-      const newSourceFileRecordInfo = MemoryMonitor.recordStage(MemoryDefine.NEW_SOURCE_FILE);
       compilingEtsOrTsFiles.push(path.normalize(node.fileName));
 
-      KitInfo.init(node, context, id);
-      // @ts-ignore
-      const resolver = context.getEmitResolver();
+      KitInfo.init(node, context, id, resolver);
 
       // When compile hap or hsp, it is used to determine whether there is a keepTsNode in the file.
       let hasKeepTs: boolean = false;
@@ -134,28 +166,18 @@ export function processKitImport(id: string, metaInfo: Object, parentEvent: Comp
           // process KitImport transforming
           const processedNode: ts.SourceFile =
             ts.visitEachChild(node, visitor, context); // this node used for [writeFile]
-          MemoryMonitor.stopRecordStage(newSourceFileRecordInfo);
           stopEvent(eventProcessKitImport);
           // this processNode is used to convert ets/ts to js intermediate products
           return processedNode;
         }
         // process [ConstEnum] + [TypeExportImport] + [KitImport] transforming
-        // when autoLazyImport is true, some imports are converted to lazy-import
-        // eg. import { xxx } form "xxx" --> import lazy { xxx } form "xxx"
-        let processedNode: ts.SourceFile =
+        const processedNode: ts.SourceFile =
           ts.visitEachChild(ts.getTypeExportImportAndConstEnumTransformer(context)(node), visitor, context);
-        processedNode = <ts.SourceFile> (autoLazyImport ? transformLazyImport(metaInfo, processedNode, autoLazyFilter, resolver,
-          eventProcessKitImport) : processedNode);
-        processedNode = processStaticInteropImports(processedNode, id, context);
-        lazyImportReExportCheck(processedNode, reExportCheckMode, eventProcessKitImport);
-        ModuleSourceFile.newSourceFile(id, processedNode, metaInfo, projectConfig.singleFileEmit);
-        MemoryMonitor.stopRecordStage(newSourceFileRecordInfo);
         stopEvent(eventProcessKitImport);
-        return shouldReturnOriginalNode ? node : processedNode; // this node not used for [writeFile]
+        return processedNode;
       }
       // process KitImport transforming
       const processedNode: ts.SourceFile = ts.visitEachChild(node, visitor, context);
-      MemoryMonitor.stopRecordStage(newSourceFileRecordInfo);
       stopEvent(eventProcessKitImport);
       return processedNode;
     };
@@ -256,7 +278,7 @@ export class KitInfo {
   private static currentKitName: string = '';
   private static currentSourcefile: string = '';
   private static needSkipType: boolean = true;
-  private static tsEmitResolver: Object;
+  private static tsEmitResolver: ImportTransformResolver | undefined;
 
   private symbols: KitSymbols;
   private kitNode: TSModuleDeclaration;
@@ -272,9 +294,10 @@ export class KitInfo {
     this.kitNodeModifier = ts.canHaveDecorators(this.kitNode) ? ts.getModifiers(this.kitNode) : undefined;
   }
 
-  static init(node: ts.SourceFile, context: ts.TransformationContext, moduleId: string): void {
+  static init(node: ts.SourceFile, context: ts.TransformationContext, moduleId: string,
+    resolver?: ImportTransformResolver): void {
     // @ts-ignore
-    this.tsEmitResolver = context.getEmitResolver();
+    this.tsEmitResolver = resolver ?? context.getEmitResolver();
     this.currentSourcefile = moduleId;
     if (/\.ts$/.test(node.fileName)) {
       this.setFileType(FileType.TS);
@@ -282,11 +305,7 @@ export class KitInfo {
       this.setFileType(FileType.ETS);
     }
 
-    if (projectConfig.processTs === true && !ts.hasTsNoCheckOrTsIgnoreFlag(node)) {
-      this.needSkipType = false;
-    } else {
-      this.needSkipType = true;
-    }
+    this.needSkipType = shouldSkipKitTypeSymbols(node, projectConfig.processTs);
 
     kitTransformLog.sourceFile = node;
   }
@@ -315,42 +334,7 @@ export class KitInfo {
     if (!this.needSkipType) {
       return false;
     }
-
-    // need to skip type symbol
-    const resolver = this.tsEmitResolver;
-    let isTypeSymbol: boolean = false;
-    switch (node.kind) {
-      case ts.SyntaxKind.ImportDeclaration:
-      case ts.SyntaxKind.ImportClause: {
-        const importClause = ts.isImportClause(node) ? node : (node as ts.ImportDeclaration).importClause;
-        if (importClause) {
-          isTypeSymbol = importClause.isTypeOnly;
-          if (importClause.name && !resolver.isReferencedAliasDeclaration(importClause)) {
-              isTypeSymbol = true;
-          }
-        }
-        break;
-      }
-      case ts.SyntaxKind.ImportSpecifier: {
-        isTypeSymbol = (node as ts.ImportSpecifier).isTypeOnly;
-        if (!resolver.isReferencedAliasDeclaration(node)) {
-          isTypeSymbol = true;
-        }
-        break;
-      }
-      case ts.SyntaxKind.ExportDeclaration: {
-        isTypeSymbol = (node as ts.ExportDeclaration).isTypeOnly;
-        break;
-      }
-      case ts.SyntaxKind.ExportSpecifier: {
-        isTypeSymbol = (node as ts.ExportSpecifier).isTypeOnly;
-        if (!resolver.isValueAliasDeclaration(node)) {
-          isTypeSymbol = true;
-        }
-        break;
-      }
-    }
-    return isTypeSymbol;
+    return isKitTypeSymbol(node, this.tsEmitResolver!);
   }
 
   static processImportDecl(kitNode: ts.ImportDeclaration, symbols: Record<string, KitSymbol>) {
@@ -704,15 +688,6 @@ function getKitDefs(kitModuleRequest: string): Object | undefined {
 
 function trimSourceSuffix(source: string): string {
   return source.replace(/\.d.[e]?ts$/, '');
-}
-
-export function checkHasKeepTs(node: ts.SourceFile): boolean {
-  // Get the first comment in the file and determine whether it is "// @keepTs"
-  const comments = ts.getTrailingCommentRanges(node.getFullText(), 0) || [];
-  if (comments.length === 0) {
-    return false;
-  }
-  return node.getFullText().substring(comments[0].pos, comments[0].end).trim() === KEEPTS;
 }
 
 export function resetKitImportLog(): void {

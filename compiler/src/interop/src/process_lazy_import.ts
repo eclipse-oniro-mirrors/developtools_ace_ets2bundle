@@ -14,10 +14,12 @@
  */
 
 import * as ts from 'typescript';
+import type { ImportTransformResolver } from './utils';
 
 import {
   IFileLog,
-  LogType
+  LogType,
+  shouldSkipTsImportTransform
 } from './utils';
 import {
   LogData,
@@ -33,6 +35,8 @@ import {
   createAndStartEvent,
   stopEvent
 } from './performance';
+import { projectConfig } from '../main';
+import { processStaticInteropImports } from './fast_build/ark_compiler/interop/process_static_interop_imports';
 
 export const reExportCheckLog: IFileLog = new creatAstNodeUtils.FileLog();
 export const reExportNoCheckMode: string = 'noCheck';
@@ -42,6 +46,29 @@ export interface LazyImportOptions {
   autoLazyImport: boolean;
   reExportCheckMode: string;
   autoLazyFilter: Object;
+}
+
+export function processLazyImport(metaInfo: Object, parentEvent: CompileEvent,
+  lazyImportOptions: LazyImportOptions = {
+    autoLazyImport: false,
+    reExportCheckMode: reExportNoCheckMode,
+    autoLazyFilter: {}
+  }, resolver?: ImportTransformResolver, id?: string): ts.TransformerFactory<ts.SourceFile> {
+  const { autoLazyImport, reExportCheckMode, autoLazyFilter } = lazyImportOptions;
+  return (context: ts.TransformationContext) => (node: ts.SourceFile) => {
+    if (shouldSkipTsImportTransform(node, projectConfig.processTs, projectConfig.complieHar)) {
+      return node;
+    }
+    const eventProcessLazyImport: CompileEvent = createAndStartEvent(parentEvent, 'processLazyImport');
+    // @ts-ignore
+    const importResolver: ImportTransformResolver = resolver ?? context.getEmitResolver();
+    const processedNode: ts.SourceFile = autoLazyImport ?
+      transformLazyImport(metaInfo, node, autoLazyFilter, importResolver, eventProcessLazyImport) : node;
+    const finalNode: ts.SourceFile = id === undefined ? processedNode : processStaticInteropImports(processedNode, id, context);
+    lazyImportReExportCheck(finalNode, reExportCheckMode, eventProcessLazyImport);
+    stopEvent(eventProcessLazyImport);
+    return finalNode;
+  };
 }
 
 export function processJsCodeLazyImport(id: string, code: string,
@@ -58,7 +85,7 @@ export function processJsCodeLazyImport(id: string, code: string,
 }
 
 export function transformLazyImport(metaInfo: Object, sourceNode: ts.SourceFile,
-  autoLazyFilter: Object, resolver?: Object, parentEvent?: CompileEvent): ts.SourceFile {
+  autoLazyFilter: Object, resolver?: ImportTransformResolver, parentEvent?: CompileEvent): ts.SourceFile {
   const eventTransformLazyImport: CompileEvent = createAndStartEvent(parentEvent, 'transform lazy import');
   if (isNotAutoLazyImport(metaInfo, autoLazyFilter)) {
     return sourceNode;
@@ -96,6 +123,7 @@ function isNotAutoLazyImport(metaInfo: Object, autoLazyFilter: Object): boolean 
 }
 
 function updateImportDecl(node: ts.ImportDeclaration, resolver: Object): ts.ImportDeclaration | ts.ImportDeclaration[] {
+  const importTransformResolver: ImportTransformResolver = resolver as ImportTransformResolver;
   const importClause: ts.ImportClause | undefined = node.importClause;
   const moduleRequest: string = (node.moduleSpecifier! as ts.StringLiteral).text.replace(/'|"/g, '');
   // The following cases do not support lazy-import.
@@ -124,12 +152,12 @@ function updateImportDecl(node: ts.ImportDeclaration, resolver: Object): ts.Impo
   if (namedBindings && ts.isNamedImports(namedBindings)) {
     // The resolver is used to determine whether type symbols need to be processed.
     // Only TS/ETS files have type symbols.
-    if (resolver) {
+    if (importTransformResolver) {
       // Separate type symbols from runtime values.
       // case1: import { type t, x } from '...' -->  import lazy { x } from '...'; import { type t } from '...';
       // case2: import x { type t } from '...' -->  import lazy x from '...'; import { type t } from '...';
       // case3: import type u { type t, x } from '...' -->  import lazy { x } from '...'; import { type u, type t } from '...';
-      const { valueBindings, typeBindings } = splitImportBindings(namedBindings, resolver);
+      const { valueBindings, typeBindings } = splitImportBindings(namedBindings, importTransformResolver);
       const typeImportDeclaration: ts.ImportDeclaration | undefined = typeBindings.length > 0 ?
         ts.factory.updateImportDeclaration(
           node,
@@ -169,7 +197,9 @@ function updateImportDecl(node: ts.ImportDeclaration, resolver: Object): ts.Impo
   return ts.factory.updateImportDeclaration(node, modifiers, newImportClause, node.moduleSpecifier, node.assertClause);
 }
 
-function splitImportBindings(namedBindings: ts.NamedImportBindings, resolver: Object): {
+export { updateImportDecl };
+
+function splitImportBindings(namedBindings: ts.NamedImportBindings, resolver: ImportTransformResolver): {
   valueBindings: ts.ImportSpecifier[];
   typeBindings: ts.ImportSpecifier[];
 } {

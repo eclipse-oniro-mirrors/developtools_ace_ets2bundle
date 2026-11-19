@@ -24,6 +24,20 @@ import {
   kitTransformLog,
   KitInfo
 } from '../../../lib/process_kit_import';
+import {
+  processLazyImport,
+  reExportNoCheckMode
+} from '../../../lib/process_lazy_import';
+import { collectModuleSourceFile } from '../../../lib/process_module_source_file';
+import {
+  getCheckerlessKitResolver,
+  initCheckerlessImportPreprocess,
+  getCheckerlessLazyImportResolver,
+  preprocessSourceFileForCheckerlessImport,
+  resetCheckerlessImportTransform
+} from '../../../lib/checkerless_import_transform';
+import '../../../lib/fast_build/ets_ui/rollup-plugin-ets-typescript';
+import { projectConfig } from '../../../main';
 import { findImportSpecifier } from '../utils/utils';
 import {
   ArkTSErrorDescription,
@@ -570,5 +584,117 @@ mocha.describe('process Kit Imports tests', function () {
     });
     expect(result.outputText == SINGLE_DEFAULT_BINDINGS_NO_DEFAULT_IMPORT_CODE_EXPECT).to.be.true;
     fs.unlinkSync(arkTestKitConfig);
+  });
+
+  function createKitPreprocessProgram(files: Record<string, string>, entry: string): ts.Program {
+    const compilerHost = ts.createCompilerHost({}, true);
+    const getFileKey = (filePath: string) => path.basename(filePath);
+    compilerHost.getSourceFile = (filePath, languageVersion) => {
+      const key = getFileKey(filePath);
+      const sourceText = files[key];
+      return sourceText !== undefined
+        ? ts.createSourceFile(filePath, sourceText, languageVersion, true)
+        : undefined;
+    };
+    compilerHost.readFile = (filePath) => {
+      const key = getFileKey(filePath);
+      return files[key];
+    };
+    compilerHost.fileExists = (filePath) => {
+      const key = getFileKey(filePath);
+      return key in files;
+    };
+    compilerHost.getCanonicalFileName = fileName =>
+      ts.sys.useCaseSensitiveFileNames ? fileName : fileName.toLowerCase();
+    return ts.createProgram([entry], {
+      target: ts.ScriptTarget.ESNext,
+      module: ts.ModuleKind.ESNext
+    }, compilerHost);
+  }
+
+  function emitWithProcessKitImport(program: ts.Program, entry: string, lazyImportOptions: Object): string {
+    let output: string = '';
+    const sourceFile: ts.SourceFile = program.getSourceFile(entry)!;
+    program.emit(sourceFile, (fileName: string, text: string) => {
+      if (fileName.endsWith('.js')) {
+        output = text;
+      }
+    }, undefined, undefined, {
+      before: [
+        processKitImport(entry, {}, undefined, getCheckerlessKitResolver()),
+        processLazyImport({}, undefined, lazyImportOptions,
+          getCheckerlessLazyImportResolver()),
+        collectModuleSourceFile(entry, {}, undefined)
+      ]
+    });
+    return output;
+  }
+
+  mocha.it('4-1: kit import output is identical when reading preprocessed resolver data', function () {
+    const files: Record<string, string> = {
+      'main.ts': `
+        import { BusinessError, appAccount } from '@kit.BasicServicesKit';
+        let e: BusinessError;
+        appAccount.createAppAccountManager();
+      `
+    };
+    const lazyImportOptions: Object = { autoLazyImport: false, reExportCheckMode: reExportNoCheckMode, autoLazyFilter: {} };
+    const program: ts.Program = createKitPreprocessProgram(files, 'main.ts');
+    const liveOutput: string = emitWithProcessKitImport(program, 'main.ts', lazyImportOptions);
+    // BusinessError is only referenced as a type, so the resolver path drops it from the ohos imports.
+    expect(liveOutput).to.include('appAccount');
+    expect(liveOutput).to.not.include('BusinessError');
+
+    initCheckerlessImportPreprocess({ share: { projectConfig: { earlyReleaseChecker: true, autoLazyImport: false } } });
+    program.getSourceFiles().forEach(sourceFile => {
+      preprocessSourceFileForCheckerlessImport(program, sourceFile);
+    });
+    projectConfig.earlyReleaseChecker = true;
+    const preprocessOutput: string = emitWithProcessKitImport(program, 'main.ts', lazyImportOptions);
+    expect(preprocessOutput).to.equal(liveOutput);
+
+    projectConfig.earlyReleaseChecker = false;
+    resetCheckerlessImportTransform();
+  });
+
+  mocha.it('4-2: processLazyImport reads preprocessed resolver data', function () {
+    const files: Record<string, string> = {
+      'main.ts': `
+        import { appAccount } from '@kit.BasicServicesKit';
+        import { foo, bar } from './lib';
+        appAccount.createAppAccountManager();
+        console.log(foo);
+        let x: bar;
+      `,
+      'lib.ts': `
+        export const foo = 42;
+        export type bar = number;
+      `
+    };
+    const lazyImportOptions: Object = { autoLazyImport: true, reExportCheckMode: reExportNoCheckMode, autoLazyFilter: {} };
+    const program: ts.Program = createKitPreprocessProgram(files, 'main.ts');
+    projectConfig.processTs = true;
+    const liveOutput: string = emitWithProcessKitImport(program, 'main.ts', lazyImportOptions);
+    // foo is value-referenced and becomes a lazy import; bar is only referenced as a type and is
+    // moved into a separate non-lazy type-only import.
+    expect(liveOutput).to.include("import lazy { foo } from './lib';");
+    expect(liveOutput).to.include("import type { bar } from './lib';");
+
+    initCheckerlessImportPreprocess({ share: { projectConfig: { earlyReleaseChecker: true, autoLazyImport: true } } });
+    program.getSourceFiles().forEach(sourceFile => {
+      preprocessSourceFileForCheckerlessImport(program, sourceFile);
+    });
+    projectConfig.earlyReleaseChecker = true;
+    const preprocessOutput: string = emitWithProcessKitImport(program, 'main.ts', lazyImportOptions);
+    expect(preprocessOutput).to.equal(liveOutput);
+
+    projectConfig.earlyReleaseChecker = false;
+    projectConfig.processTs = false;
+    resetCheckerlessImportTransform();
+  });
+
+  mocha.it('4-3: leaves Kit on the live resolver when early release is disabled', function () {
+    projectConfig.earlyReleaseChecker = false;
+    expect(getCheckerlessKitResolver()).to.be.undefined;
   });
 });
