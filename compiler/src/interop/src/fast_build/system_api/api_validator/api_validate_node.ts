@@ -472,22 +472,19 @@ export class SdkComparisonValidator extends BaseValidator implements NodeValidat
       return false;
     }
 
-    if (this.findParentNode(node, (parent) => this.isParentIfSdkComparison(node, parent)) !== null) {
-      return true;
-    }
-    return this.isNodeInApiAvailableGuardPattern(node);
+    return this.isNodeInApiGuardPattern(node);
   }
 
   /**
-   * 守卫结构的判定：else/卫语句/三元/then。
+   * 判断节点是否在 apiAvailable 或 sdkApiVersion 比较守卫结构内（else/卫语句/三元/then）。
    */
-  private isNodeInApiAvailableGuardPattern(node: ts.Node): boolean {
+  private isNodeInApiGuardPattern(node: ts.Node): boolean {
     try {
-     
       return isNodeInGuardPattern(
         node,
         (guardExpression, impliedConditionValue) =>
-          this.isApiAvailableGuardImpliedTrue(guardExpression, impliedConditionValue)
+          this.isApiAvailableGuardImpliedTrue(guardExpression, impliedConditionValue) ||
+          this.isSdkComparisonGuardImpliedTrue(guardExpression, impliedConditionValue)
       );
     } catch {
       return false;
@@ -515,27 +512,15 @@ export class SdkComparisonValidator extends BaseValidator implements NodeValidat
   }
 
   /**
-   * Checks if a parent if-statement contains a valid SDK comparison.
-   *
-   * @param node - Original node
-   * @param parent - Parent node to check
-   * @returns True if parent is valid SDK comparison if-statement
+   * 判断守卫条件里的 sdkApiVersion/distributionOSApiVersion 比较是否成立（成立→消除告警）。
    */
-  private isParentIfSdkComparison(node: ts.Node, parent: ts.Node): boolean {
-    if (!ts.isIfStatement(parent)) {
-      return false;
-    }
-
-    try {
-      const isInThenBlock = this.isNodeInIfThenBlock(node, parent);
-      if (!isInThenBlock) {
-        return false;
-      }
-
-      return this.sdkComparisonHelper.isSdkComparisonHelper(parent.expression);
-    } catch {
-      return false;
-    }
+  private isSdkComparisonGuardImpliedTrue(guardExpression: ts.Expression, impliedConditionValue: boolean): boolean {
+    return findImpliedGuardExpression(
+      guardExpression,
+      impliedConditionValue,
+      (candidate: ts.Expression, candidateValue: boolean) =>
+        this.sdkComparisonHelper.isSdkComparisonHelper(candidate, candidateValue)
+    ) !== null;
   }
 
 }
