@@ -704,12 +704,6 @@ function builderCallNode(node: ts.CallExpression): ts.Expression {
 function hasOptionalChain(
   expr: ts.Expression
 ): boolean {
-  if (!isCompatibleVersionOverTarget(26)) {
-    return ts.isPropertyAccessExpression(expr) &&
-      expr.questionDotToken &&
-      expr.questionDotToken.kind === ts.SyntaxKind.QuestionDotToken;
-  }
- 
   let currentExp: ts.Expression | undefined = expr;
  
   while (currentExp) {
