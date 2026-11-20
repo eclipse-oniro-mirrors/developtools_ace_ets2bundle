@@ -57,6 +57,7 @@ import { LINTER_SUBSYSTEM_CODE } from '../../hvigor_error_code/hvigor_error_info
 import { ErrorCodeModule } from '../../hvigor_error_code/const/error_code_module';
 import { fileInfoCache } from '../../file_info_cache';
 import { validateHarWidgetCompile } from '../ark_compiler/common/process_ark_config';
+import { DEBUG } from '../ark_compiler/common/ark_define';
 
 export let tsWatchEmitter: EventEmitter | undefined = undefined;
 export let tsWatchEndPromise: Promise<void>;
@@ -109,7 +110,8 @@ export function etsChecker() {
         runtimeOS: projectConfig.runtimeOS,
         ignoreCrossplatformCheck: projectConfig.ignoreCrossplatformCheck,
         strictCheckerOnly: projectConfig.strictCheckerOnly,
-        enableAccurateNullChecks: projectConfig.enableAccurateNullChecks
+        enableAccurateNullChecks: projectConfig.enableAccurateNullChecks,
+        skipArkTSLinter: projectConfig.skipArkTSLinter && projectConfig.buildMode.toLowerCase() === DEBUG
       });
       initCheckerlessImportPreprocess(this);
       const logger = this.share.getLogger('etsChecker');
