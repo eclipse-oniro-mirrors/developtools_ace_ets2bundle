@@ -138,6 +138,7 @@ import {
   getCheckerlessKitResolver,
   getCheckerlessLazyImportResolver,
   isEarlyReleaseCheckerEnabled,
+  preprocessSourceFileForCheckerlessImport,
   registerCheckerlessImportHooks,
   resetCheckerlessImportTransform
 } from '../../checkerless_import_transform';
@@ -691,6 +692,8 @@ async function processNoTargetSourceFile(id: string, code: string, parentEvent?:
   }
   await CreateProgramMoment.block(id, code);
   CreateProgramMoment.release(id);
+  const sourceFilesToPreprocess: Set<ts.SourceFile> | undefined = isEarlyReleaseCheckerEnabled(projectConfig) ?
+    new Set() : undefined;
   globalProgram.program.initProcessingFiles();
   for (const root of CreateProgramMoment.getRoots(id, code)) {
     if (!globalProgram.program.getSourceFile(root.id)) {
@@ -701,6 +704,7 @@ async function processNoTargetSourceFile(id: string, code: string, parentEvent?:
       newSourceFile.path = root.id;
       globalProgram.program.processImportedModules(newSourceFile, true);
       globalProgram.program.setProgramSourceFiles(newSourceFile);
+      sourceFilesToPreprocess?.add(newSourceFile);
       CreateProgramMoment.deleteFileCollect.add(newSourceFile.fileName);
     }
   }
@@ -711,9 +715,13 @@ async function processNoTargetSourceFile(id: string, code: string, parentEvent?:
         CreateProgramMoment.deleteFileCollect.add(file.fileName);
       }
       globalProgram.program.setProgramSourceFiles(file);
+      sourceFilesToPreprocess?.add(file);
     });
   }
   globalProgram.program.refreshTypeChecker();
+  sourceFilesToPreprocess?.forEach((sourceFile: ts.SourceFile) => {
+    preprocessSourceFileForCheckerlessImport(globalProgram.program, sourceFile);
+  });
   stopEvent(eventNoSourceFileRebuildProgram);
 }
 

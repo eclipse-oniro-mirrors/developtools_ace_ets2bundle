@@ -137,6 +137,7 @@ import {
   getCheckerlessKitResolver,
   getCheckerlessLazyImportResolver,
   isEarlyReleaseCheckerEnabled,
+  preprocessSourceFileForCheckerlessImport,
   registerCheckerlessImportHooks,
   resetCheckerlessImportTransform
 } from '../../checkerless_import_transform';
@@ -699,6 +700,8 @@ async function processNoTargetSourceFile(id: string, code: string, parentEvent?:
   stopEvent(eventRelease);
 
   const initProcessingFilesEvent = createAndStartEvent(eventNoSourceFileRebuildProgram, 'initProcessingFiles');
+  const sourceFilesToPreprocess: Set<ts.SourceFile> | undefined = isEarlyReleaseCheckerEnabled(projectConfig) ?
+    new Set() : undefined;
   globalProgram.program.initProcessingFiles();
   stopEvent(initProcessingFilesEvent);
 
@@ -716,6 +719,7 @@ async function processNoTargetSourceFile(id: string, code: string, parentEvent?:
       stopEvent(importModulesEvent);
       const setSourceFilesEvent = createAndStartEvent(eventNoSourceFileRebuildProgram, 'setSourceFilesEvent');
       globalProgram.program.setProgramSourceFiles(newSourceFile);
+      sourceFilesToPreprocess?.add(newSourceFile);
       stopEvent(setSourceFilesEvent);
       CreateProgramMoment.deleteFileCollect.add(newSourceFile.fileName);
     }
@@ -732,6 +736,7 @@ async function processNoTargetSourceFile(id: string, code: string, parentEvent?:
       }
       const setProcessingSourceFileEvent = createAndStartEvent(eventNoSourceFileRebuildProgram, 'setProcessingSourceFileEvent');
       globalProgram.program.setProgramSourceFiles(file);
+      sourceFilesToPreprocess?.add(file);
       stopEvent(setProcessingSourceFileEvent);
     });
   }
@@ -740,6 +745,9 @@ async function processNoTargetSourceFile(id: string, code: string, parentEvent?:
   globalProgram.program.refreshTypeChecker();
   stopEvent(TSRefreshTypeChecker);
 
+  sourceFilesToPreprocess?.forEach((sourceFile: ts.SourceFile) => {
+    preprocessSourceFileForCheckerlessImport(globalProgram.program, sourceFile);
+  });
   stopEvent(eventNoSourceFileRebuildProgram);
 }
 

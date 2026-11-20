@@ -223,12 +223,19 @@ function createResolverPreprocessData(): ResolverPreprocessData {
 
 function createCheckerlessResolver(preprocessData?: ResolverPreprocessData): ImportTransformResolver {
   return {
-    isReferenced: (node: ts.Node): boolean => preprocessData?.isReferenced.get(node) ?? false,
+    isReferenced: (node: ts.Node): boolean =>
+      getCachedResolverValue(preprocessData?.isReferenced, node, false),
     isReferencedAliasDeclaration: (node: ts.Node): boolean =>
-      preprocessData?.isReferencedAliasDeclaration.get(node) ?? true,
+      getCachedResolverValue(preprocessData?.isReferencedAliasDeclaration, node, true),
     isValueAliasDeclaration: (node: ts.Node): boolean =>
-      preprocessData?.isValueAliasDeclaration.get(node) ?? true
+      getCachedResolverValue(preprocessData?.isValueAliasDeclaration, node, true)
   };
+}
+
+function getCachedResolverValue(cache: WeakMap<ts.Node, boolean> | undefined,
+  node: ts.Node, defaultValue: boolean): boolean {
+  const parseNode = ts.getParseTreeNode(node);
+  return parseNode ? cache?.get(parseNode) ?? defaultValue : defaultValue;
 }
 
 function getOrSetResolverValue(cache: WeakMap<ts.Node, boolean>, node: ts.Node,
