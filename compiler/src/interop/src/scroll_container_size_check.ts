@@ -300,6 +300,20 @@ function hasScrollContainerEffectiveSize(
     return false;
 }
 
+function hasScrollContainerWithNoDirection(
+    attrs: Map<string, ts.CallExpression>
+): boolean {
+    const hasHeightValue: boolean = hasScrollContainerEffectiveSize(attrs, HEIGHT);
+    const hasWidthValue: boolean = hasScrollContainerEffectiveSize(attrs, WIDTH);
+    if (hasHeightValue && hasWidthValue) {
+        return true;
+    }
+    if (!attrs.has(ASPECT_RATIO)) {
+        return false;
+    }
+    return hasHeightValue || hasWidthValue;
+}
+
 export function checkScrollContainerSize(
     node: ts.EtsComponentExpression,
     sourceFileNode: ts.SourceFile,
@@ -319,8 +333,7 @@ export function checkScrollContainerSize(
     }
     const direction: ScrollContainerDirection = resolveScrollContainerDirection(componentName, attrMaps);
     if (direction === ScrollContainerDirection.Unknown) {
-        (!hasScrollContainerEffectiveSize(attrMaps, HEIGHT) ||
-            !hasScrollContainerEffectiveSize(attrMaps, WIDTH)) &&
+        !hasScrollContainerWithNoDirection(attrMaps) &&
             validateScrollComponentSizeWarning(componentName, node.expression, log, sourceFileNode);
         return;
     }
