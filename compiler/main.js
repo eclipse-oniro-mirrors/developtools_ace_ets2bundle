@@ -87,6 +87,8 @@ let externalApiCheckerMap = new Map();
 let crossplatformDepsConfig = new Map();
 // collect crossplatform external data
 let crossplatformExternalModule = new Map();
+// cache the processed available nodes to avoid duplicate processing
+let processedAvailableNodes = new Map();
 
 function initProjectConfig(projectConfig) {
   initProjectPathConfig(projectConfig);
@@ -1352,6 +1354,7 @@ function resetMain() {
   externalApiCheckerMap = new Map();
   crossplatformDepsConfig = new Map();
   crossplatformExternalModule = new Map();
+  processedAvailableNodes = new Map();
   isInitialRender.reuse = false;
 }
 
@@ -1457,4 +1460,5 @@ exports.suppressWarningsCheckPlugin = suppressWarningsCheckPlugin;
 exports.externalApiCheckerMap = externalApiCheckerMap;
 exports.crossplatformDepsConfig = crossplatformDepsConfig;
 exports.crossplatformExternalModule = crossplatformExternalModule;
+exports.processedAvailableNodes = processedAvailableNodes;
 exports.isInitialRender = isInitialRender;
