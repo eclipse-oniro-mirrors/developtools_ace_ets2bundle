@@ -18,6 +18,8 @@ import { BaseValidator } from '../base';
 import { NormalClassRecord, RecordBuilder, StructPropertyInfo } from '../../records';
 import { DecoratorNames, LogType } from '../../../../common/predefines';
 import { TypeFlags, getAnnotationUsageByName } from '../utils';
+import { expectNameInTypeReference } from '../../../../common/arkts-utils';
+import { containsNamedFunctionType } from './check-objectlink-function-type';
 import { getPerfName, performanceLog } from '../../../../common/debug';
 
 export const checkPropertyType = performanceLog(_checkPropertyType, getPerfName([0, 0, 0, 0, 0], 'checkPropertyType'));
@@ -139,7 +141,7 @@ function validateObjectLinkPropertyType(
             this.report({
                 node: annotationIdentifier,
                 level: LogType.ERROR,
-                message: `'@ObjectLink' cannot be used with this type. Apply it only to classes decorated by '@Observed'.`,
+                message: `'@ObjectLink' cannot be used with this type. Apply it only to classes decorated by '@Observed' or initialized using the return value of 'makeV1Observed'.`,
             });
         }
     } else if (
@@ -152,15 +154,17 @@ function validateObjectLinkPropertyType(
         this.report({
             node: annotationIdentifier,
             level: LogType.ERROR,
-            message: `'@ObjectLink' cannot be used with this type. Apply it only to classes decorated by '@Observed'.`,
+            message: `'@ObjectLink' cannot be used with this type. Apply it only to classes decorated by '@Observed' or initialized using the return value of 'makeV1Observed'.`,
         });
     }
-    if (arkts.isETSUnionType(propertyType)) {
+    // union 中存在名为 'Function' 的类型引用时，由 checkObjectLinkFunctionType 上报，
+    // 此处跳过，避免同一属性重复报错
+    if (arkts.isETSUnionType(propertyType) && !containsNamedFunctionType(propertyType)) {
         if (!areAllUnionMembersValid(propertyType)) {
             this.report({
                 node: annotationIdentifier,
                 level: LogType.ERROR,
-                message: `'@ObjectLink' cannot be used with this type. Apply it only to classes decorated by '@Observed'.`,
+                message: `'@ObjectLink' cannot be used with this type. Apply it only to classes decorated by '@Observed' or initialized using the return value of 'makeV1Observed'.`,
             });
         }
     }
@@ -225,12 +229,41 @@ function checkTypeClassWithObservedV2(classExpr: arkts.Identifier): boolean | un
     return !!classInfo?.annotationInfo?.hasObservedV2;
 }
 
+// 括号类型节点（如 union 成员 '(() => void)'）语义与内部类型一致，解包后统一判定
+function unwrapParenthesizedType(typeNode: arkts.TypeNode): arkts.TypeNode {
+    let current: arkts.TypeNode = typeNode;
+    while (arkts.isTSParenthesizedType(current) && current.type) {
+        current = current.type as arkts.TypeNode;
+    }
+    return current;
+}
+
+// 类型别名解析到 lambda（匿名函数类型）时返回 true；visited 防止别名循环引用
+function isLambdaTypeReference(typeNode: arkts.TypeNode, visited: Set<string>): boolean {
+    const nameNode = expectNameInTypeReference(typeNode);
+    if (!nameNode) {
+        return false;
+    }
+    if (visited.has(nameNode.name)) {
+        return false;
+    }
+    const decl = arkts.getPeerIdentifierDecl(nameNode.peer);
+    if (!decl || !arkts.isTSTypeAliasDeclaration(decl)) {
+        return false;
+    }
+    visited.add(nameNode.name);
+    const aliasedType = unwrapParenthesizedType(decl.typeAnnotation);
+    return arkts.isETSFunctionType(aliasedType) || isLambdaTypeReference(aliasedType, visited);
+}
+
 // null、undefined与有效类型联合为有效，其余情况只要存在无效类型则无效。
+// lambda（匿名函数类型）成员视为有效类型：@ObjectLink 仅拒绝名为 'Function' 的类型引用（见 checkObjectLinkFunctionType）。
 function areAllUnionMembersValid(unionType: arkts.ETSUnionType): boolean {
     const members = unionType.types;
     // At least one valid type All types must be allowed types and do not contain illegal combinations
     let isValidType = false;
-    for (const member of members) {
+    for (const typeNode of members) {
+        const member = unwrapParenthesizedType(typeNode);
         if (
             arkts.isETSTypeReference(member) &&
             member.part &&
@@ -247,7 +280,11 @@ function areAllUnionMembersValid(unionType: arkts.ETSUnionType): boolean {
             ) {
                 return false;
             }
-            if (checkTypeClassWithObservedV2(propertyTypeIdentifier) === false || ARRAY_TYPES.includes(propertyTypeName)) {
+            if (
+                checkTypeClassWithObservedV2(propertyTypeIdentifier) === false ||
+                ARRAY_TYPES.includes(propertyTypeName) ||
+                isLambdaTypeReference(member, new Set<string>())
+            ) {
                 isValidType = true;
             }
         } else if (
@@ -261,6 +298,8 @@ function areAllUnionMembersValid(unionType: arkts.ETSUnionType): boolean {
             arkts.isETSUndefinedType(member)
         ) {
             continue;
+        } else if (arkts.isETSFunctionType(member)) {
+            isValidType = true;
         }
     }
     return isValidType;

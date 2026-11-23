@@ -50,7 +50,7 @@ function _checkObjectLinkFunctionType(
             node: node.key,
             level: LogType.ERROR,
             message: `'@${DecoratorNames.OBJECT_LINK}' cannot be used with this type. ` +
-                `Apply it only to classes decorated by '@ObservedV2' or initialized using the return value of 'makeV1Observed'.`,
+                `Apply it only to classes decorated by '@${DecoratorNames.OBSERVED}' or initialized using the return value of 'makeV1Observed'.`,
         });
     }
 }
@@ -63,6 +63,15 @@ function containsFunctionType(typeNode: arkts.TypeNode, visited: Set<string>): b
         return unionContainsFunctionType(typeNode, visited);
     }
     return false;
+}
+
+/**
+ * 判断类型节点（含别名解析与 union 成员）中是否存在名为 'Function' 的类型引用。
+ * 供 checkPropertyType 的联合类型校验跳过 Function 域：
+ * 该域由本规则上报，跳过可保证同一属性只报一次错误。
+ */
+export function containsNamedFunctionType(typeNode: arkts.TypeNode): boolean {
+    return containsFunctionType(typeNode, new Set<string>());
 }
 
 function isFunctionTypeReference(typeNode: arkts.TypeNode, visited: Set<string>): boolean {

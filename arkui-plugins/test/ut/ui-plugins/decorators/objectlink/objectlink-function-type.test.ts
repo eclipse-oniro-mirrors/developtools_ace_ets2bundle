@@ -44,15 +44,18 @@ const parsedTransform: Plugins = {
     parsed: uiTransform().parsed
 };
 
-const OBJECTLINK_FUNCTION_TYPE_MESSAGE = '\'@ObjectLink\' cannot be used with this type. ' +
-    'Apply it only to classes decorated by \'@ObservedV2\' or initialized using the return value of \'makeV1Observed\'.';
+// Canonical @ObjectLink type-error text: both the Function-type rule
+// (checkObjectLinkFunctionType) and the type/union validation (checkPropertyType)
+// emit this message, aligned with Dynamic ArkTS (code 10905307).
+const OBJECTLINK_TYPE_MESSAGE = '\'@ObjectLink\' cannot be used with this type. ' +
+    'Apply it only to classes decorated by \'@Observed\' or initialized using the return value of \'makeV1Observed\'.';
 
 // Property names reported as invalid by the validator layer
-// (checkObjectLinkFunctionType reports at the property name identifier).
+// (both rules report at the property name identifier).
 let capturedPropertyNames: string[] = [];
 
-function isObjectLinkFunctionTypeInvalid(logItem: LogInfo): boolean {
-    return logItem.message === OBJECTLINK_FUNCTION_TYPE_MESSAGE;
+function isObjectLinkTypeInvalid(logItem: LogInfo): boolean {
+    return logItem.message === OBJECTLINK_TYPE_MESSAGE;
 }
 
 function captureInvalidObjectLinkPropertyName(logItem: LogInfo): void {
@@ -61,7 +64,7 @@ function captureInvalidObjectLinkPropertyName(logItem: LogInfo): void {
 }
 
 // Runs the Collector + validators flow at the checked state while capturing
-// @ObjectLink Function-type reports instead of emitting them as es2panda diagnostics.
+// @ObjectLink type reports instead of emitting them as es2panda diagnostics.
 const objectLinkFunctionTypeTransform: Plugins = {
     name: 'objectlink-function-type-validation',
     checked(this: PluginContext): arkts.ETSModule | undefined {
@@ -69,13 +72,13 @@ const objectLinkFunctionTypeTransform: Plugins = {
         return runCheckedLinterCapture(
             objectLinkFunctionTypeTransform.name,
             this,
-            isObjectLinkFunctionTypeInvalid,
+            isObjectLinkTypeInvalid,
             captureInvalidObjectLinkPropertyName
         );
     },
 };
 
-/** Property names of @ObjectLink properties reported as Function-typed by the validator layer. */
+/** Property names of @ObjectLink properties reported as invalid by either rule. */
 function reportedInvalidObjectLinkProperties(): string[] {
     return capturedPropertyNames;
 }
@@ -87,12 +90,13 @@ function testParsedAndCheckedTransformer(this: PluginTestContext): void {
     expect(reported).toContain('fn');
     expect(reported).toContain('fnAlias');
     expect(reported).toContain('fnUnion');
-    // Valid: lambda types are anonymous (no 'Function' symbol) and must not be reported:
+    // Valid: lambda types are anonymous (no 'Function' symbol) and must not be reported by ANY rule
+    // (checkObjectLinkFunctionType and checkPropertyType alike):
     // direct lambda type, alias to a lambda type, union of only lambda types
     expect(reported).not.toContain('handler');
     expect(reported).not.toContain('cb');
     expect(reported).not.toContain('pureLambdaUnion');
-    // Valid: '@Observed' class type must not be reported
+    // Valid: '@Observed' class type (control case, must not be reported)
     expect(reported).not.toContain('data');
 }
 
