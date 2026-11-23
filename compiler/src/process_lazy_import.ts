@@ -33,6 +33,8 @@ import { CompileEvent, createAndStartEvent, stopEvent } from './performance';
 import { projectConfig } from '../main';
 import { shouldSkipTsImportTransform } from './utils';
 
+export { updateImportDecl };
+
 export const reExportCheckLog: IFileLog = new creatAstNodeUtils.FileLog();
 export const reExportNoCheckMode: string = 'noCheck';
 const reExportStrictMode: string = 'strict';
@@ -190,8 +192,6 @@ function updateImportDecl(node: ts.ImportDeclaration, resolver: Object): ts.Impo
   newImportClause.isLazy = true;
   return ts.factory.updateImportDeclaration(node, modifiers, newImportClause, node.moduleSpecifier, node.assertClause);
 }
-
-export { updateImportDecl };
 
 function splitImportBindings(namedBindings: ts.NamedImportBindings, resolver: ImportTransformResolver): {
   valueBindings: ts.ImportSpecifier[];

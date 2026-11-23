@@ -1392,6 +1392,7 @@ function resetProjectConfig() {
   projectConfig.hspResourcesMap = false;
   projectConfig.coldReload = undefined;
   projectConfig.hotReload = undefined;
+  projectConfig.earlyReleaseChecker = false;
   projectConfig.isFirstBuild = undefined;
   projectConfig.changedFileList = undefined;
   projectConfig.patchAbcPath = undefined;
