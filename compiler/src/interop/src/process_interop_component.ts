@@ -268,23 +268,25 @@ export function generateBytecodePathFragement(
   filePath: string,
   moduleSpecifier: string
 ): OptionsPathFragments {
-    const regex = /.*declgenV1\/(.*?)\.d\.ets$/;
-    const match = filePath.match(regex);
-
-    if (!match) {
-        throw new Error('declgenV1 path not found.');
-    }
-
+    const declarationExtension = '.d.ets';
+    const normalizedFilePath = toUnixPath(filePath);
     let packageName: string = '';
+    let relativePath: string = '';
     const combinedMap = new Map([...arkTSHybridModuleMap, ...arkTSEvolutionModuleMap]);
     for (const arkTSEvolutionModuleInfo of combinedMap.values()) {
       const declgenV1OutputPath = toUnixPath(arkTSEvolutionModuleInfo.declgenV1OutPath);
-      if (filePath.startsWith(declgenV1OutputPath + '/')) {
+      const pathPrefix = declgenV1OutputPath + '/';
+      if (declgenV1OutputPath && normalizedFilePath.startsWith(pathPrefix) &&
+        normalizedFilePath.endsWith(declarationExtension)) {
         packageName = arkTSEvolutionModuleInfo.packageName;
+        relativePath = normalizedFilePath.slice(pathPrefix.length, -declarationExtension.length);
         break;
       }
     }
-    const targetPath = packageName + '/' + match[1];
+    if (!relativePath) {
+        throw new Error('Declaration output path not found.');
+    }
+    const targetPath = packageName + '/' + relativePath;
 
     const targetPathWithDollar: string = packageName + targetPath.slice(packageName.length).replace(/\//g, '$');
     return {
