@@ -15,8 +15,8 @@
 
 import { Entry, Component, Column } from '@ohos.arkui.component';
 
-// Expected: In an '@Entry' decorated component, the 'build' function root must be a container component.
-// Actual: The 'build' function has a single root node, but it is a same-file custom component ('Child'),
+// Expected: In an '@Entry' decorated component, the 'build' method root must be a container component.
+// Actual: The 'build' method has a single root node, but it is a same-file custom component ('Child'),
 // which is invalid for @Entry.
 
 @Entry

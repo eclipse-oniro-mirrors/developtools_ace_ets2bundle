@@ -15,8 +15,8 @@
 
 import { Entry, Component, Row} from '@ohos.arkui.component';
 
-// Expected: The 'build' function should have exactly one root node.
-// Actual: The 'build' function contains multiple (2) root nodes (Row, Row).
+// Expected: The 'build' method should have exactly one root node.
+// Actual: The 'build' method contains multiple (2) root nodes (Row, Row).
 
 @Entry
 @Component
