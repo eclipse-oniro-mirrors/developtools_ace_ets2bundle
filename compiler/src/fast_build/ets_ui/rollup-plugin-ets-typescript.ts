@@ -144,6 +144,7 @@ import {
 } from '../../checkerless_import_transform';
 import { fileInfoCache } from '../../file_info_cache';
 import { clearExtendBlockCache } from '../../scroll_container_size_check';
+import { InvalidCacheReason } from '../../cache_relate_utils';
 
 let switchTsAst: boolean = true;
 
@@ -167,6 +168,8 @@ let disableCacheOptions = {
   etsLoaderVersion: 'default'
 };
 
+let globalReason: string | undefined;
+
 registerCheckerlessImportHooks(() => ({
   expand: { shouldExpandImportDeclaration, getRealFilePath },
   kit: { isKitImportOrExportDeclaration, shouldSkipKitTypeSymbols, isKitTypeSymbol },
@@ -188,6 +191,7 @@ export function etsTransform() {
     buildStart() {
       const hookEventFactory: CompileEvent = getHookEventFactory(this.share, 'etsTransform', 'buildStart');
       const eventEtsTransformBuildStart = createAndStartEvent(hookEventFactory, 'etsTransformBuildStart');
+      globalReason = undefined;
       const judgeCacheShouldDisableInBS = createAndStartEvent(eventEtsTransformBuildStart, 'judgeCacheShouldDsiableInBS');
       judgeCacheShouldDisabled.call(this);
       stopEvent(judgeCacheShouldDisableInBS);
@@ -219,6 +223,7 @@ export function etsTransform() {
       }
       if (!!this.cache.get('enableDebugLine') !== projectConfig.enableDebugLine) {
         ShouldEnableDebugLine.enableDebugLine = true;
+        globalReason = globalReason || InvalidCacheReason.ENABLE_DEBUG_LINE;
       }
       // Initialize the baseline of trggering GC by the maxMemory at the end of serviceChecker. 
       // In etsTransform plugin, if the memory after transforming a file exceeds the baseline,
@@ -245,37 +250,70 @@ export function etsTransform() {
       stopEvent(eventEtsTransformLoad);
     },
     shouldInvalidCache(options) {
-      const hookEventFactory: CompileEvent = getHookEventFactory(this.share, 'etsTransform', 'shouldInvalidCache');
+      const hookEventFactory: CompileEvent = getHookEventFactory(this.share, 'etsTransform', 'beforeBuildEnd');
       const eventEtsShouldInvalidCache = createAndStartEvent(hookEventFactory, 'etsTransformShouldInvalidCache');
       const fileName: string = path.resolve(options.id);
-      let shouldDisable: boolean = shouldDisableCache || disableNonEntryFileCache(fileName) || ShouldEnableDebugLine.enableDebugLine;
+      let firstReason: string | undefined;
+      const markInvalid = (reason: string): boolean => {
+        if (firstReason === undefined) {
+          firstReason = reason;
+        }
+        return true;
+      };
+      let shouldDisable: boolean = (shouldDisableCache && markInvalid(globalReason ?? InvalidCacheReason.SHOULD_DISABLE_CACHE)) ||
+        (disableNonEntryFileCache(fileName) && markInvalid(InvalidCacheReason.NON_ENTRY_FILE)) ||
+        (ShouldEnableDebugLine.enableDebugLine && markInvalid(InvalidCacheReason.ENABLE_DEBUG_LINE));
       if (process.env.compileMode === 'moduleJson') {
         const checkRawFileChangeEvent = createAndStartEvent(eventEtsShouldInvalidCache, 'checkRawFileChangeEvent');
-        shouldDisable = shouldDisable || storedFileInfo.shouldInvalidFiles.has(fileName) || checkRawFileChange(fileName);
+        shouldDisable = shouldDisable ||
+          (storedFileInfo.shouldInvalidFiles.has(fileName) && markInvalid(InvalidCacheReason.RESOURCE_INVALID)) ||
+          (checkRawFileChange(fileName) && markInvalid(InvalidCacheReason.RAW_FILE_CHANGE));
         stopEvent(checkRawFileChangeEvent);
         if (cacheFile && cacheFile[fileName] && cacheFile[fileName].children.length) {
           for (let child of cacheFile[fileName].children) {
             const newTimeMs: number = fs.existsSync(child.fileName) ? fs.statSync(child.fileName).mtimeMs : -1;
             const getFileHashInShouldInvalidCache = createAndStartEvent(eventEtsShouldInvalidCache, 'getFileHashInShouldInvalidCache');
-            const fileHash: string = this.share?.getHashByFilePath ? this.share?.getHashByFilePath(child.fileName) : '';
+            let fileHash: string = '';
+            try {
+              fileHash = this.share?.getHashByFilePath ? this.share?.getHashByFilePath(child.fileName) : '';
+            } catch (e) {
+              stopEvent(getFileHashInShouldInvalidCache);
+              shouldDisable = true;
+              markInvalid(InvalidCacheReason.FRAMEWORK_INVALIDATED);
+              break;
+            }
             stopEvent(getFileHashInShouldInvalidCache);
             if (this.share?.getHashByFilePath && (fileHash !== child.hash || fileHash === '')) {
               shouldDisable = true;
+              markInvalid(`${InvalidCacheReason.CHILDREN_HASH}`);
               break;
             } else if (!(this.share?.getHashByFilePath) && newTimeMs !== child.mtimeMs) {
               shouldDisable = true;
+              markInvalid(`${InvalidCacheReason.CHILDREN_HASH}`);
               break;
             }
           }
         }
       }
       // If a file import an const enum object from other changed file, this file also need to be transformed.
-      shouldDisable = shouldDisable || checkRelateToConstEnum(options.id);
+      const checkRelateFilesToTransformEvent = createAndStartEvent(eventEtsShouldInvalidCache, 'checkRelateFilesToTransform&Collect');
+      shouldDisable = shouldDisable || (checkRelateToConstEnum(options.id) && markInvalid(InvalidCacheReason.CONST_ENUM));
+      stopEvent(checkRelateFilesToTransformEvent);
       if (!shouldDisable) {
         storedFileInfo.collectCachedFiles(fileName);
       }
+      const emittedReason: string = shouldDisable ?
+        (firstReason ?? InvalidCacheReason.UNATTRIBUTED) :
+        (obfuscationConfigChanged ? InvalidCacheReason.OBFUSCATION_CONFIG : InvalidCacheReason.CACHED);
+      const reasonEvent = createAndStartEvent(eventEtsShouldInvalidCache, emittedReason);
+      stopEvent(reasonEvent);
       stopEvent(eventEtsShouldInvalidCache);
       return shouldDisable || obfuscationConfigChanged;
+    },
+    beforeBuildEnd(): void {
+      const hookEventFactory: CompileEvent = getHookEventFactory(this.share, 'etsTransform', 'beforeBuildEnd');
+      const eventEtsTransformBeforeBuildEnd = createAndStartEvent(hookEventFactory, 'etsTransformBeforeBuildEnd');
+      stopEvent(eventEtsTransformBeforeBuildEnd);
     },
     buildEnd(): void {
       const fileToDelete: string[] = Array.from(CreateProgramMoment.deleteFileCollect);
@@ -396,6 +434,7 @@ function judgeCacheShouldDisabled(): void {
         shouldDisableCache = false;
       } else if (!shouldDisableCache) {
         shouldDisableCache = true;
+        globalReason = `${InvalidCacheReason.SHOULD_DISABLE_CACHE}: ${key}`;
       }
     }
     if (this.share && this.share.projectConfig && this.share.projectConfig[key]) {
@@ -850,6 +889,7 @@ function resetEtsTransform(): void {
   projectConfig.ignoreWarning = false;
   projectConfig.widgetCompile = false;
   compilerHost = null;
+  globalReason = undefined;
   disableCacheOptions = {
     bundleName: 'default',
     entryModuleName: 'default',
