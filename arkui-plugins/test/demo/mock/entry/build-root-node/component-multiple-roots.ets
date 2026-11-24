@@ -15,7 +15,7 @@
 
 import { Entry, Component, Row, Column, Text, Color } from '@ohos.arkui.component';
 
-// Expected: The 'build' function of a standard '@Component' must have exactly one root node.
+// Expected: The 'build' method of a standard '@Component' must have exactly one root node.
 // Actual: Multiple root nodes (Row and Text) are defined at the top level of this component's build function.
 
 @Component

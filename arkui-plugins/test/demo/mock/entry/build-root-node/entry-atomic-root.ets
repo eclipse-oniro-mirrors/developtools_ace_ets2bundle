@@ -15,8 +15,8 @@
 
 import { Entry, Component, Span, Color } from '@ohos.arkui.component';
 
-// Expected: In an '@Entry' decorated component, the 'build' function root must be a container component.
-// Actual: The 'build' function has a single root node, but it is an atomic component ('Span'), which is invalid for @Entry.
+// Expected: In an '@Entry' decorated component, the 'build' method root must be a container component.
+// Actual: The 'build' method has a single root node, but it is an atomic component ('Span'), which is invalid for @Entry.
 
 @Entry
 @Component

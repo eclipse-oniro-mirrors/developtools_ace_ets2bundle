@@ -29,8 +29,8 @@ export const checkBuildRootNode = performanceLog(
 
 const BUILD_NAME = 'build';
 const BUILD_COUNT_LIMIT: number = 1;
-const INVALID_ENTRY_BUILD_ROOT = `In an '@Entry' decorated component, the 'build' function can have only one root node, which must be a container component.`;
-const INVALID_BUILD_ROOT = `The 'build' function can have only one root node.`;
+const INVALID_ENTRY_BUILD_ROOT = `In an '@Entry' decorated component, the 'build' method can have only one root node, which must be a container component.`;
+const INVALID_BUILD_ROOT = `The 'build' method can have only one root node.`;
 
 /**
  * 校验规则：用于验证组件中 `build()` 方法的结构是否符合规范。

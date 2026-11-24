@@ -15,8 +15,8 @@
 
 import { Entry, Component, Column, Text } from '@ohos.arkui.component';
 
-// Expected: The 'build' function can have only one root node.
-// Actual: The 'build' function contains multiple (2) root nodes: one standard container ('Column') and one custom component ('HeaderComponent').
+// Expected: The 'build' method can have only one root node.
+// Actual: The 'build' method contains multiple (2) root nodes: one standard container ('Column') and one custom component ('HeaderComponent').
 
 @Component
 struct HeaderComponent {

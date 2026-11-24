@@ -29,8 +29,8 @@ import { uiTransform } from '../../../../../ui-plugins';
 const BUILD_ROOT_NODE_DIR_PATH = 'entry/build-root-node';
 const BUILD_ROOT_NODE_ETS_NAME = 'entry-custom-component-root';
 
-const INVALID_ENTRY_BUILD_ROOT = `In an '@Entry' decorated component, the 'build' function can have only one root node, which must be a container component.`;
-const INVALID_BUILD_ROOT = `The 'build' function can have only one root node.`;
+const INVALID_ENTRY_BUILD_ROOT = `In an '@Entry' decorated component, the 'build' method can have only one root node, which must be a container component.`;
+const INVALID_BUILD_ROOT = `The 'build' method can have only one root node.`;
 
 const buildConfig: BuildConfig = mockBuildConfig();
 const projectConfig: ProjectConfig = mockProjectConfig();
