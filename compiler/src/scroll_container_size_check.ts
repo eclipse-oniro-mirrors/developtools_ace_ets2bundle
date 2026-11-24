@@ -102,7 +102,7 @@ function validateScrollComponentSizeWarning(
     sourceFile: ts.SourceFile
 ): void {
     const message: string = `You are advised to initialize the width and height attributes of the ${componentName} component.`;
-    addLog(LogType.WARN, message, identifierNode.pos, log, sourceFile);
+    addLog(LogType.WARN, message, identifierNode.getEnd(), log, sourceFile);
 }
 
 function hasExtendDecorator(functionDeclaration: ts.FunctionDeclaration): boolean {
