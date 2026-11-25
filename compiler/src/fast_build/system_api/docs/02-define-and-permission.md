@@ -174,14 +174,14 @@ SINCE_LEVEL_CONFIG = Map {
 
 开发者可在 `build-profile.json5` 中配置 `apiCompatibilityCheck` 改变 @since 告警级别。
 
-### 6. 白名单
+### 6. 允许列表
 
-本模块定义了两个白名单，用途不同：
+本模块定义了两个允许列表，用途不同：
 
-#### 6.1 API_INTERFACE_WHITE_LIST（接口白名单）
+#### 6.1 API_INTERFACE_WHITE_LIST（接口允许列表）
 
 ```typescript
-// API 接口白名单：文件名 -> 允许的 API 名称列表
+// API 接口允许列表：文件名 -> 允许的 API 名称列表
 API_INTERFACE_WHITE_LIST = Map {
   '@arkts.lang.d.ets': ['RetentionPolicy', 'Retention', 'SOURCE', 'BYTECODE'],
   '@ohos.deviceInfo.d.ts': ['apiAvailable']
@@ -202,15 +202,15 @@ API_INTERFACE_WHITE_LIST = Map {
 globalModulePaths: ['/sdk/']
 相对路径: @arkts.lang.d.ets
 API 名称: RetentionPolicy
-→ 命中白名单，抑制 @since 告警
+→ 命中允许列表，抑制 @since 告警
 ```
 
-**使用场景**：仅用于 `@since` 告警抑制。某些 SDK 内部接口（如 `@arkts.lang` 的注解相关接口、`deviceInfo.apiAvailable`）本身不需要版本兼容性检查，通过白名单跳过。
+**使用场景**：仅用于 `@since` 告警抑制。某些 SDK 内部接口（如 `@arkts.lang` 的注解相关接口、`deviceInfo.apiAvailable`）本身不需要版本兼容性检查，通过允许列表跳过。
 
-#### 6.2 GLOBAL_DECLARE_WHITE_LIST（全局声明白名单）
+#### 6.2 GLOBAL_DECLARE_WHITE_LIST（全局声明允许列表）
 
 ```typescript
-// 全局声明白名单：允许在 .ts 文件中使用的全局类型名
+// 全局声明允许列表：允许在 .ts 文件中使用的全局类型名
 GLOBAL_DECLARE_WHITE_LIST = Set {
   'Context', 'PointerStyle', 'PixelMap', 'UnifiedData',
   'Summary', 'UniformDataType', 'IntentionCode', 'NavDestinationInfo',
@@ -227,7 +227,7 @@ GLOBAL_DECLARE_WHITE_LIST = Set {
 
 **使用场景**：`.ts` 文件中不应直接引用 OHOS 系统模块中定义的全局类型。这些类型（如 `Context`、`Resource`、`PixelMap` 等）虽然被声明为全局可用，但在 `.ts` 文件中引用时会导致编译问题，因此需要告警提示。
 
-> **注意**：两个白名单的作用方向相反 —— `API_INTERFACE_WHITE_LIST` 是**放行**（抑制告警），`GLOBAL_DECLARE_WHITE_LIST` 是**拦截**（产生告警）。
+> **注意**：两个允许列表的作用方向相反 —— `API_INTERFACE_WHITE_LIST` 是**放行**（抑制告警），`GLOBAL_DECLARE_WHITE_LIST` 是**拦截**（产生告警）。
 
 ### 7. 常量速查
 

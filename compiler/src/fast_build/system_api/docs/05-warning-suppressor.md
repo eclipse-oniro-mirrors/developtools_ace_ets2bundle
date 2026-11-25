@@ -372,7 +372,7 @@ if (canIUse('SystemCapability.xxx')) {
 
 ### 4.8 WhiteListValidator
 
-**抑制策略**：API 声明在 `API_INTERFACE_WHITE_LIST` 白名单中。
+**抑制策略**：API 声明在 `API_INTERFACE_WHITE_LIST` 允许列表中。
 
 ```typescript
 export class WhiteListValidator extends BaseValidator {
@@ -391,7 +391,7 @@ export class WhiteListValidator extends BaseValidator {
 }
 ```
 
-**白名单定义**（`api_check_define.ts`）：
+**允许列表定义**（`api_check_define.ts`）：
 ```typescript
 API_INTERFACE_WHITE_LIST = Map {
   '@arkts.lang.d.ets': ['RetentionPolicy', 'Retention', 'SOURCE', 'BYTECODE'],
@@ -406,7 +406,7 @@ API_INTERFACE_WHITE_LIST = Map {
 - 查 `API_INTERFACE_WHITE_LIST[相对路径]` 是否包含该 API 名称
 - 命中则返回 `true`（抑制告警）
 
-**使用场景**：某些 SDK 内部接口（如 `@arkts.lang` 注解、`deviceInfo.apiAvailable`）本身不需要 `@since` 版本兼容性检查，通过白名单跳过。
+**使用场景**：某些 SDK 内部接口（如 `@arkts.lang` 注解、`deviceInfo.apiAvailable`）本身不需要 `@since` 版本兼容性检查，通过允许列表跳过。
 
 > 详见 [02-define-and-permission.md](02-define-and-permission.md) §6.1。
 
@@ -548,7 +548,7 @@ function checkStringDistributionOS(content, isCheckDistributionOSVersion): ApiAv
 | `AnnotateSuppressWarningsValidator` | api_validate_node.ts | :694 | @SuppressWarnings 注解抑制 |
 | `CommentSuppressWarningsValidator` | api_validate_node.ts | :823 | // @SuppressWarnings 注释抑制 |
 | `CanIUseValidator` | api_validate_node.ts | :1096 | canIUse() 条件抑制 |
-| `WhiteListValidator` | api_validate_node.ts | :1257 | 白名单抑制 |
+| `WhiteListValidator` | api_validate_node.ts | :1257 | 允许列表抑制 |
 | `SdkComparisonHelper` | api_validate_utils.ts | :49 | SDK 版本比较辅助类 |
 | `validateApiAvailableArgument` | apiAvailable_validate_utils.ts | :151 | apiAvailable 参数校验 |
 | `BaseWarningSuppressor` | base_warning_suppressor.ts | :31 | 抑制器基类 |

@@ -2,7 +2,7 @@
 
 > 文件：`api_check_utils.ts`（2848 行，本模块最大的文件）
 
-本文件是 API 兼容性校验子系统的 **核心枢纽**，承担以下职责：
+本文件是 API 兼容性校验子系统的 **核心文件**，承担以下职责：
 1. 构建 JSDoc 校验配置（`getJsDocNodeCheckConfig`）
 2. 各标签的 check 回调函数
 3. 版本比较与格式校验函数（含插件系统）
@@ -64,7 +64,7 @@ getFileCheckedModuleInfo: (containFilePath: string) => {
 | `fileName` | `fileCheckedInfo.currentFileName` ← `checkSourceFile(node)` 的 `node.fileName` | **引用方** | tsc 当前正在校验的源文件，即包含 API 调用标识符的编译文件 | 项目源文件：`/project/src/main/ets/pages/Index.ets` |
 | `sourceFileName` | `sourceSymbolSourceFile.fileName` ← `getSourceFileOfNode(sourceSymbol.valueDeclaration)` | **声明方** | 被引用 API 的声明所在文件，即含 JSDoc 标签的声明文件 | SDK 声明：`/sdk/@ohos.network.d.ts`；项目模块：`/project/src/main/ets/utils/Helper.ets` |
 
-> 简言之：`fileName` 是"谁在用"，`sourceFileName` 是"用的东西声明在哪"。JSDoc 标签从声明方（`sourceFileName`）的 declaration 上读取（见 `expressionCheckByJsDoc` 中的 `getJSDocTags(declaration)`），而校验条件（卡片/测试目录/编译模式等）取决于引用方（`fileName`）的项目上下文。
+> 简言之：`fileName` 是"使用 API 的编译文件"，`sourceFileName` 是"API 声明所在文件"。JSDoc 标签从声明方（`sourceFileName`）的 declaration 上读取（见 `expressionCheckByJsDoc` 中的 `getJSDocTags(declaration)`），而校验条件（卡片/测试目录/编译模式等）取决于引用方（`fileName`）的项目上下文。
 
 **调用场景示例**：
 
@@ -478,3 +478,127 @@ function processDescriptionPlaceholders(code, cause, description): string
 | `checkFileHasAvailableByFileName` | :2720 | 文件含 @Available 检查 |
 | `configureSyscapInfo` | :1049 | SysCap 配置初始化 |
 | `sdkBuildErrorInfoFromDiagnostic` | :2259 | 错误诊断构建 |
+
+---
+
+## 9. 错误诊断构建
+
+当 check 回调返回 `true`（需要告警）后，tsc 生成诊断信息，本模块将其转换为 hvigor 格式错误。理解此流程对新增错误码或修改告警级别至关重要。
+
+### 9.1 诊断消息格式与阻塞编译机制
+
+check 回调在返回 `true` 前，会设置 `config.message`。消息格式有两种：
+
+| 格式 | 示例 | 含义 | 效果 |
+|------|------|------|------|
+| `code#message` | `11706011#The 'xxx' API is supported since...` | 带 error code 前缀 | hvigor 识别为编译错误，**阻塞编译** |
+| 纯 `message` | `'xxx' is system api` | 无 code 前缀 | 仅 tsc Warning，**不阻塞编译** |
+
+**关键规则**：消息是否带 `code#` 前缀由 check 回调中的 `diagnosticType` 决定（truthy=Error→带前缀，falsy=Warning→不带）。`ts.DiagnosticCategory.Error=1`（truthy），`Warning=0`（falsy）。
+
+### 9.2 buildErrorDiagnostic（api_check_utils.ts）
+
+```typescript
+function buildErrorDiagnostic(positionMessage: string, message: string): BuildDiagnosticInfo | undefined
+```
+
+**执行流程**：
+
+```
+buildErrorDiagnostic(positionMessage, message)
+  │
+  ├─ 1. 按 '#' 分割消息
+  │    messageInfo = message.split('#')
+  │    // messageInfo[0] = error code（如 '11706011'）
+  │    // messageInfo[1] = cause（如 "The 'xxx' API is supported since..."）
+  │
+  ├─ 2. 在 ERROR_CODE_INFO 中查找 code
+  │    遍历 ERROR_CODE_INFO.values()
+  │    if (item.code === messageInfo[0]):
+  │      diagnosticInfo = {
+  │        code: item.code,
+  │        description: item.description,     // 如 'The API requires version $ApiVersion or newer.'
+  │        cause: messageInfo[1] || message,  // 告警原因（来自 check 回调填充的消息）
+  │        position: positionMessage,         // 错误位置
+  │        solutions: item.solutions           // 解决方案列表
+  │      }
+  │
+  ├─ 3. 未找到 code → return undefined（不生成 hvigor 错误）
+  │
+  ├─ 4. 占位符替换
+  │    processedDescription = processDescriptionPlaceholders(code, cause, description)
+  │    // 将 description 中的 $ApiVersion 替换为从 cause 中提取的版本号
+  │
+  └─ 5. 返回 BuildDiagnosticInfo
+       code, description, positionMessage, message(cause), solutions
+```
+
+> **关键**：如果消息没有 `code#` 前缀（纯 message），`messageInfo[0]` 是整个消息文本，不会匹配 `ERROR_CODE_INFO` 中任何 code → 返回 `undefined` → 不生成 hvigor 错误。这就是纯 Warning 不阻塞编译的根本原因。
+
+### 9.3 processDescriptionPlaceholders
+
+```typescript
+function processDescriptionPlaceholders(code: string, cause: string, description: string): string
+```
+
+将 `description` 中的占位符替换为从 `cause` 中提取的实际值。
+
+**PLACEHOLDER_HANDLERS** 配置（api_check_utils.ts）：
+
+| code | 占位符 | 提取逻辑 |
+|------|--------|----------|
+| `11706011`（@since）、`11706012`（@Available） | `$ApiVersion` | 从 cause 中正则匹配 `version xxx` 提取版本号 |
+
+**示例**：
+- `description` = `'The API requires version $ApiVersion or newer.'`
+- `cause` = `"The 'xxx' API is supported since SDK version 5.0.0. However, the current compatible SDK version is 21."`
+- 提取版本 `5.0.0`，替换后 `description` = `'The API requires version 5.0.0 or newer.'`
+
+### 9.4 sdkBuildErrorInfoFromDiagnostic
+
+```typescript
+export function sdkBuildErrorInfoFromDiagnostic(positionMessage: string, message: string): SdkHvigorErrorInfo | undefined
+```
+
+**入口函数**（被 ets_checker.ts 调用），将 tsc 诊断转换为 hvigor 格式。
+
+```
+sdkBuildErrorInfoFromDiagnostic(positionMessage, message)
+  │
+  ├─ buildErrorDiagnostic(positionMessage, message)  → BuildDiagnosticInfo | undefined
+  │
+  └─ sdkTransfromErrorCode(diagnostic)  → SdkHvigorErrorInfo | undefined
+     │
+     ├─ if (!diagnostic || !diagnostic.code) → return undefined
+     └─ 构造 SdkHvigorErrorInfo:
+          code: String(diagnostic.code)       // 如 '11706011'
+          description: diagnostic.description  // 处理后的描述
+          cause: diagnostic.getMessage()       // 告警原因
+          position: diagnostic.getPositionMessage()
+          solutions: diagnostic.getSolutions()
+```
+
+### 9.5 新增错误码的完整流程
+
+新增一个标签或修改告警级别为 Error 时，需要：
+
+1. **api_check_define.ts**：在 `ERROR_CODE_INFO` 中注册消息常量 → 错误码映射
+   ```typescript
+   [XXX_TAG_CHECK_ERROR, { code: '117060XX', description: '...', solutions: ['...'] }]
+   ```
+
+2. **api_check_utils.ts** 的 `getXxxCheckConfig`：消息格式改为带 code 前缀
+   ```typescript
+   message: `${ERROR_CODE_INFO.get(XXX_TAG_CHECK_ERROR)?.code}#${XXX_TAG_CHECK_ERROR}`
+   ```
+
+3. **api_check_utils.ts** 的 `checkXxxValue` 回调：根据告警级别决定消息格式
+   ```typescript
+   const diagnosticMessage = diagnosticType
+     ? `${ERROR_CODE_INFO.get(XXX_TAG_CHECK_ERROR)?.code}#${XXX_TAG_CHECK_ERROR}`  // Error: 带前缀
+     : XXX_TAG_CHECK_ERROR;                                                         // Warning: 不带
+   ```
+
+4. **如需 description 占位符**：在 `PLACEHOLDER_HANDLERS` 中添加占位符处理器
+
+> **验证**：设置 `type: ts.DiagnosticCategory.Error` + 消息带 `code#` 前缀 → `buildErrorDiagnostic` 在 `ERROR_CODE_INFO` 中找到 code → 生成 `SdkHvigorErrorInfo` → hvigor 阻塞编译。两者缺一不可：只有 `type: Error` 但消息不带 code 前缀 → `buildErrorDiagnostic` 找不到 code → 返回 undefined → 不阻塞。
