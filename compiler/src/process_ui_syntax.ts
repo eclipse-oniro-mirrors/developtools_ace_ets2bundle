@@ -981,7 +981,7 @@ function isResourcefile(node: ts.CallExpression, previewLog: {isAcceleratePrevie
       type: isTemplateString ? LogType.WARN : LogType.ERROR,
       message: `No such '${resourceText}' resource in current module.`,
       pos: node.getStart(),
-      code: '10904333'
+      code: isTemplateString ? undefined : '10904333'
     });
   } else if (!isResourceModule && process.env.rawFileResource) {
     if (!storedFileInfo.resourcesForFiles.has(filePath)) {
