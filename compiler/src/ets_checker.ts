@@ -266,7 +266,8 @@ function setCompilerOptions(resolveModulePaths: string[]): void {
   if (projectConfig.packageDir === 'oh_modules') {
     Object.assign(compilerOptions, { 'packageManagerType': 'ohpm' });
   }
-  // Keep the module resolution cache consistent with the current compilerOptions.
+  // Freeze after Hvigor merges the rules, without assigning back through its setter.
+  Object.freeze(compilerOptions.paths);
   // Reuse the existing instance (updating its options) to retain shared sub-caches like packageJsonInfo.
   if (moduleResolutionCache) {
     moduleResolutionCache.update(compilerOptions);
@@ -856,17 +857,9 @@ let disableSendableCheckRules: string[] = [];
 let mixCompile: boolean = false;
 let skipArkTSLinter: boolean = false;
 export let maxMemoryInServiceChecker: number = 0;
-export function serviceChecker(rootFileNames: string[], newLogger: Object = null, resolveModulePaths: string[] = null,
-  parentEvent?: CompileEvent, rollupShareObject?: Object): void {
-  fastBuildLogger = newLogger;
+function initializeCheckerLanguageService(rootFileNames: string[], resolveModulePaths: string[],
+  parentEvent?: CompileEvent, rollupShareObject?: Object): string {
   let cacheFile: string = null;
-  tsImportSendable = rollupShareObject?.projectConfig.tsImportSendable;
-  skipOhModulesLint = rollupShareObject?.projectConfig.skipOhModulesLint;
-  enableStrictCheckOHModule = rollupShareObject?.projectConfig.enableStrictCheckOHModule;
-  disableStrictCheckPaths = normalizeDisableStrictCheckPaths(rollupShareObject?.projectConfig?.strictMode?.disableStrictCheckPaths);
-  disableSendableCheckRules = rollupShareObject?.projectConfig.disableSendableCheckRules || [];
-  mixCompile = rollupShareObject?.projectConfig.mixCompile;
-  skipArkTSLinter = rollupShareObject?.projectConfig.skipArkTSLinter;
   if (projectConfig.xtsMode || process.env.watchMode === 'true') {
     if (projectConfig.hotReload) {
       rootFileNames.forEach(fileName => {
@@ -891,7 +884,10 @@ export function serviceChecker(rootFileNames: string[], newLogger: Object = null
     languageService = createLanguageService(rootFileNames, resolveModulePaths, parentEvent, rollupShareObject);
     MemoryMonitor.stopRecordStage(recordInfo);
   }
+  return cacheFile;
+}
 
+function buildCheckerProgram(rootFileNames: string[], rollupShareObject?: Object): void {
   const timePrinterInstance = ts.ArkTSLinterTimePrinter.getInstance();
   timePrinterInstance.setArkTSTimePrintSwitch(false);
   timePrinterInstance.appendTime(ts.TimePhase.START);
@@ -908,6 +904,26 @@ export function serviceChecker(rootFileNames: string[], newLogger: Object = null
 
   collectAllFiles(globalProgram.program, undefined, undefined, rollupShareObject);
   collectFileToIgnoreDiagnostics(rootFileNames);
+}
+
+export function serviceChecker(rootFileNames: string[], newLogger: Object = null, resolveModulePaths: string[] = null,
+  parentEvent?: CompileEvent, rollupShareObject?: Object): void {
+  releaseModuleResolutionCaches();
+  fastBuildLogger = newLogger;
+  let cacheFile: string = null;
+  tsImportSendable = rollupShareObject?.projectConfig.tsImportSendable;
+  skipOhModulesLint = rollupShareObject?.projectConfig.skipOhModulesLint;
+  enableStrictCheckOHModule = rollupShareObject?.projectConfig.enableStrictCheckOHModule;
+  disableStrictCheckPaths = normalizeDisableStrictCheckPaths(rollupShareObject?.projectConfig?.strictMode?.disableStrictCheckPaths);
+  disableSendableCheckRules = rollupShareObject?.projectConfig.disableSendableCheckRules || [];
+  mixCompile = rollupShareObject?.projectConfig.mixCompile;
+  skipArkTSLinter = rollupShareObject?.projectConfig.skipArkTSLinter;
+  try {
+    cacheFile = initializeCheckerLanguageService(rootFileNames, resolveModulePaths, parentEvent, rollupShareObject);
+    buildCheckerProgram(rootFileNames, rollupShareObject);
+  } finally {
+    releaseModuleResolutionCaches();
+  }
   ts.PerformanceDotting?.startAdvanced('runArkTSLinterTime');
   const runArkTSLinterRecordInfo = MemoryMonitor.recordStage(MemoryDefine.RUN_ARK_TS_LINTER);
   const errorCodeLogger: Object | undefined = !!rollupShareObject?.getHvigorConsoleLogger ?
@@ -1459,6 +1475,29 @@ function checkNeedUpdateFiles(file: string, needUpdate: NeedUpdateFlag, alreadyC
 
 const fileExistsCache: Map<string, boolean> = new Map<string, boolean>();
 const dirExistsCache: Map<string, boolean> = new Map<string, boolean>();
+const realpathCache: Map<string, string> = new Map();
+type ParentDedupIndex = WeakMap<string[], Set<string>>;
+// Index by array identity so replacing a parent list (e.g. in watch mode) invalidates its index.
+let parentDedupIndex: ParentDedupIndex = new WeakMap();
+
+export function releaseModuleResolutionCaches(): void {
+  realpathCache.clear();
+  parentDedupIndex = new WeakMap();
+}
+
+function resolveCachedRealPath(fileName: string, cache: Map<string, string>): string {
+  const cachedRealPath = cache.get(fileName);
+  if (cachedRealPath !== undefined) {
+    return cachedRealPath;
+  }
+  const realFilePath: string = ts.sys.realpath(fileName);
+  // Do not normalize across symlinks or cache paths relative to a changing cwd.
+  if (path.isAbsolute(fileName) && (!isWindows() || path.parse(fileName).root.length > 1)) {
+    cache.set(fileName, realFilePath);
+  }
+  return realFilePath;
+}
+
 const getCanonicalFileName = (fileName: string): string =>
   ts.sys.useCaseSensitiveFileNames ? fileName : fileName.toLowerCase();
 // Caches module resolution results (per directory/module name) so that the same module specifier
@@ -1484,8 +1523,8 @@ const moduleResolutionHost: ts.ModuleResolutionHost = {
   readFile(fileName: string): string | undefined {
     return ts.sys.readFile(fileName);
   },
-  realpath(path: string): string {
-    return ts.sys.realpath(path);
+  realpath(fileName: string): string {
+    return resolveCachedRealPath(fileName, realpathCache);
   },
   trace(s: string): void {
     console.info(s);
@@ -1496,6 +1535,11 @@ const moduleResolutionHost: ts.ModuleResolutionHost = {
 export const moduleResolutionHostTest = moduleResolutionHost;
 
 export function resolveTypeReferenceDirectives(typeDirectiveNames: string[] | ts.FileReference[]): ts.ResolvedTypeReferenceDirective[] {
+  return resolveTypeReferenceDirectivesWithHost(typeDirectiveNames, moduleResolutionHost);
+}
+
+function resolveTypeReferenceDirectivesWithHost(typeDirectiveNames: string[] | readonly ts.FileReference[],
+  resolutionHost: ts.ModuleResolutionHost): ts.ResolvedTypeReferenceDirective[] {
   if (typeDirectiveNames.length === 0) {
     return [];
   }
@@ -1508,7 +1552,7 @@ export function resolveTypeReferenceDirectives(typeDirectiveNames: string[] | ts
   for (const entry of typeDirectiveNames) {
     const typeName = isString(entry) ? entry : entry.fileName.toLowerCase();
     if (!cache.has(typeName)) {
-      const resolvedFile = ts.resolveTypeReferenceDirective(typeName, containingFile, compilerOptions, moduleResolutionHost);
+      const resolvedFile = ts.resolveTypeReferenceDirective(typeName, containingFile, compilerOptions, resolutionHost);
       if (!resolvedFile || !resolvedFile.resolvedTypeReferenceDirective) {
         etsCheckerLogger.warn('\u001b[33m', `ArkTS:Cannot find type definition file for: ${typeName}\n`);
       }
@@ -1554,13 +1598,18 @@ function isResolvedPathUnderExternalApi(target: string | undefined, externalApiP
 }
 
 export function resolveModuleNames(moduleNames: string[], containingFile: string): ts.ResolvedModuleFull[] {
+  return resolveModuleNamesWithCaches(moduleNames, containingFile, moduleResolutionHost, parentDedupIndex);
+}
+
+function resolveModuleNamesWithCaches(moduleNames: string[], containingFile: string,
+  resolutionHost: ts.ModuleResolutionHost, parentIndex: ParentDedupIndex): ts.ResolvedModuleFull[] {
   ts.PerformanceDotting?.startAdvanced('resolveModuleNames');
   const resolvedModules: ts.ResolvedModuleFull[] = [];
   const cacheFileContent: ts.ResolvedModuleFull[] = resolvedModulesCache.get(path.resolve(containingFile));
   if (![...shouldResolvedFiles].length || shouldResolvedFiles.has(path.resolve(containingFile)) ||
     !(cacheFileContent && cacheFileContent.length === moduleNames.length)) {
     for (const moduleName of moduleNames) {
-      const result = ts.resolveModuleName(moduleName, containingFile, compilerOptions, moduleResolutionHost,
+      const result = ts.resolveModuleName(moduleName, containingFile, compilerOptions, resolutionHost,
         moduleResolutionCache);
       if (result.resolvedModule && !isOhExport(result.resolvedModule?.packageId?.name, result.resolvedModule?.resolvedFileName)) {
         result.resolvedModule.isNotOhExport = true;
@@ -1668,7 +1717,7 @@ export function resolveModuleNames(moduleNames: string[], containingFile: string
       }
     }
     if (!projectConfig.xtsMode) {
-      createOrUpdateCache(resolvedModules, path.resolve(containingFile));
+      createOrUpdateCache(resolvedModules, path.resolve(containingFile), parentIndex);
     }
     resolvedModulesCache.set(path.resolve(containingFile), resolvedModules);
     ts.PerformanceDotting?.stopAdvanced('resolveModuleNames');
@@ -1692,30 +1741,75 @@ function collectShouldPackedFiles(resolvedModules: ts.ResolvedModuleFull[]): boo
         new RegExp('\\' + path.sep + 'src' + '\\' + path.sep + 'main' + '\\' + path.sep)));
 }
 
-function createOrUpdateCache(resolvedModules: ts.ResolvedModuleFull[], containingFile: string): void {
+function addParentToCache(value: CacheFileName, resolvedContainingFile: string, parentIndex: ParentDedupIndex): void {
+  let parents: string[] = value.parent || [];
+  let parentSet: Set<string> | undefined = parentIndex.get(parents);
+  // Another resolution scope may have appended to the same parent array.
+  if (parentSet?.size !== parents.length) {
+    parentSet = new Set(parents);
+    // Match the old first-update behavior even if a loaded list has duplicates.
+    if (parentSet.size !== parents.length) {
+      parents = [...parentSet];
+    }
+    parentIndex.set(parents, parentSet);
+    value.parent = parents;
+  }
+  if (!parentSet.has(resolvedContainingFile)) {
+    parentSet.add(resolvedContainingFile);
+    parents.push(resolvedContainingFile);
+  }
+}
+
+function createOrUpdateCache(resolvedModules: ts.ResolvedModuleFull[], containingFile: string,
+  parentIndex: ParentDedupIndex = parentDedupIndex): void {
+  const resolvedContainingFile: string = path.resolve(containingFile);
   const children: string[] = [];
   const error: boolean = false;
   resolvedModules.forEach(moduleObj => {
-    if (moduleObj && moduleObj.resolvedFileName && /\.(ets|ts)$/.test(moduleObj.resolvedFileName)) {
-      const file: string = path.resolve(moduleObj.resolvedFileName);
-      const mtimeMs: number = fileInfoCache.getMtimeMs(file);
-      children.push(file);
-      const value: CacheFileName = cache[file];
-      if (value) {
-        value.mtimeMs = mtimeMs;
-        value.error = error;
-        value.parent = value.parent || [];
-        value.parent.push(path.resolve(containingFile));
-        value.parent = [...new Set(value.parent)];
-      } else {
-        cache[file] = { mtimeMs, children: [], parent: [containingFile], error };
-      }
+    if (!moduleObj || !moduleObj.resolvedFileName || !/\.(ets|ts)$/.test(moduleObj.resolvedFileName)) {
+      return;
+    }
+    const file: string = path.resolve(moduleObj.resolvedFileName);
+    const mtimeMs: number = fileInfoCache.getMtimeMs(file);
+    children.push(file);
+    const value: CacheFileName = cache[file];
+    if (value) {
+      value.mtimeMs = mtimeMs;
+      value.error = error;
+      addParentToCache(value, resolvedContainingFile, parentIndex);
+    } else {
+      cache[file] = { mtimeMs, children: [], parent: [containingFile], error };
     }
   });
-  cache[path.resolve(containingFile)] = {
+  cache[resolvedContainingFile] = {
     mtimeMs: fileInfoCache.getMtimeMs(containingFile), children,
-    parent: cache[path.resolve(containingFile)] && cache[path.resolve(containingFile)].parent ?
-      cache[path.resolve(containingFile)].parent : [], error
+    parent: cache[resolvedContainingFile]?.parent || [], error
+  };
+}
+
+type WatchResolutionCallbacks = Pick<ts.WatchCompilerHostOfFilesAndCompilerOptions<ts.SemanticDiagnosticsBuilderProgram>,
+  'createProgram' | 'resolveModuleNames' | 'resolveTypeReferenceDirectives'>;
+
+function createWatchResolutionCallbacks(): WatchResolutionCallbacks {
+  let current: { host: ts.ModuleResolutionHost, parentIndex: ParentDedupIndex } | undefined;
+  return {
+    createProgram: (...args) => {
+      const previous = current;
+      const watchRealpathCache = new Map<string, string>();
+      current = {
+        host: { ...moduleResolutionHost, realpath: fileName => resolveCachedRealPath(fileName, watchRealpathCache) },
+        parentIndex: new WeakMap()
+      };
+      try {
+        return ts.createSemanticDiagnosticsBuilderProgram(...args);
+      } finally {
+        current = previous;
+      }
+    },
+    resolveModuleNames: (names, file) => current
+      ? resolveModuleNamesWithCaches(names, file, current.host, current.parentIndex)
+      : resolveModuleNames(names, file),
+    resolveTypeReferenceDirectives: names => resolveTypeReferenceDirectivesWithHost(names, current?.host ?? moduleResolutionHost)
   };
 }
 
@@ -1733,7 +1827,7 @@ export function createWatchCompilerHost(rootFileNames: string[],
   // Change the buildInfo file path, or it will cover the buildInfo file created before.
   const buildInfoPath: string = path.resolve(projectConfig.cachePath, '..', WATCH_COMPILER_BUILD_INFO_SUFFIX);
   const watchCompilerOptions = { ...compilerOptions, tsBuildInfoFile: buildInfoPath };
-  const createProgram = ts.createSemanticDiagnosticsBuilderProgram;
+  const { createProgram, ...resolveCallbacks } = createWatchResolutionCallbacks();
   const host = ts.createWatchCompilerHost(
     [...rootFileNames, ...readDeaclareFiles()], watchCompilerOptions,
     ts.sys, createProgram, reportDiagnostic,
@@ -1768,9 +1862,7 @@ export function createWatchCompilerHost(rootFileNames: string[],
     }
     return fs.readFileSync(fileName).toString();
   };
-  host.resolveModuleNames = resolveModuleNames;
-  host.resolveTypeReferenceDirectives = resolveTypeReferenceDirectives;
-  return host;
+  return Object.assign(host, resolveCallbacks);
 }
 
 export function watchChecker(rootFileNames: string[], newLogger: any = null, resolveModulePaths: string[] = null): void {
@@ -2272,37 +2364,43 @@ function resetEtsStandaloneCheckerConfig(beforeInitFastBuildLogger, beforeInitCo
 }
 
 export function etsStandaloneChecker(entryObj, logger, projectConfig): void {
+  releaseModuleResolutionCaches();
   const beforeInitFastBuildLogger = fastBuildLogger;
   const beforeInitCompileMode = process.env.compileMode;
-  initEtsStandaloneCheckerConfig(logger, projectConfig);
-  const rootFileNames: string[] = [];
-  const resolveModulePaths: string[] = [];
-  Object.values(entryObj).forEach((fileName: string) => {
-    rootFileNames.push(path.resolve(fileName));
-  });
-  if (projectConfig.resolveModulePaths && Array.isArray(projectConfig.resolveModulePaths)) {
-    resolveModulePaths.push(...projectConfig.resolveModulePaths);
-  }
-  const filterFiles: string[] = filterInput(rootFileNames);
-  languageService = createLanguageService(filterFiles, resolveModulePaths);
-  const timePrinterInstance = ts.ArkTSLinterTimePrinter.getInstance();
-  timePrinterInstance.setArkTSTimePrintSwitch(false);
-  timePrinterInstance.appendTime(ts.TimePhase.START);
-  globalProgram.builderProgram = languageService.getBuilderProgram(/*withLinterProgram*/ true);
-  globalProgram.program = globalProgram.builderProgram.getProgram();
-  props = languageService.getProps();
-  timePrinterInstance.appendTime(ts.TimePhase.GET_PROGRAM);
-  collectFileToIgnoreDiagnostics(filterFiles);
-  runArkTSLinter();
-  const allDiagnostics: ts.Diagnostic[] = globalProgram.builderProgram
-    .getSyntacticDiagnostics()
-    .concat(globalProgram.builderProgram.getSemanticDiagnostics());
-  globalProgram.builderProgram.emitBuildInfo(buildInfoWriteFile);
+  try {
+    initEtsStandaloneCheckerConfig(logger, projectConfig);
+    const rootFileNames: string[] = [];
+    const resolveModulePaths: string[] = [];
+    Object.values(entryObj).forEach((fileName: string) => {
+      rootFileNames.push(path.resolve(fileName));
+    });
+    if (projectConfig.resolveModulePaths && Array.isArray(projectConfig.resolveModulePaths)) {
+      resolveModulePaths.push(...projectConfig.resolveModulePaths);
+    }
+    const filterFiles: string[] = filterInput(rootFileNames);
+    languageService = createLanguageService(filterFiles, resolveModulePaths);
+    const timePrinterInstance = ts.ArkTSLinterTimePrinter.getInstance();
+    timePrinterInstance.setArkTSTimePrintSwitch(false);
+    timePrinterInstance.appendTime(ts.TimePhase.START);
+    globalProgram.builderProgram = languageService.getBuilderProgram(/*withLinterProgram*/ true);
+    globalProgram.program = globalProgram.builderProgram.getProgram();
+    props = languageService.getProps();
+    timePrinterInstance.appendTime(ts.TimePhase.GET_PROGRAM);
+    collectFileToIgnoreDiagnostics(filterFiles);
+    releaseModuleResolutionCaches();
+    runArkTSLinter();
+    const allDiagnostics: ts.Diagnostic[] = globalProgram.builderProgram
+      .getSyntacticDiagnostics()
+      .concat(globalProgram.builderProgram.getSemanticDiagnostics());
+    globalProgram.builderProgram.emitBuildInfo(buildInfoWriteFile);
 
-  allDiagnostics.forEach((diagnostic: ts.Diagnostic) => {
-    printDiagnostic(diagnostic);
-  });
-  resetEtsStandaloneCheckerConfig(beforeInitFastBuildLogger, beforeInitCompileMode);
+    allDiagnostics.forEach((diagnostic: ts.Diagnostic) => {
+      printDiagnostic(diagnostic);
+    });
+    resetEtsStandaloneCheckerConfig(beforeInitFastBuildLogger, beforeInitCompileMode);
+  } finally {
+    releaseModuleResolutionCaches();
+  }
 }
 
 export function resetEtsCheckTypeScript(): void {
@@ -2314,6 +2412,7 @@ export function resetEtsCheckTypeScript(): void {
 }
 
 export function resetEtsCheck(): void {
+  releaseModuleResolutionCaches();
   cache = {};
   props = new Set();
   needReCheckForChangedDepUsers = false;
@@ -2398,5 +2497,8 @@ function performDeclarationMerging(inputDir: string, isByteCodeHar: boolean): vo
   } catch (error) {
     logger.debug(`Failed to merge declaration files: ${error.message}`);
     throw error;
+  } finally {
+    // The declaration resolver can repopulate both caches after the checker phase.
+    releaseModuleResolutionCaches();
   }
 }
