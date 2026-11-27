@@ -36,7 +36,7 @@ system_api/
 │   ├── available_warning_suppressor.ts # @Available 告警抑制器
 │   ├── permission_warning_suppressor.ts # @permission 告警抑制器
 │   ├── syscap_warning_suppressor.ts     # @syscap 告警抑制器
-│   ├── api_validate_node.ts       #   各 Validator 实现（try-catch/undefined/SDK版本/白名单/@SuppressWarnings）
+│   ├── api_validate_node.ts       #   各 Validator 实现（try-catch/undefined/SDK版本/允许列表/@SuppressWarnings）
 │   ├── api_validate_utils.ts     #   SdkComparisonHelper（SDK 版本比较辅助）
 │   └── apiAvailable_validate_utils.ts # apiAvailable() 参数校验
 └── docs/                          # 本文档目录
@@ -45,10 +45,24 @@ system_api/
     ├── 02-define-and-permission.md#   常量定义与权限校验
     ├── 03-check-utils.md          #   核心校验工具
     ├── 04-version-checker.md      #   版本检查器（策略模式）
-    └── 05-warning-suppressor.md   #   告警抑制系统（组合模式）
+    ├── 05-warning-suppressor.md   #   告警抑制系统（组合模式）
+    ├── 06-since-check.md          #   @since 标签校验（版本比较，可配 warn/error）
+    ├── 07-available-check.md      #   @Available 装饰器校验（版本比较，含 apiAvailable）
+    ├── 08-permission-check.md     #   @permission 标签校验（权限表达式解析）
+    ├── 09-syscap-check.md         #   @syscap 标签校验（设备能力集 + canIUse）
+    ├── 10-systemapi-check.md      #   @systemapi 标签校验（模式 A：限制使用）
+    ├── 11-test-check.md           #   @test 标签校验（模式 A：测试目录限制）
+    ├── 12-famodelonly-check.md    #   @famodelonly 标签校验（模式 A：FA 模型限制）
+    ├── 13-stagemodelonly-check.md #   @stagemodelonly 标签校验（模式 A：Stage 模型限制）
+    ├── 14-form-check.md           #   @form 标签校验（模式 B：卡片支持声明）
+    ├── 15-crossplatform-check.md  #   @crossplatform 标签校验（模式 B + 外部模块收集）
+    ├── 16-atomicservice-check.md  #   @atomicservice 标签校验（模式 B：原子化服务）
+    └── 17-deprecated-check.md     #   @deprecated 标签校验（无回调，标签存在即告警）
 ```
 
-**必读顺序**：README.md -> 01 -> 02 -> 03 -> 04 -> 05
+**必读顺序**：
+- 概览：README.md -> 01 -> 02 -> 03 -> 04 -> 05
+- 各标签详细校验：06-17（按需查阅，修改哪个标签就读哪个）
 
 ---
 
@@ -397,7 +411,7 @@ rollup-plugin-ets-checker.ts: etsChecker().buildStart()           ← 触发入�
 | `@SuppressWarnings` 注解 | `@since`、`@Available`、`@syscap`、`@permission` | `@SuppressWarnings({rules: [...]})` |
 | `// @SuppressWarnings` 注释 | `@since`、`@Available`、`@syscap`、`@permission` | `// @SuppressWarnings compatibility` |
 | `canIUse()` 条件 | `@syscap` | `if (canIUse('xxx')) { ... }` |
-| 白名单 | `@since`、`@Available` | `API_INTERFACE_WHITE_LIST` 中声明的接口 |
+| 允许列表 | `@since`、`@Available` | `API_INTERFACE_WHITE_LIST` 中声明的接口 |
 
 ### 5.4 版本格式
 
@@ -460,11 +474,29 @@ rollup-plugin-ets-checker.ts: etsChecker().buildStart()           ← 触发入�
 | 任务 | 阅读文档 | 关键入口 |
 |------|----------|----------|
 | 修改系统 API 变换逻辑 | [01-plugin-and-transform.md](01-plugin-and-transform.md) | `processSystemApi`、`processSystemApiAndLibso` |
+| 修改某个标签的校验逻辑 | [06-17](#) 各标签文档（见下表） | 各标签的 `getXxxCheckConfig` + `checkXxxValue` |
 | 新增校验标签 | [02-define-and-permission.md](02-define-and-permission.md) + [03-check-utils.md](03-check-utils.md) | `api_check_define.ts` 加常量 + `getJsDocNodeCheckConfig` 加配置 |
 | 修改版本比较逻辑 | [04-version-checker.md](04-version-checker.md) | `base_version_checker.ts` 的 `compare()` |
 | 新增告警抑制策略 | [05-warning-suppressor.md](05-warning-suppressor.md) | `api_validate_node.ts` 加 Validator + 对应 suppressor |
-| 修改权限表达式解析 | [02-define-and-permission.md](02-define-and-permission.md) | `api_check_permission.ts` 的 `JsDocCheckService` |
+| 修改权限表达式解析 | [02-define-and-permission.md](02-define-and-permission.md) + [08-permission-check.md](08-permission-check.md) | `api_check_permission.ts` 的 `JsDocCheckService` |
 | 修改错误码/消息 | [02-define-and-permission.md](02-define-and-permission.md) | `ERROR_CODE_INFO` 映射表 |
+
+### 各标签校验文档速查
+
+| 标签 | 文档 | 校验模式 | 告警级别 | 错误码 |
+|------|------|---------|---------|--------|
+| `@since` | [06-since-check.md](06-since-check.md) | 版本比较（策略模式） | warn/error（可配） | 11706011 |
+| `@Available` | [07-available-check.md](07-available-check.md) | 版本比较（装饰器） | warn/error（可配） | 11706012 |
+| `@permission` | [08-permission-check.md](08-permission-check.md) | 权限表达式解析 | Warning | 无 |
+| `@syscap` | [09-syscap-check.md](09-syscap-check.md) | 设备能力集 + canIUse | Warning | 无 |
+| `@systemapi` | [10-systemapi-check.md](10-systemapi-check.md) | 模式 A（限制使用） | Warning | 无 |
+| `@test` | [11-test-check.md](11-test-check.md) | 模式 A（限制使用） | Warning | 无 |
+| `@famodelonly` | [12-famodelonly-check.md](12-famodelonly-check.md) | 模式 A（限制使用） | Error | 11706008 |
+| `@stagemodelonly` | [13-stagemodelonly-check.md](13-stagemodelonly-check.md) | 模式 A（限制使用） | Error | 11706009 |
+| `@form` | [14-form-check.md](14-form-check.md) | 模式 B（支持声明） | Error | 11706006 |
+| `@crossplatform` | [15-crossplatform-check.md](15-crossplatform-check.md) | 模式 B + 外部模块收集 | Error/Warning（可配） | 11706007 |
+| `@atomicservice` | [16-atomicservice-check.md](16-atomicservice-check.md) | 模式 B（支持声明） | Error | 11706010 |
+| `@deprecated` | [17-deprecated-check.md](17-deprecated-check.md) | 无回调（存在即告警） | Warning | 无 |
 
 ### 8.2 开发约束
 
